@@ -1,0 +1,17 @@
+node_modules
+dist
+.turbo
+coverage
+.env
+.env.local
+.env.*.local
+!.env.example
+*.log
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+next-env.d.ts
+.expo
+.cache
+*.tsbuildinfo

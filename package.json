@@ -1,0 +1,44 @@
+{
+  "name": "foundry",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "docker compose up -d postgres valkey",
+    "db:migrate": "pnpm --filter @foundry/db migrate up",
+    "prepare": "node ./scripts/install-git-hooks.mjs"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown",
+    "*.{ts,tsx,mjs,js}": "eslint --fix"
+  },
+  "devDependencies": {
+    "@foundry/config": "workspace:*",
+    "@types/node": "24.13.3",
+    "eslint": "9.39.5",
+    "lint-staged": "17.3.0",
+    "prettier": "3.9.6",
+    "simple-git-hooks": "2.13.1",
+    "turbo": "2.10.10",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10",
+    "better-auth": "1.5.6",
+    "@better-auth/api-key": "1.5.6",
+    "pg": "8.23.0"
+  }
+}
