@@ -1,0 +1,30 @@
+import { z } from 'zod';
+
+export const StreamEventSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('message_started'), runId: z.string() }),
+  z.object({ type: z.literal('text_delta'), runId: z.string(), delta: z.string() }),
+  z.object({ type: z.literal('question_ready'), runId: z.string(), question: z.unknown() }),
+  z.object({ type: z.literal('tool_planned'), runId: z.string(), tool: z.unknown() }),
+  z.object({ type: z.literal('tool_started'), runId: z.string(), toolCallId: z.string() }),
+  z.object({
+    type: z.literal('tool_progress'),
+    runId: z.string(),
+    toolCallId: z.string(),
+    progress: z.unknown(),
+  }),
+  z.object({
+    type: z.literal('tool_completed'),
+    runId: z.string(),
+    toolCallId: z.string(),
+    result: z.unknown(),
+  }),
+  z.object({ type: z.literal('evidence_found'), runId: z.string(), evidence: z.unknown() }),
+  z.object({ type: z.literal('proposal_ready'), runId: z.string(), proposal: z.unknown() }),
+  z.object({ type: z.literal('approval_required'), runId: z.string(), approval: z.unknown() }),
+  z.object({ type: z.literal('sprint_progress'), sprintId: z.string(), progress: z.unknown() }),
+  z.object({ type: z.literal('artifact_ready'), artifactId: z.string(), version: z.number() }),
+  z.object({ type: z.literal('warning'), runId: z.string(), warning: z.unknown() }),
+  z.object({ type: z.literal('blocked'), runId: z.string(), reason: z.unknown() }),
+  z.object({ type: z.literal('message_completed'), runId: z.string() }),
+]);
+export type StreamEvent = z.infer<typeof StreamEventSchema>;

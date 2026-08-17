@@ -1,0 +1,22 @@
+import base from '@foundry/config/vitest';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  ...base,
+  test: {
+    ...base.test,
+    passWithNoTests: false,
+    fileParallelism: false,
+    pool: 'forks',
+    maxWorkers: 1,
+    hookTimeout: 60_000,
+    testTimeout: 30_000,
+    env: {
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgres://foundry:foundry@localhost:5432/foundry_test',
+      TEST_DATABASE_URL: 'postgres://foundry:foundry@localhost:5432/foundry_test',
+      BETTER_AUTH_URL: 'http://localhost:3000',
+      BETTER_AUTH_SECRET: 'test-secret-test-secret-test-32by',
+    },
+  },
+});

@@ -96,3 +96,16 @@ export async function listProjects(sql: Sql): Promise<Project[]> {
   `;
   return rows.map(toProject);
 }
+
+export async function listProjectsByWorkspaceId(
+  sql: Sql,
+  workspaceId: WorkspaceId,
+): Promise<Project[]> {
+  const rows = await sql<ProjectRow[]>`
+    select * from projects
+    where workspace_id = ${workspaceId}
+      and archived_at is null
+    order by created_at asc
+  `;
+  return rows.map(toProject);
+}

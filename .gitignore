@@ -11,7 +11,9 @@ coverage
 .idea
 .vscode/*
 !.vscode/extensions.json
-next-env.d.ts
+.next
 .expo
 .cache
 *.tsbuildinfo
+cdk.out
+cdk.context.json

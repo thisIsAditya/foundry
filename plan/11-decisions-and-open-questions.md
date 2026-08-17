@@ -180,3 +180,35 @@ The app may describe a model as **solid enough for the next decision** when:
 - the founder understands and accepts the next experiment.
 
 It must not describe a business as guaranteed, validated by simulated users, legally compliant, or investable merely because the generated artifacts look polished.
+
+## 6. Implementation decisions (build)
+
+### I1 — Local Docker Compose vs AWS `dev`
+
+**Choice:** Day-to-day local development uses Docker Compose Postgres + Valkey. AWS `dev` is the shared environment auto-deployed on merge to `main`. Local `.env` stays on Compose URLs (`localhost:5432` / `localhost:6379`) and is not pointed at RDS.
+
+**Reason:** Laptop-to-RDS adds latency, security-group complexity, and idle cost. Compose already matches Milestone 0 and keeps feature work offline-capable. `plan/implementation/14` § Milestone 3 allows either choice; this is the team's.
+
+### I2 — Custom domain and ACM are follow-ups
+
+**Choice:** Milestone 3 serves `dev` on the CloudFront default domain (`*.cloudfront.net`). The ALB origin is HTTP:80 (no ACM certificate on the ALB yet). HTTPS for a custom domain is a later CDK change: ACM on CloudFront (and optionally on the ALB), then `BETTER_AUTH_URL` switches to that hostname.
+
+**Reason:** CloudFront is in front of the ALB from day one (`10` §6). Waiting on a product domain/ACM would block the "hello world on Fargate" risk-reduction step.
+
+### I3 — Worker Fargate service waits for Milestone 4
+
+**Choice:** `EcrStack` creates `foundry-worker`. `EcsStack` in Milestone 3 runs only the `web` service. Worker task definition, Service Connect health port, and queue-depth alarms land with `apps/worker`.
+
+**Reason:** There is no worker image or process yet. An empty Fargate service would fail health checks and burn the same baseline cost as web.
+
+### I4 — Application deploys do not `cdk deploy`
+
+**Choice:** First-time infrastructure is a human `cdk bootstrap` + `cdk deploy` of Network, Data, Ecr, Observability, Ci, then (after the first image is in ECR) Ecs. After that, `.github/workflows/deploy-dev.yml` builds `linux/arm64`, pushes ECR, `RunTask`s the migrate command on the web image, and `update-service`s. The GitHub deploy role cannot create or delete CloudFormation stacks.
+
+**Reason:** `10` §7 and §9: schema must exist before the new tasks start, and CI must not be able to mutate VPC/RDS.
+
+### I5 — First EcsStack deploy needs an image
+
+**Choice:** `EcsStack` references `foundry-web:${webImageTag}` (CDK context `webImageTag`, default `latest`). Push that tag to ECR before the first `cdk deploy` of `Foundry-Dev-Ecs`. Later releases only change the registered task definition in `deploy-dev.yml`.
+
+**Reason:** ECS cannot start a service against an empty repository. Splitting EcrStack from EcsStack is how we break that chicken-and-egg without a dummy public image.

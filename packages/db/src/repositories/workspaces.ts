@@ -92,3 +92,16 @@ export async function listWorkspaces(sql: Sql): Promise<Workspace[]> {
   `;
   return rows.map(toWorkspace);
 }
+
+export async function listWorkspacesByIds(
+  sql: Sql,
+  ids: readonly WorkspaceId[],
+): Promise<Workspace[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const rows = await sql<WorkspaceRow[]>`
+    select * from workspaces where id in ${sql(ids)} order by created_at asc
+  `;
+  return rows.map(toWorkspace);
+}

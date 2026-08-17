@@ -17,6 +17,7 @@ export default tseslint.config(
       '**/.next/**',
       '**/coverage/**',
       '**/*.tsbuildinfo',
+      '**/cdk.out/**',
     ],
   },
   js.configs.recommended,
@@ -52,7 +53,12 @@ export default tseslint.config(
               ],
             },
             {
-              target: path.join(repoRoot, 'apps/web'),
+              target: [
+                path.join(repoRoot, 'apps/web/app/(marketing)'),
+                path.join(repoRoot, 'apps/web/app/(app)'),
+                path.join(repoRoot, 'apps/web/components'),
+                path.join(repoRoot, 'apps/web/lib/trpc/client.ts'),
+              ],
               from: [
                 path.join(repoRoot, 'packages/db'),
                 path.join(repoRoot, 'packages/agent-runtime'),

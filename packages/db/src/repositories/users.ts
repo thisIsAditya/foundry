@@ -73,3 +73,11 @@ export async function getUserById(sql: Sql, id: UserId): Promise<User | null> {
   const row = rows[0];
   return row === undefined ? null : toUser(row);
 }
+
+export async function getUserByEmail(sql: Sql, email: string): Promise<User | null> {
+  const rows = await sql<UserRow[]>`
+    select * from users where email = ${email}
+  `;
+  const row = rows[0];
+  return row === undefined ? null : toUser(row);
+}

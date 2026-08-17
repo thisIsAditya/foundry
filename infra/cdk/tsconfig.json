@@ -1,0 +1,9 @@
+{
+  "extends": "@foundry/config/tsconfig/base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["bin/**/*.ts", "lib/**/*.ts", "config/**/*.ts"]
+}

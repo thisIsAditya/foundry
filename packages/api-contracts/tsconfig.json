@@ -1,0 +1,9 @@
+{
+  "extends": "@foundry/config/tsconfig/base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/router-type.ts"]
+}

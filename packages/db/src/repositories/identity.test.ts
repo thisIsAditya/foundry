@@ -5,8 +5,11 @@ import { describe, expect, it } from 'vitest';
 import { insertNotificationEndpoint } from '../repositories/notification-endpoints.js';
 import { insertProjectMembership } from '../repositories/project-memberships.js';
 import { getProjectById, insertProject } from '../repositories/projects.js';
-import { getUserById, insertUser } from '../repositories/users.js';
-import { insertWorkspaceMembership } from '../repositories/workspace-memberships.js';
+import { getUserByEmail, getUserById, insertUser } from '../repositories/users.js';
+import {
+  insertWorkspaceMembership,
+  listWorkspaceMembershipsByUserId,
+} from '../repositories/workspace-memberships.js';
 import { getWorkspaceById, insertWorkspace } from '../repositories/workspaces.js';
 import { sql } from '../test/harness.js';
 
@@ -21,6 +24,7 @@ describe('identity repositories', () => {
     });
     const loaded = await getUserById(sql, created.id);
     expect(loaded).toEqual(created);
+    expect(await getUserByEmail(sql, created.email)).toEqual(created);
     expect(created.emailVerified).toBe(false);
   });
 
@@ -49,6 +53,7 @@ describe('identity repositories', () => {
       invitedBy: owner.id,
     });
     expect(membership.role).toBe('member');
+    expect(await listWorkspaceMembershipsByUserId(sql, member.id)).toEqual([membership]);
 
     const project = await insertProject(sql, {
       workspaceId: workspace.id,

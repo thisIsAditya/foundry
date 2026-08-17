@@ -6,6 +6,14 @@ export {
   type TransactionSql,
 } from './client.js';
 export { getDatabaseUrl, getTestDatabaseUrl, parseDbEnv } from './env.js';
+export { migrateUp } from './migrate.js';
+export { sslConfigFromDatabaseUrl, type PostgresSslConfig } from './ssl.js';
+export {
+  insertDomainEvent,
+  toDomainEvent,
+  type DomainEvent,
+  type InsertDomainEvent,
+} from './repositories/domain-events.js';
 export {
   insertNotificationEndpoint,
   toNotificationEndpoint,
@@ -20,12 +28,20 @@ export {
   getProjectById,
   insertProject,
   listProjects,
+  listProjectsByWorkspaceId,
   toProject,
   type InsertProject,
 } from './repositories/projects.js';
-export { getUserById, insertUser, toUser, type InsertUser } from './repositories/users.js';
+export {
+  getUserByEmail,
+  getUserById,
+  insertUser,
+  toUser,
+  type InsertUser,
+} from './repositories/users.js';
 export {
   insertWorkspaceMembership,
+  listWorkspaceMembershipsByUserId,
   toWorkspaceMembership,
   type InsertWorkspaceMembership,
 } from './repositories/workspace-memberships.js';
@@ -33,6 +49,7 @@ export {
   getWorkspaceById,
   insertWorkspace,
   listWorkspaces,
+  listWorkspacesByIds,
   toWorkspace,
   type InsertWorkspace,
 } from './repositories/workspaces.js';

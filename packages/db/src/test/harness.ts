@@ -38,6 +38,7 @@ beforeAll(async () => {
 afterEach(async () => {
   await sql`
     truncate table
+      domain_events,
       notification_endpoints,
       project_memberships,
       projects,

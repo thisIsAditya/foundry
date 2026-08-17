@@ -20,6 +20,7 @@ export const limits = {
     trpcReadPerMinute: 60,
     trpcMutationPerMinute: 20,
     adminApiKeyPerMinute: 30,
+    verifyAccessKeyPerMinute: 5,
   },
   idempotencyKeyTtlSeconds: 24 * 60 * 60,
   betterAuthSessionCookieCacheTtlSeconds: 5 * 60,

@@ -35,6 +35,25 @@ services:
       - '1025:1025'
       - '8025:8025'
 
+  web:
+    profiles: ['app']
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://foundry:foundry@postgres:5432/foundry
+      REDIS_URL: redis://valkey:6379
+      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_SECRET: replace-with-at-least-32-characters
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   valkey_data:

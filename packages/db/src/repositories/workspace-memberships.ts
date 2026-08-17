@@ -52,3 +52,13 @@ export async function insertWorkspaceMembership(
   `;
   return toWorkspaceMembership(requireRow(rows, 'insertWorkspaceMembership'));
 }
+
+export async function listWorkspaceMembershipsByUserId(
+  sql: Sql,
+  userId: UserId,
+): Promise<WorkspaceMembership[]> {
+  const rows = await sql<WorkspaceMembershipRow[]>`
+    select * from workspace_memberships where user_id = ${userId} order by created_at asc
+  `;
+  return rows.map(toWorkspaceMembership);
+}
