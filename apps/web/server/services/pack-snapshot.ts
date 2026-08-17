@@ -4,7 +4,11 @@ import {
   listBeachheadsByPackRevisionId,
   listDmusByPackRevisionId,
   listInterviewsByProjectId,
+  listMarketModelsByPackRevisionId,
   listQuotesByInterviewIds,
+  listUnitEconomicsByPackRevisionId,
+  listWtpEventsByProjectId,
+  getCurrentMoneyRules,
   updateProjectCurrentPackRevision,
   type Sql,
 } from '@foundry/db';
@@ -63,6 +67,10 @@ export async function loadPackSnapshot(sql: Sql, project: Project): Promise<Pack
   );
   const beachheads = await listBeachheadsByPackRevisionId(sql, pack.id);
   const dmus = await listDmusByPackRevisionId(sql, pack.id);
+  const moneyRules = await getCurrentMoneyRules(sql, project.id);
+  const marketModels = await listMarketModelsByPackRevisionId(sql, pack.id);
+  const unitEconomics = await listUnitEconomicsByPackRevisionId(sql, pack.id);
+  const wtpEvents = await listWtpEventsByProjectId(sql, project.id);
   return {
     pack,
     phase: project.currentPhase,
@@ -70,6 +78,10 @@ export async function loadPackSnapshot(sql: Sql, project: Project): Promise<Pack
     quotes,
     beachheads,
     dmus,
+    moneyRules,
+    marketModels,
+    unitEconomics,
+    wtpEvents,
     clarifications: readClarifications(pack.proposedChanges),
   };
 }

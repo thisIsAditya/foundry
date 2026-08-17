@@ -31,6 +31,11 @@ describe('project procedures', () => {
 
     const listed = await caller.project.list({ workspaceId: createdWorkspace.id });
     expect(listed.map((project) => project.id)).toEqual([created.id]);
+
+    const desk = await caller.project.getDeskSummary({ projectId: created.id });
+    expect(desk.phase).toBe('diagnose');
+    expect(desk.moneyRulesSet).toBe(false);
+    expect(desk.nextAction).toBe('Set canonical MoneyRules.');
   });
 
   it('answers a clarification through a mocked model and publishes text_delta', async () => {

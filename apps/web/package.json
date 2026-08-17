@@ -20,6 +20,7 @@
     "@better-auth/expo": "1.5.6",
     "@foundry/api-contracts": "workspace:*",
     "@foundry/agent-runtime": "workspace:*",
+    "@foundry/artifacts": "workspace:*",
     "@foundry/config": "workspace:*",
     "@foundry/db": "workspace:*",
     "@foundry/domain": "workspace:*",

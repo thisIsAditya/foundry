@@ -135,7 +135,7 @@ export {
   toAgentRun,
   type InsertAgentRun,
 } from './repositories/agent-runs.js';
-export { insertGate, toGate, type InsertGate } from './repositories/gates.js';
+export { insertGate, listGatesByProjectId, toGate, type InsertGate } from './repositories/gates.js';
 export {
   insertUsageRecord,
   toUsageRecord,
@@ -160,3 +160,60 @@ export {
   updateUserMcpServerHealth,
   type InsertUserMcpServer,
 } from './repositories/user-mcp-servers.js';
+export {
+  getCurrentMoneyRules,
+  insertCurrentMoneyRules,
+  toMoneyRules,
+  type InsertMoneyRules,
+} from './repositories/money-rules.js';
+export {
+  insertMarketModel,
+  listMarketModelsByPackRevisionId,
+  toMarketModel,
+  type InsertMarketModel,
+} from './repositories/market-models.js';
+export {
+  insertUnitEconomicsModel,
+  listUnitEconomicsByPackRevisionId,
+  toUnitEconomicsModel,
+  type InsertUnitEconomicsModel,
+} from './repositories/unit-economics.js';
+export {
+  getExperimentById,
+  insertExperiment,
+  listExperimentsByProjectId,
+  toExperiment,
+  type InsertExperiment,
+} from './repositories/experiments.js';
+export {
+  insertWtpEvent,
+  listWtpEventsByProjectId,
+  toWtpEvent,
+  type InsertWtpEvent,
+} from './repositories/wtp-events.js';
+export {
+  countStaleArtifactVersions,
+  getArtifactById,
+  getArtifactByProjectAndType,
+  getArtifactVersionById,
+  getArtifactVersionByNumber,
+  insertArtifact,
+  insertArtifactVersion,
+  listArtifactVersions,
+  listArtifactsByProjectId,
+  markCurrentArtifactVersionsStale,
+  markDependentArtifactsStale,
+  toArtifact,
+  toArtifactVersion,
+  updateArtifactCurrentVersion,
+  updateArtifactVersionStatus,
+} from './repositories/artifacts.js';
+export {
+  getLatestRenderJobByVersionId,
+  getLatestTemplate,
+  getTemplateByTypeAndVersion,
+  insertRenderJob,
+  toRenderJob,
+  toTemplate,
+  updateRenderJobStatus,
+} from './repositories/templates.js';

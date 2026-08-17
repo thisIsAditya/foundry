@@ -28,11 +28,25 @@ export {
   type IntegrationConnection,
 } from './integration-connection.js';
 export { InterviewSchema, type Interview } from './interview.js';
-export { MarketModelSchema, type MarketModel } from './market-model.js';
+export {
+  MarketComputedResultSchema,
+  MarketFormulaSpecSchema,
+  MarketInputsSchema,
+  MarketModelSchema,
+  type MarketComputedResult,
+  type MarketFormulaSpec,
+  type MarketInputs,
+  type MarketModel,
+} from './market-model.js';
 export { MetricDefinitionSchema, type MetricDefinition } from './metric-definition.js';
 export { MetricObservationSchema, type MetricObservation } from './metric-observation.js';
 export { ModelProfileSchema, type ModelProfile } from './model-profile.js';
-export { MoneyRulesSchema, type MoneyRules } from './money-rules.js';
+export {
+  CostStructureSchema,
+  MoneyRulesSchema,
+  type CostStructure,
+  type MoneyRules,
+} from './money-rules.js';
 export { NotificationEndpointSchema, type NotificationEndpoint } from './notification-endpoint.js';
 export { OfferSchema, type Offer } from './offer.js';
 export { PersonaSchema, type Persona } from './persona.js';
@@ -59,7 +73,16 @@ export { TaskLedgerSchema, type TaskLedger } from './task-ledger.js';
 export { TemplateSchema, type Template } from './template.js';
 export { ToolCallSchema, type ToolCall } from './tool-call.js';
 export { ToolDefinitionSchema, type ToolDefinition } from './tool-definition.js';
-export { UnitEconomicsModelSchema, type UnitEconomicsModel } from './unit-economics-model.js';
+export {
+  SensitivityResultSchema,
+  SensitivityShockSchema,
+  UnitEconomicsModelSchema,
+  UnitEconomicsResultSchema,
+  type SensitivityResult,
+  type SensitivityShock,
+  type UnitEconomicsModel,
+  type UnitEconomicsResult,
+} from './unit-economics-model.js';
 export { UsageRecordSchema, type UsageRecord } from './usage-record.js';
 export { UserSchema, type User } from './user.js';
 export { UserMcpServerSchema, type UserMcpServer } from './user-mcp-server.js';

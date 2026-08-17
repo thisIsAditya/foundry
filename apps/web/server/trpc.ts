@@ -377,3 +377,9 @@ export const sprintReadByProjectProcedure = protectedProcedure.use(
 );
 export const sprintReadProcedure = protectedProcedure.use(requireSprintAccess('sprint.read'));
 export const sprintApproveProcedure = protectedProcedure.use(requireSprintAccess('sprint.run'));
+export const moneyWriteProcedure = protectedProcedure.use(requireProjectAccess('money.write'));
+export const moneyReadProcedure = protectedProcedure.use(requireProjectAccess('money.read'));
+export const artifactWriteProcedure = protectedProcedure.use(
+  requireProjectAccess('artifact.generate'),
+);
+export const artifactReadProcedure = protectedProcedure.use(requireProjectAccess('artifact.read'));

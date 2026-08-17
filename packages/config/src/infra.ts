@@ -11,6 +11,7 @@ export const infra = {
   queues: {
     ingestion: 'ingestion',
     sprint: 'sprint',
+    render: 'render',
   },
   ingestion: {
     concurrency: 8,
@@ -21,6 +22,11 @@ export const infra = {
     concurrency: 4,
     attempts: 1,
     lockDurationMs: 5 * 60_000,
+  },
+  renderQueue: {
+    concurrency: 4,
+    attempts: 3,
+    backoffMs: 5_000,
   },
   stream: {
     channelPrefix: 'stream:',

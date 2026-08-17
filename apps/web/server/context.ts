@@ -19,8 +19,11 @@ import { getEnv } from '../lib/env';
 import { getSql } from '../lib/sql';
 import { getCoordinationStore, type CoordinationStore } from './coordination';
 import { createBullmqJobQueue, createMemoryJobQueue, type JobQueue } from './queue/job-queue';
+import { ArtifactService } from './services/artifact-service';
 import { DocumentService } from './services/document-service';
+import { ExperimentService } from './services/experiment-service';
 import { McpServerService } from './services/mcp-server-service';
+import { MoneyRulesService } from './services/money-rules-service';
 import { ProjectService } from './services/project-service';
 import { ProviderService, type CapabilityProbe } from './services/provider-service';
 import { SprintService } from './services/sprint-service';
@@ -48,6 +51,9 @@ export type ServiceContainer = {
   providerService: ProviderService;
   mcpServerService: McpServerService;
   sprintService: SprintService;
+  moneyRulesService: MoneyRulesService;
+  experimentService: ExperimentService;
+  artifactService: ArtifactService;
 };
 
 export type Context = {
@@ -118,6 +124,15 @@ export function createServices(
       policyService,
       extras.jobQueue,
       extras.streamBus,
+    ),
+    moneyRulesService: new MoneyRulesService(sql, coordination, policyService),
+    experimentService: new ExperimentService(sql, coordination, policyService),
+    artifactService: new ArtifactService(
+      sql,
+      coordination,
+      policyService,
+      extras.objectStore,
+      extras.jobQueue,
     ),
   };
 }

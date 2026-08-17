@@ -147,5 +147,9 @@ describe('execution repositories', () => {
     const orchestrator = await getCurrentAgentDefinition(sql, 'orchestrator');
     expect(orchestrator?.version).toBe(1);
     expect(orchestrator?.instructionsText.length).toBeGreaterThan(20);
+    const pricing = await getCurrentAgentDefinition(sql, 'pricing_analyst');
+    expect(pricing?.version).toBe(1);
+    const business = await getCurrentAgentDefinition(sql, 'business_model_analyst');
+    expect(business?.version).toBe(1);
   });
 });

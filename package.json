@@ -20,6 +20,7 @@
     "db:migrate": "pnpm --filter @foundry/db migrate up",
     "dev:web": "pnpm --filter @foundry/web dev",
     "dev:worker": "pnpm --filter @foundry/worker dev",
+    "dev:mobile": "pnpm --filter @foundry/mobile dev",
     "create-admin-key": "pnpm --filter @foundry/web create-admin-key",
     "cdk:synth": "pnpm --filter @foundry/cdk synth",
     "prepare": "node ./scripts/install-git-hooks.mjs"

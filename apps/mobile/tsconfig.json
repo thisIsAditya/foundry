@@ -1,0 +1,12 @@
+{
+  "extends": "@foundry/config/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "types": ["react"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", "*.ts"]
+}

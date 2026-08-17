@@ -27,11 +27,20 @@ export const WtpParticipantClasses = ['friend', 'known_contact', 'independent_pr
 export const WtpParticipantClassSchema = z.enum(WtpParticipantClasses);
 export type WtpParticipantClass = z.infer<typeof WtpParticipantClassSchema>;
 
-export const WtpInstruments = ['paid_pilot', 'invoice', 'deposit', 'loi', 'concierge'] as const;
+export const WtpInstruments = [
+  'paid_pilot',
+  'invoice',
+  'deposit',
+  'loi',
+  'concierge',
+  'waitlist',
+  'comment',
+  'simulated',
+] as const;
 export const WtpInstrumentSchema = z.enum(WtpInstruments);
 export type WtpInstrument = z.infer<typeof WtpInstrumentSchema>;
 
-export const ExperimentStatuses = ['planned'] as const;
+export const ExperimentStatuses = ['planned', 'running', 'completed'] as const;
 export const ExperimentStatusSchema = z.enum(ExperimentStatuses);
 export type ExperimentStatus = z.infer<typeof ExperimentStatusSchema>;
 

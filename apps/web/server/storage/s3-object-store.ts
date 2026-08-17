@@ -53,6 +53,20 @@ export function createS3ObjectStore(env: Env): ObjectStore {
         expiresAt: new Date(Date.now() + expiresSeconds * 1000),
       };
     },
+    async createDownloadUrl(key, expiresSeconds) {
+      const url = await getSignedUrl(
+        client,
+        new GetObjectCommand({
+          Bucket: bucket,
+          Key: key,
+        }),
+        { expiresIn: expiresSeconds },
+      );
+      return {
+        url,
+        expiresAt: new Date(Date.now() + expiresSeconds * 1000),
+      };
+    },
     async exists(key) {
       try {
         await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));

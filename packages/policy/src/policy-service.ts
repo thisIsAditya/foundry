@@ -19,6 +19,10 @@ export const PolicyActions = [
   'provider.connect',
   'sprint.read',
   'sprint.run',
+  'money.read',
+  'money.write',
+  'artifact.read',
+  'artifact.generate',
 ] as const;
 export type PolicyAction = (typeof PolicyActions)[number];
 
@@ -40,12 +44,16 @@ export class PolicyService {
       case 'evidence.read':
       case 'provider.read':
       case 'sprint.read':
+      case 'money.read':
+      case 'artifact.read':
         return roleAtLeast(membership.role, 'viewer');
       case 'project.create':
       case 'project.answer':
       case 'evidence.upload':
       case 'provider.connect':
       case 'sprint.run':
+      case 'money.write':
+      case 'artifact.generate':
         return roleAtLeast(membership.role, 'member');
     }
   }

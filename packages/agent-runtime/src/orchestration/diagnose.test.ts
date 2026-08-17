@@ -33,6 +33,10 @@ function snapshot(): PackSnapshot {
     quotes: [],
     beachheads: [],
     dmus: [],
+    moneyRules: null,
+    marketModels: [],
+    unitEconomics: [],
+    wtpEvents: [],
     clarifications: [],
   };
 }

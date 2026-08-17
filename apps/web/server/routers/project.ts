@@ -1,11 +1,13 @@
 import {
   AnswerClarificationInputSchema,
   CreateProjectInputSchema,
+  GetMoneyRulesInputSchema,
   ListProjectsInputSchema,
 } from '@foundry/api-contracts';
 
 import {
   projectAnswerProcedure,
+  projectReadProcedure,
   router,
   workspaceProcedure,
   workspaceReadProcedure,
@@ -26,6 +28,12 @@ export const projectRouter = router({
     }),
   list: workspaceReadProcedure.input(ListProjectsInputSchema).query(async ({ ctx, input }) => {
     return ctx.services.projectService.list(ctx.membership, input.workspaceId);
+  }),
+  getDeskSummary: projectReadProcedure.input(GetMoneyRulesInputSchema).query(async ({ ctx }) => {
+    return ctx.services.projectService.getDeskSummary({
+      membership: ctx.membership,
+      project: ctx.project,
+    });
   }),
   answerClarification: projectAnswerProcedure
     .meta({ invalidates: ['project.getDeskSummary', 'sprint.getActivity'] })

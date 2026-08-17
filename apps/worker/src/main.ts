@@ -6,6 +6,7 @@ import { Redis } from 'ioredis';
 import { getEnv } from './env.js';
 import { startHealthServer } from './health.js';
 import { startIngestionWorker } from './queues/ingestion.worker.js';
+import { startRenderWorker } from './queues/render.worker.js';
 import { startSprintWorker } from './queues/sprint.worker.js';
 import { registerShutdown } from './shutdown.js';
 import { createS3ObjectStore } from './storage/s3-object-store.js';
@@ -35,7 +36,12 @@ async function main(): Promise<void> {
     connection: redis,
     streamBus,
   });
-  registerShutdown({ workers: [ingestion, sprint], sql, redis, health });
+  const render = startRenderWorker({
+    sql,
+    connection: redis,
+    objectStore,
+  });
+  registerShutdown({ workers: [ingestion, sprint, render], sql, redis, health });
 }
 
 void main();

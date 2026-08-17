@@ -8,8 +8,11 @@ import {
 } from '@foundry/agent-runtime';
 import { limits } from '@foundry/config/limits';
 import {
+  countStaleArtifactVersions,
+  getCurrentMoneyRules,
   getProjectById,
   insertProject,
+  listInterviewsByProjectId,
   listProjectsByWorkspaceId,
   listProviderConnectionsByWorkspaceId,
   updatePackRevisionProposedChanges,
@@ -101,6 +104,49 @@ export class ProjectService {
     return withWorkspaceScope(this.sql, [workspaceId], async (tx) =>
       listProjectsByWorkspaceId(tx, workspaceId),
     );
+  }
+
+  async getDeskSummary(actor: { membership: WorkspaceMembership; project: Project }): Promise<{
+    project: Project;
+    packRevisionId: Project['currentPackRevisionId'];
+    phase: Project['currentPhase'];
+    interviewCount: number;
+    staleArtifactCount: number;
+    moneyRulesSet: boolean;
+    nextAction: string;
+  }> {
+    if (!this.policyService.can(actor.membership, 'project.list')) {
+      throw new AppError({
+        code: 'policy_forbidden',
+        explanation: 'Your role cannot read the founder desk.',
+        nextAction: 'Ask a workspace admin to change your role.',
+      });
+    }
+    return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
+      const [interviews, moneyRules, staleArtifactCount] = await Promise.all([
+        listInterviewsByProjectId(tx, actor.project.id),
+        getCurrentMoneyRules(tx, actor.project.id),
+        countStaleArtifactVersions(tx, actor.project.id),
+      ]);
+      const moneyRulesSet = moneyRules !== null;
+      let nextAction = 'Review the pack and continue the current phase.';
+      if (!moneyRulesSet) {
+        nextAction = 'Set canonical MoneyRules.';
+      } else if (interviews.length === 0) {
+        nextAction = 'Capture interview evidence.';
+      } else if (staleArtifactCount > 0) {
+        nextAction = 'Regenerate stale artifacts.';
+      }
+      return {
+        project: actor.project,
+        packRevisionId: actor.project.currentPackRevisionId,
+        phase: actor.project.currentPhase,
+        interviewCount: interviews.length,
+        staleArtifactCount,
+        moneyRulesSet,
+        nextAction,
+      };
+    });
   }
 
   async answerClarification(

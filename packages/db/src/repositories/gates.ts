@@ -51,6 +51,13 @@ function parseGate(row: GateRow): Gate {
   return toGate(GateRowSchema.parse(row));
 }
 
+export async function listGatesByProjectId(sql: Sql, projectId: ProjectId): Promise<Gate[]> {
+  const rows = await sql<GateRow[]>`
+    select * from gates where project_id = ${projectId} order by evaluated_at desc
+  `;
+  return rows.map(parseGate);
+}
+
 export async function insertGate(sql: Sql, input: InsertGate): Promise<Gate> {
   const rows = await sql<GateRow[]>`
     insert into gates (project_id, gate_type, rule_version, inputs_json, result)

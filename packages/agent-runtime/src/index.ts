@@ -53,4 +53,8 @@ export {
   type McpClientFactory,
   type McpToolProbe,
 } from './mcp/mcp-bridge.js';
-export { ORCHESTRATOR_INSTRUCTIONS_V1 } from './agents/instructions.js';
+export {
+  BUSINESS_MODEL_ANALYST_INSTRUCTIONS_V1,
+  ORCHESTRATOR_INSTRUCTIONS_V1,
+  PRICING_ANALYST_INSTRUCTIONS_V1,
+} from './agents/instructions.js';

@@ -43,6 +43,10 @@ function snapshot(interviews: PackSnapshot['interviews']): PackSnapshot {
     quotes: [],
     beachheads: [],
     dmus: [],
+    moneyRules: null,
+    marketModels: [],
+    unitEconomics: [],
+    wtpEvents: [],
     clarifications: [],
   };
 }

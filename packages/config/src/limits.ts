@@ -7,6 +7,7 @@ export const limits = {
   maxPdfPagesParsed: 200,
   uploadIntentTtlSeconds: 60 * 60,
   uploadUrlExpiresSeconds: 60 * 60,
+  downloadUrlExpiresSeconds: 15 * 60,
   codeMode: {
     maxExecutionMs: 5_000,
     maxMemoryBytes: 64 * 1024 * 1024,
@@ -42,6 +43,13 @@ export const limits = {
     minNonFriendInterviews: 3,
     minLinkedQuotes: 3,
     minDistinctInterviewsWithQuotes: 2,
+  },
+  gateB: {
+    ruleVersion: 1,
+    minIndependentMoneySignals: 1,
+  },
+  money: {
+    decimalScale: 4,
   },
   rateLimit: {
     trpcReadPerMinute: 60,

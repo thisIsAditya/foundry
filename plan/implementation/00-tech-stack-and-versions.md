@@ -41,6 +41,8 @@ Node version is pinned via `.nvmrc` and `engines.node` in every `package.json`. 
 | Client local UI state | Zustand | 5.x | Minimal, avoids Redux boilerplate; used only for ephemeral UI state (panel open/closed, active tab), never for server data. |
 | Forms | React Hook Form + Zod resolver | RHF 7.x, Zod 4.x | Type-safe forms validated with the same Zod schemas used by the API layer. |
 | Charts | Visx or Recharts | latest | Used by artifact previews (market-size, unit-economics, sensitivity charts) inside the web app; server-rendered chart images use the same data through the artifact renderer (see `07-artifacts-and-tool-catalog.md`). |
+| Spreadsheet bytes | Hand-written OOXML (no ExcelJS) | — | Milestone 6 generates the market/economics workbook from validated calculator specs (`plan/07` §5). Formulas are written as Excel formulas; values are never invented by a model. |
+| Document PDF | Hand-written PDF 1.4 in `@foundry/artifacts` | — | Milestone 7 pack/brief/slide exports. Avoids shipping Chromium (or `pdf-lib`) on Fargate; layout is text-first Markdown/HTML with a simple PDF companion. |
 
 ## 4. Mobile application
 
@@ -49,8 +51,8 @@ Node version is pinned via `.nvmrc` and `engines.node` in every `package.json`. 
 | Framework | Expo (managed workflow) | SDK 57 | Fastest path to iOS + Android from one TypeScript codebase; EAS Build/Submit removes the need for local Xcode/Android Studio release pipelines. |
 | Native runtime | React Native | 0.86.x | Version pinned by Expo SDK 57. |
 | UI library | React | 19.2.3 | Matches Expo SDK 57's bundled React version exactly (must not drift from web's 19.2.x line). |
-| Navigation | Expo Router | 5.x (bundled with SDK 57) | File-based routing consistent with Next.js App Router mental model; one less concept for the implementing agent to learn. |
-| Styling | NativeWind | 5.x | Tailwind classes on React Native views; shares the same design tokens as the web Tailwind config. |
+| Navigation | Expo Router | **57.x** (bundled with SDK 57) | File-based routing consistent with Next.js App Router mental model. SDK 57 versions the router with the SDK (`expo-router@57.0.x`) rather than the older 5.x line. |
+| Styling | NativeWind | **4.2.6** | Tailwind classes on React Native views; shares the same design tokens as the web Tailwind config. NativeWind 5.0 was still preview as of August 2026, so 4.2.x is the pinned stable line until 5.0 is `latest`. |
 | Local storage / secrets | `expo-secure-store` | bundled with SDK 57 | Stores mobile refresh tokens; backed by Keychain (iOS) / Keystore (Android). |
 | Push notifications | Expo Notifications | bundled with SDK 57 | Used for approval requests, sprint completion, and digest notifications (`08-security...` / product notification policy). |
 | Minimum Node for tooling | Node 22.13+ | satisfied by Node 24 | Expo CLI requirement; repo already standardizes on Node 24. |
@@ -137,7 +139,7 @@ Node.js 22+ and ESM are hard requirements of AI SDK 7 — already satisfied by t
 |---|---|---|---|
 | Web/shared unit + component tests | Vitest + `@testing-library/react` | Vitest 4.x | Native ESM/TypeScript, ~4x faster than Jest, Vite-native browser mode for component tests; community and Next.js docs converged on this for 2026 greenfield projects. |
 | Web E2E | Playwright | latest 1.5x | The only reliable way to test async Server Components and full auth/streaming flows — Vitest/Jest cannot render async RSCs. |
-| Mobile unit tests | Jest + `@testing-library/react-native` | bundled with Expo SDK 57 | Expo/React Native tooling still assumes Jest; fighting that in Vitest costs more than it saves. |
+| Mobile unit tests | Jest + `@testing-library/react-native` for RN components; Vitest for pure `lib/` modules | Jest via `jest-expo` 57.x when component tests are added; Vitest 4.x for CI unit tests of header/auth helpers | Expo/React Native component tooling still assumes Jest; Milestone 7 ships Vitest for the non-RN `lib/` surface so `turbo test` stays Node-only. |
 | Mobile E2E | Maestro | latest | YAML-based mobile flow testing, works against Expo/EAS builds without the Xcode/Gradle overhead of Detox. |
 | API/integration tests | Vitest + a disposable Postgres/Redis via Docker Compose (CI service containers) | — | Cheapest reliable way to test raw SQL repository functions and tRPC procedures against a real database in CI, no paid test-DB service required. |
 | Type checking | `tsc --noEmit` per package | TS 5.9.x | Run in CI as a dedicated Turborepo task; type errors fail the build before tests run. |
