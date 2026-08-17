@@ -27,7 +27,10 @@ import { AppError } from '@foundry/observability';
 import { PolicyService } from '@foundry/policy';
 import superjson from 'superjson';
 
+import { randomUUID } from 'node:crypto';
+
 import { withIdempotency, type CoordinationStore } from '../coordination';
+import type { JobQueue } from '../queue/job-queue';
 
 export class FounderTaskService {
   constructor(
@@ -35,6 +38,7 @@ export class FounderTaskService {
     private readonly coordination: CoordinationStore,
     private readonly policyService: PolicyService,
     private readonly streamBus: StreamBus,
+    private readonly jobQueue?: JobQueue,
   ) {}
 
   async create(
@@ -60,6 +64,14 @@ export class FounderTaskService {
         founderTaskId: created.id,
         title: created.title,
       });
+      if (this.jobQueue !== undefined) {
+        await this.jobQueue.enqueueNotification({
+          kind: 'founder_task_due',
+          projectId: actor.project.id,
+          workspaceId: actor.project.workspaceId,
+          correlationId: randomUUID(),
+        });
+      }
       return created;
     });
   }

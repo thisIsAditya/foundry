@@ -22,6 +22,13 @@ export const NotificationJobKinds = [
   'execute_approval',
   'weekly_digest',
   'compliance_reminder',
+  'research_completed',
+  'job_needs_founder',
+  'revision_ready',
+  'job_failed_or_blocked',
+  'founder_task_due',
+  'score_changed_materially',
+  'budget_threshold_reached',
 ] as const;
 export const NotificationJobKindSchema = z.enum(NotificationJobKinds);
 export type NotificationJobKind = z.infer<typeof NotificationJobKindSchema>;

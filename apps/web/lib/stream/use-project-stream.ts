@@ -8,6 +8,8 @@ type ProjectStreamState = {
   events: StreamEvent[];
   lastSeq: number;
   transcript: string;
+  unreadCount: number;
+  markRead: () => void;
   append: (seq: number, event: StreamEvent) => void;
 };
 
@@ -20,6 +22,8 @@ function createProjectStreamStore(): ProjectStreamStore {
     events: [],
     lastSeq: 0,
     transcript: '',
+    unreadCount: 0,
+    markRead: () => set({ unreadCount: 0 }),
     append: (seq, event) =>
       set((state) => {
         if (seq <= state.lastSeq) {
@@ -28,6 +32,10 @@ function createProjectStreamStore(): ProjectStreamStore {
         return {
           events: [...state.events, event],
           lastSeq: seq,
+          unreadCount:
+            event.type === 'conversation_message_appended' && event.actor === 'co_founder'
+              ? state.unreadCount + 1
+              : state.unreadCount,
           transcript:
             event.type === 'text_delta' ? `${state.transcript}${event.delta}` : state.transcript,
         };
@@ -50,6 +58,8 @@ export function useProjectStream(projectId: string): ProjectStreamState {
   const events = store((state) => state.events);
   const lastSeq = store((state) => state.lastSeq);
   const transcript = store((state) => state.transcript);
+  const unreadCount = store((state) => state.unreadCount);
+  const markRead = store((state) => state.markRead);
   const append = store((state) => state.append);
 
   useEffect(() => {
@@ -75,5 +85,5 @@ export function useProjectStream(projectId: string): ProjectStreamState {
     };
   }, [append, projectId]);
 
-  return { events, lastSeq, transcript, append };
+  return { events, lastSeq, transcript, unreadCount, markRead, append };
 }

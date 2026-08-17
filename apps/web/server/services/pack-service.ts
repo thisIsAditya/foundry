@@ -472,7 +472,7 @@ export class PackService {
   async acceptAllSafeSections(
     actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
     input: AcceptAllSafeSectionsInput,
-  ): Promise<PackRevision> {
+  ): Promise<{ revision: PackRevision; skippedUnsafeKeys: BusinessModelSectionKey[] }> {
     if (input.revisionId !== input.expectedRevision) {
       throw new AppError({
         code: 'stale_revision',
@@ -482,15 +482,25 @@ export class PackService {
     }
     const key = `idem:${actor.userId}:pack.acceptAllSafeSections:${input.idempotencyKey}`;
     const safeKeys = BusinessModelSectionKeys.filter(
-      (key) => !UNSAFE_BUSINESS_MODEL_SECTIONS.has(key),
+      (sectionKey) => !UNSAFE_BUSINESS_MODEL_SECTIONS.has(sectionKey),
+    );
+    const skippedUnsafeKeys = BusinessModelSectionKeys.filter((sectionKey) =>
+      UNSAFE_BUSINESS_MODEL_SECTIONS.has(sectionKey),
     );
     return withIdempotency(
       this.coordination,
       key,
       limits.idempotencyKeyTtlSeconds,
-      (raw) => superjson.parse(raw) as PackRevision,
+      (raw) =>
+        superjson.parse(raw) as {
+          revision: PackRevision;
+          skippedUnsafeKeys: BusinessModelSectionKey[];
+        },
       (value) => superjson.stringify(value),
-      async () => this.writeAcceptedKeys(actor, input.revisionId, safeKeys),
+      async () => ({
+        revision: await this.writeAcceptedKeys(actor, input.revisionId, safeKeys),
+        skippedUnsafeKeys,
+      }),
     );
   }
 

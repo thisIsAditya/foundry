@@ -26,6 +26,7 @@ export const ConversationReferenceKinds = [
   'section',
   'revision',
   'decision',
+  'source',
 ] as const;
 export const ConversationReferenceKindSchema = z.enum(ConversationReferenceKinds);
 export type ConversationReferenceKind = z.infer<typeof ConversationReferenceKindSchema>;

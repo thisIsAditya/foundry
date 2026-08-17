@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+import { Scorecard } from '../../../../../components/score/scorecard';
 import { EmptyState } from '../../../../../components/ui/empty-state';
 import { formatUnknown } from '../../../../../lib/format';
 import { useTRPC } from '../../../../../lib/trpc/client';
@@ -16,10 +17,12 @@ export function DecisionsList({ projectId }: { projectId: string }) {
       <header>
         <h1 className="page-title">Decisions</h1>
         <p className="lede">
-          A running log of the calls you and the AI made along the way — including gate outcomes —
-          so you can see why the plan changed.
+          GO, PIVOT, and KILL sit next to score history so you can see why the plan changed.
         </p>
       </header>
+      <section className="card">
+        <Scorecard projectId={projectId} />
+      </section>
       {list.isLoading ? <p className="muted">Loading…</p> : null}
       {!list.isLoading && items.length === 0 ? (
         <EmptyState

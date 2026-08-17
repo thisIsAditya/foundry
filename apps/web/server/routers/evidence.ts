@@ -3,7 +3,10 @@ import {
   ConfirmUploadInputSchema,
   CreateUploadIntentInputSchema,
   ListEvidenceInputSchema,
+  ListEvidenceLibraryInputSchema,
+  ListFindingsInputSchema,
   ListInterviewsInputSchema,
+  RecordObservationInputSchema,
   SearchEvidenceInputSchema,
 } from '@foundry/api-contracts';
 
@@ -66,4 +69,27 @@ export const evidenceRouter = router({
       ctx.correlationId,
     );
   }),
+  listLibrary: projectReadProcedure
+    .input(ListEvidenceLibraryInputSchema)
+    .query(async ({ ctx, input }) => {
+      return ctx.services.documentService.listLibrary(ctx.membership, ctx.project, input.filter);
+    }),
+  listFindings: projectReadProcedure.input(ListFindingsInputSchema).query(async ({ ctx }) => {
+    return ctx.services.researchFindingService.listByProject(
+      ctx.project.workspaceId,
+      ctx.project.id,
+    );
+  }),
+  recordObservation: projectProcedure
+    .meta({ invalidates: mutationInvalidations['evidence.recordObservation'] })
+    .input(RecordObservationInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.actor.type !== 'user') {
+        throw new Error('projectProcedure requires a user actor');
+      }
+      return ctx.services.documentService.recordObservation(
+        { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
+        input,
+      );
+    }),
 });

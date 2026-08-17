@@ -20,7 +20,18 @@ export type IngestionJobData = z.infer<typeof IngestionJobDataSchema>;
 export type { SprintJobData, RenderJobData };
 
 export const NotificationJobDataSchema = z.object({
-  kind: z.enum(['execute_approval', 'weekly_digest', 'compliance_reminder']),
+  kind: z.enum([
+    'execute_approval',
+    'weekly_digest',
+    'compliance_reminder',
+    'research_completed',
+    'job_needs_founder',
+    'revision_ready',
+    'job_failed_or_blocked',
+    'founder_task_due',
+    'score_changed_materially',
+    'budget_threshold_reached',
+  ]),
   projectId: ProjectIdSchema,
   workspaceId: WorkspaceIdSchema,
   correlationId: z.string().min(1),

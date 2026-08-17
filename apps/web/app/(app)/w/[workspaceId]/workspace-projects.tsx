@@ -40,6 +40,8 @@ export function WorkspaceProjects({ workspaceId }: { workspaceId: string }) {
         <header>
           <p className="lede mb-1">
             <Link href="/home">← All workspaces</Link>
+            {' · '}
+            <Link href={`/w/${workspaceId}/settings`}>Settings</Link>
           </p>
           <h1 className="page-title">Your projects</h1>
           <p className="lede">
@@ -80,7 +82,7 @@ export function WorkspaceProjects({ workspaceId }: { workspaceId: string }) {
         {!projects.isLoading && items.length === 0 ? (
           <EmptyState
             title="No projects yet"
-            description="Start one above — you'll land straight on the desk where your AI co-founder helps you take the first step."
+            description="Start one above — you'll land on the overview with a draft, score, and research proposal."
           />
         ) : (
           <ul className="list">

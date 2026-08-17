@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const SourceKinds = ['upload', 'url', 'interview_note'] as const;
+export const SourceKinds = ['upload', 'url', 'interview_note', 'voice_note'] as const;
 export const SourceKindSchema = z.enum(SourceKinds);
 export type SourceKind = z.infer<typeof SourceKindSchema>;
 

@@ -1,10 +1,10 @@
-import { ApprovalsQueue } from './approvals-queue';
+import { redirect } from 'next/navigation';
 
-export default async function ApprovalsPage({
+export default async function ApprovalsRedirect({
   params,
 }: {
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  return <ApprovalsQueue projectId={projectId} />;
+  redirect(`/p/${projectId}/work?view=blocked`);
 }

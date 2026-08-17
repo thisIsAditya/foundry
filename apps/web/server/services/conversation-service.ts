@@ -187,6 +187,7 @@ export class ConversationService {
           actorUserId: actor.userId,
           text: input.text,
           blocks: [{ kind: 'concise_answer', text: input.text }],
+          references: input.sourceId === undefined ? [] : [{ kind: 'source', id: input.sourceId }],
         }),
     );
     await this.runtime.streamBus.publish(actor.project.id, {

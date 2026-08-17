@@ -116,12 +116,13 @@ export function createServices(
   policyService: PolicyService,
   extras: ServiceExtras,
 ): ServiceContainer {
-  const scoringService = new ScoringService(sql, extras.streamBus);
+  const scoringService = new ScoringService(sql, extras.streamBus, extras.jobQueue);
   const founderTaskService = new FounderTaskService(
     sql,
     coordination,
     policyService,
     extras.streamBus,
+    extras.jobQueue,
   );
   const sprintService = new SprintService(
     sql,
@@ -170,6 +171,7 @@ export function createServices(
       policyService,
       extras.objectStore,
       extras.jobQueue,
+      scoringService,
     ),
     interviewService: new InterviewService(sql, coordination, policyService, scoringService),
     providerService: new ProviderService(

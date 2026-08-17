@@ -175,4 +175,29 @@ describe('evidence procedures', () => {
     expect(desk.gateA.qualifyingInterviews).toBe(0);
     expect(desk.gateA.passed).toBe(false);
   });
+
+  it('records a field observation as an evidence item', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `obs-${randomUUID()}@example.com`,
+    });
+    const workspace = await appRouter
+      .createCaller(await createTestContext(sql, user))
+      .workspace.create({ name: 'Acme', idempotencyKey: randomUUID() });
+    const caller = appRouter.createCaller(await createTestContext(sql, user));
+    const project = await caller.project.create({
+      workspaceId: workspace.id,
+      name: 'Venture',
+      idempotencyKey: randomUUID(),
+    });
+    const item = await caller.evidence.recordObservation({
+      projectId: project.id,
+      summary: 'Cafe owners mentioned weekend staffing pain.',
+      sectionKey: 'problem',
+      idempotencyKey: randomUUID(),
+    });
+    expect(item.summary).toContain('weekend staffing');
+    const library = await caller.evidence.listLibrary({ projectId: project.id, filter: 'sources' });
+    expect(library.some((entry) => entry.id === item.id)).toBe(true);
+  });
 });

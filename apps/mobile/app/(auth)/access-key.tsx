@@ -22,7 +22,7 @@ export default function AccessKeyScreen() {
       return;
     }
     await storeAccessKey(key);
-    router.replace('/(app)/desk');
+    router.replace('/(app)/home');
   }
 
   return (

@@ -1,39 +1,63 @@
 import { color } from '@foundry/ui-native';
-import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Link, router } from 'expo-router';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { clearAccessKey, signOut } from '../../lib/auth';
+import { signOut } from '../../lib/auth';
+import { useActiveProject } from '../../lib/active-project';
+import { screen } from '../../lib/styles';
 
 export default function MoreScreen() {
+  const {
+    projectId,
+    workspaceId,
+    workspaces,
+    projects,
+    selectProject,
+    selectWorkspace,
+    isLoading,
+  } = useActiveProject();
+
   return (
-    <View style={styles.screen}>
-      <Text style={styles.title}>More</Text>
-      <Text style={styles.body}>Workspace switcher, providers, and sign-out.</Text>
+    <ScrollView contentContainerStyle={screen.root}>
+      <Text style={screen.title}>More</Text>
+      <Text style={screen.lede}>Switch project, open decisions, or sign out.</Text>
+      {isLoading ? <Text style={screen.muted}>Loading workspaces…</Text> : null}
+      {workspaces.map((workspace) => (
+        <View key={workspace.id} style={screen.card}>
+          <Text style={screen.cardTitle}>{workspace.name}</Text>
+          {workspace.id === workspaceId ? (
+            projects.map((project) => (
+              <Pressable
+                key={project.id}
+                onPress={() => void selectProject(project.id, workspace.id)}
+              >
+                <Text style={project.id === projectId ? { color: color.statusInfo } : screen.body}>
+                  {project.id === projectId ? '● ' : '○ '}
+                  {project.name}
+                </Text>
+              </Pressable>
+            ))
+          ) : (
+            <Pressable onPress={() => void selectWorkspace(workspace.id)}>
+              <Text style={screen.muted}>Use this workspace</Text>
+            </Pressable>
+          )}
+        </View>
+      ))}
+      <Link href="/(app)/decisions" style={{ color: color.statusInfo }}>
+        Decisions
+      </Link>
+      <Link href="/(app)/settings" style={{ color: color.statusInfo }}>
+        Settings
+      </Link>
       <Pressable
-        style={styles.button}
+        style={screen.secondary}
         onPress={() => {
-          void (async () => {
-            await clearAccessKey();
-            await signOut();
-            router.replace('/(auth)/sign-in');
-          })();
+          void signOut().then(() => router.replace('/(auth)/sign-in'));
         }}
       >
-        <Text style={styles.buttonLabel}>Sign out</Text>
+        <Text style={screen.secondaryLabel}>Sign out</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: color.surface, padding: 24, gap: 12 },
-  title: { color: color.text, fontSize: 22, fontWeight: '600' },
-  body: { color: color.textMuted, fontSize: 16, lineHeight: 24 },
-  button: {
-    backgroundColor: color.statusDanger,
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  buttonLabel: { color: color.surfaceRaised, fontWeight: '600' },
-});

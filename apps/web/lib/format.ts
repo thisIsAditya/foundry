@@ -81,6 +81,48 @@ export function approvalStatusLabel(status: string): string {
   return approvalStatusLabels[status] ?? status.replaceAll('_', ' ');
 }
 
+const businessModelLabels: Record<string, string> = {
+  context: 'Context',
+  problem: 'Problem',
+  beachhead: 'Beachhead',
+  persona_dmu: 'Persona and decision-maker',
+  alternatives_competitors: 'Alternatives and competitors',
+  evidence_ledger: 'Evidence ledger',
+  assumptions_experiments: 'Assumptions and experiments',
+  market_model: 'Market model',
+  business_model_money_rules: 'Business model and money rules',
+  pricing_unit_economics: 'Pricing and unit economics',
+  willingness_to_pay: 'Willingness to pay',
+  mvbp_kill_lines: 'MVBP and kill lines',
+  gtm_first_100: 'Go-to-market (first 100)',
+  team_cost_runway: 'Team, cost, and runway',
+  legal_compliance: 'Legal and compliance',
+  launch_operate: 'Launch and operate',
+  gates_decisions_artifacts: 'Gates, decisions, and artifacts',
+};
+
+export function businessModelSectionLabel(key: string): string {
+  return businessModelLabels[key] ?? key.replaceAll('_', ' ');
+}
+
+const scoreDimensionLabels: Record<string, { heading: string; supporting: string }> = {
+  customer_clarity: { heading: 'Who is this for?', supporting: 'customer clarity' },
+  evidence_strength: { heading: 'How solid is the proof?', supporting: 'evidence strength' },
+  market_support: { heading: 'Is the market real?', supporting: 'market support' },
+  business_economics: { heading: 'Can the numbers work?', supporting: 'business economics' },
+  willingness_to_pay: { heading: 'Will people pay?', supporting: 'willingness to pay' },
+  execution_readiness: { heading: 'Can you ship this?', supporting: 'execution readiness' },
+  risk_control: { heading: 'What could kill it?', supporting: 'risk control' },
+};
+
+export function scoreDimensionHeading(dimension: string): string {
+  return scoreDimensionLabels[dimension]?.heading ?? dimension.replaceAll('_', ' ');
+}
+
+export function scoreDimensionSupporting(dimension: string): string {
+  return scoreDimensionLabels[dimension]?.supporting ?? dimension.replaceAll('_', ' ');
+}
+
 export function formatUnknown(value: unknown): string {
   if (value === null || value === undefined || value === '') {
     return 'Not set yet';

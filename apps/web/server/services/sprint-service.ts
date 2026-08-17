@@ -269,6 +269,23 @@ export class SprintService {
             fromStatus: sprint.status,
             toStatus: updated.status,
           });
+          const notifyKind =
+            updated.status === 'needs_founder'
+              ? 'job_needs_founder'
+              : updated.status === 'failed' || updated.status === 'blocked'
+                ? 'job_failed_or_blocked'
+                : updated.jobKind === 'research' &&
+                    (updated.status === 'closed' || updated.status === 'complete')
+                  ? 'research_completed'
+                  : null;
+          if (notifyKind !== null) {
+            await this.jobQueue.enqueueNotification({
+              kind: notifyKind,
+              projectId: updated.projectId,
+              workspaceId: actor.membership.workspaceId,
+              correlationId: randomUUID(),
+            });
+          }
           return updated;
         }),
     );

@@ -65,10 +65,16 @@ export const mutationInvalidations = {
   'evidence.createUploadIntent': ['evidence.list'],
   'evidence.addInterview': [
     'evidence.listInterviews',
+    'evidence.listLibrary',
     'project.getDeskSummary',
     'score.getCurrent',
   ],
-  'evidence.confirmUpload': ['evidence.list'],
+  'evidence.confirmUpload': ['evidence.list', 'evidence.listLibrary'],
+  'evidence.recordObservation': [
+    'evidence.listLibrary',
+    'project.getDeskSummary',
+    'score.getCurrent',
+  ],
   'approval.request': ['approval.list'],
   'approval.approve': ['approval.list', 'approval.getPayload'],
   'approval.reject': ['approval.list', 'approval.getPayload'],

@@ -6,27 +6,47 @@ import { useParams, usePathname } from 'next/navigation';
 const links = [
   {
     href: (id: string) => `/p/${id}`,
-    label: 'Desk',
-    title: 'Work through your idea step by step',
+    label: 'Overview',
+    title: 'Score, next action, and current work',
     match: (path: string, id: string) => path === `/p/${id}`,
   },
   {
-    href: (id: string) => `/p/${id}/pack/mvbp`,
-    label: 'Pack',
-    title: 'Your business plan',
-    match: (path: string, id: string) => path.startsWith(`/p/${id}/pack`),
+    href: (id: string) => `/p/${id}/co-founder`,
+    label: 'Co-founder',
+    title: 'Durable conversation with your AI co-founder',
+    match: (path: string, id: string) => path.startsWith(`/p/${id}/co-founder`),
   },
   {
-    href: (id: string) => `/p/${id}/approvals`,
-    label: 'Approvals',
-    title: 'Real-world actions waiting on you',
-    match: (path: string, id: string) => path.startsWith(`/p/${id}/approvals`),
+    href: (id: string) => `/p/${id}/plan`,
+    label: 'Business model',
+    title: 'All 17 plan sections',
+    match: (path: string, id: string) =>
+      path.startsWith(`/p/${id}/plan`) || path.startsWith(`/p/${id}/pack`),
+  },
+  {
+    href: (id: string) => `/p/${id}/work`,
+    label: 'Work board',
+    title: 'AI jobs, founder tasks, and approvals',
+    match: (path: string, id: string) =>
+      path.startsWith(`/p/${id}/work`) || path.startsWith(`/p/${id}/approvals`),
+  },
+  {
+    href: (id: string) => `/p/${id}/research`,
+    label: 'Research & evidence',
+    title: 'Sources, interviews, findings, and conflicts',
+    match: (path: string, id: string) => path.startsWith(`/p/${id}/research`),
   },
   {
     href: (id: string) => `/p/${id}/decisions`,
     label: 'Decisions',
-    title: 'A log of choices made along the way',
+    title: 'GO, PIVOT, KILL, and recorded choices',
     match: (path: string, id: string) => path.startsWith(`/p/${id}/decisions`),
+  },
+  {
+    href: (id: string) => `/p/${id}/settings`,
+    label: 'Settings',
+    title: 'Providers, members, and preferences',
+    match: (path: string, id: string) => path.startsWith(`/p/${id}/settings`),
   },
 ] as const;
 
@@ -39,7 +59,7 @@ export function ProjectNav() {
   }
 
   return (
-    <nav className="mb-8 flex gap-1 border-b border-border" aria-label="Project">
+    <nav className="mb-6 flex flex-wrap gap-1 border-b border-border" aria-label="Project">
       {links.map((link) => {
         const href = link.href(projectId);
         const current = link.match(pathname, projectId);

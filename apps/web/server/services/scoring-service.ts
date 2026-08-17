@@ -41,11 +41,16 @@ import {
   reconcileMoneyIdentities,
 } from '@foundry/policy';
 import { calculateScore, SCORE_RULE_VERSION } from '@foundry/scoring';
+import { limits } from '@foundry/config/limits';
+import { randomUUID } from 'node:crypto';
+
+import type { JobQueue } from '../queue/job-queue';
 
 export class ScoringService {
   constructor(
     private readonly sql: PoolSql,
     private readonly streamBus: StreamBus,
+    private readonly jobQueue?: JobQueue,
   ) {}
 
   async recalculate(project: Project): Promise<PlanScore | null> {
@@ -153,14 +158,27 @@ export class ScoringService {
         reasons: calculated.reasons,
         topActions: calculated.topActions,
       });
+      const deltaFromPrevious = previous === null ? null : stored.overall - previous.overall;
       await this.streamBus.publish(project.id, {
         type: 'score_changed',
         projectId: project.id,
         revisionId,
         overall: stored.overall,
         dimensions: stored.dimensions,
-        deltaFromPrevious: previous === null ? null : stored.overall - previous.overall,
+        deltaFromPrevious,
       });
+      if (
+        this.jobQueue !== undefined &&
+        deltaFromPrevious !== null &&
+        Math.abs(deltaFromPrevious) >= limits.notification.scoreMaterialChangePoints
+      ) {
+        await this.jobQueue.enqueueNotification({
+          kind: 'score_changed_materially',
+          projectId: project.id,
+          workspaceId: project.workspaceId,
+          correlationId: randomUUID(),
+        });
+      }
       return stored;
     });
   }

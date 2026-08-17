@@ -1,10 +1,14 @@
-import { PackSectionView } from './pack-section-view';
+import { PackSectionKeyToBusinessModelSectionKey, PackSectionKeys } from '@foundry/domain';
+import { redirect } from 'next/navigation';
 
-export default async function PackSectionPage({
+export default async function PackSectionRedirect({
   params,
 }: {
   params: Promise<{ projectId: string; section: string }>;
 }) {
   const { projectId, section } = await params;
-  return <PackSectionView projectId={projectId} section={section} />;
+  const mapped = PackSectionKeys.includes(section as (typeof PackSectionKeys)[number])
+    ? PackSectionKeyToBusinessModelSectionKey[section as (typeof PackSectionKeys)[number]]
+    : section;
+  redirect(`/p/${projectId}/plan/${mapped}`);
 }

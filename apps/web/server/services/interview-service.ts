@@ -52,7 +52,12 @@ export class InterviewService {
           const interview = await insertInterview(tx, {
             projectId: actor.project.id,
             participantType: input.participantType,
-            consent: input.consent,
+            consent: {
+              ...input.consent,
+              ...(input.label === undefined ? {} : { label: input.label }),
+              ...(input.notes === undefined ? {} : { notes: input.notes }),
+              ...(input.sourceId === undefined ? {} : { sourceId: input.sourceId }),
+            },
             conductedAt: input.conductedAt ?? null,
           });
           const quotes: Quote[] = [];

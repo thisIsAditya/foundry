@@ -41,7 +41,7 @@ export async function processNotificationJob(
   data: NotificationJobData,
   sql: PoolSql,
 ): Promise<void> {
-  if (data.kind === 'weekly_digest' || data.kind === 'compliance_reminder') {
+  if (data.kind !== 'execute_approval') {
     if (data.projectId === undefined) {
       const projects = await listProjects(sql);
       for (const project of projects) {

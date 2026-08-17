@@ -8,7 +8,7 @@ export default function SignInScreen() {
   return (
     <View style={styles.screen}>
       <Text style={styles.title}>Foundry</Text>
-      <Text style={styles.body}>Sign in with Google to open the founder desk on this device.</Text>
+      <Text style={styles.body}>Sign in with Google to open your project on this device.</Text>
       <Pressable
         style={styles.button}
         onPress={() => {

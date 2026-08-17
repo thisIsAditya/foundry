@@ -4,6 +4,7 @@ export const limits = {
     interviewRecording: 200 * 1024 * 1024,
   },
   allowedDocumentMimeTypes: ['application/pdf', 'text/plain', 'text/markdown'] as const,
+  allowedAudioMimeTypes: ['audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/aac'] as const,
   maxPdfPagesParsed: 200,
   uploadIntentTtlSeconds: 60 * 60,
   uploadUrlExpiresSeconds: 60 * 60,
@@ -69,6 +70,7 @@ export const limits = {
   },
   notification: {
     weeklyDigestCron: '0 9 * * 1',
+    scoreMaterialChangePoints: 5,
   },
   money: {
     decimalScale: 4,

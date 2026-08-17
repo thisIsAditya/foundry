@@ -64,6 +64,7 @@ export type ListConversationInput = z.infer<typeof ListConversationInputSchema>;
 export const SendConversationInputSchema = z.object({
   projectId: ProjectIdSchema,
   text: z.string().min(1),
+  sourceId: z.string().uuid().optional(),
   idempotencyKey: IdempotencyKeySchema,
 });
 export type SendConversationInput = z.infer<typeof SendConversationInputSchema>;
