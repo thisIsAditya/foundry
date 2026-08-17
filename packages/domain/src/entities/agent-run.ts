@@ -6,7 +6,7 @@ import { DecimalStringSchema, InstantSchema } from '../value-objects/primitives.
 
 export const AgentRunSchema = z.object({
   id: AgentRunIdSchema,
-  sprintId: SprintIdSchema,
+  sprintId: SprintIdSchema.nullable().default(null),
   agentDefinitionId: AgentDefinitionIdSchema,
   modelProfile: z.string().min(1),
   provider: z.string().min(1),

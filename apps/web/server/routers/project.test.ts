@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
 import { appRouter } from './_app';
-import { createTestContext } from '../test/context';
+import { createTestContext, memoryStreamBus } from '../test/context';
+import { createClarificationTestModel } from '../test/mock-model';
 import { sql } from '../test/harness';
 
 describe('project procedures', () => {
@@ -30,6 +31,37 @@ describe('project procedures', () => {
 
     const listed = await caller.project.list({ workspaceId: createdWorkspace.id });
     expect(listed.map((project) => project.id)).toEqual([created.id]);
+  });
+
+  it('answers a clarification through a mocked model and publishes text_delta', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `ans-${randomUUID()}@example.com`,
+    });
+    const workspace = await appRouter
+      .createCaller(await createTestContext(sql, user))
+      .workspace.create({ name: 'Acme', idempotencyKey: randomUUID() });
+    const languageModel = createClarificationTestModel('What is the painful job to be done?');
+    const ctx = await createTestContext(sql, user, { languageModel });
+    const caller = appRouter.createCaller(ctx);
+    const project = await caller.project.create({
+      workspaceId: workspace.id,
+      name: 'Venture',
+      idempotencyKey: randomUUID(),
+    });
+
+    const answered = await caller.project.answerClarification({
+      projectId: project.id,
+      questionId: 'problem',
+      answer: 'Owners lose two hours closing the books.',
+      idempotencyKey: randomUUID(),
+    });
+    expect(answered.text).toContain('painful job');
+    expect(
+      memoryStreamBus(ctx).entries.some(
+        (entry) => entry.event.type === 'text_delta' && entry.event.delta.includes('painful'),
+      ),
+    ).toBe(true);
   });
 
   it('rejects project create without a session', async () => {

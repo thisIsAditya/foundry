@@ -2,7 +2,11 @@ import { z } from 'zod';
 
 import { ProviderConnectionIdSchema, UserIdSchema, WorkspaceIdSchema } from '../ids.js';
 import { DataClassificationSchema } from '../status/evidence-status.js';
-import { ProviderFamilySchema, ProviderHealthStatusSchema } from '../status/output-status.js';
+import {
+  ProviderAuthModeSchema,
+  ProviderFamilySchema,
+  ProviderHealthStatusSchema,
+} from '../status/output-status.js';
 import { DecimalStringSchema, InstantSchema } from '../value-objects/primitives.js';
 
 export const ProviderConnectionSchema = z.object({
@@ -10,7 +14,7 @@ export const ProviderConnectionSchema = z.object({
   workspaceId: WorkspaceIdSchema.nullable().default(null),
   userId: UserIdSchema.nullable().default(null),
   providerFamily: ProviderFamilySchema,
-  authMode: z.string().min(1),
+  authMode: ProviderAuthModeSchema,
   credentialRefEncrypted: z.string().nullable().default(null),
   endpointOrRegion: z.string().nullable().default(null),
   allowedModels: z.unknown().nullable().default(null),

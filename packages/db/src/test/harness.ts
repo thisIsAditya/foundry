@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll } from 'vitest';
 import { createSql, type PoolSql } from '../client.js';
 import { getTestDatabaseUrl } from '../env.js';
 import { migrateUp } from '../migrate.js';
+import { truncateAppTables } from '../truncate.js';
 
 const maintenanceDatabaseUrl = 'postgres://foundry:foundry@localhost:5432/foundry';
 
@@ -36,25 +37,7 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
-  await sql`
-    truncate table
-      content_blocks,
-      documents,
-      source_snapshots,
-      sources,
-      domain_events,
-      notification_endpoints,
-      project_memberships,
-      projects,
-      workspace_memberships,
-      workspaces,
-      api_keys,
-      verifications,
-      accounts,
-      sessions,
-      users
-    cascade
-  `;
+  await truncateAppTables(sql);
 });
 
 afterAll(async () => {

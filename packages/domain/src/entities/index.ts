@@ -49,7 +49,12 @@ export { RenderJobSchema, type RenderJob } from './render-job.js';
 export { SourceSchema, type Source } from './source.js';
 export { SourceSnapshotSchema, type SourceSnapshot } from './source-snapshot.js';
 export { SprintSchema, type Sprint } from './sprint.js';
-export { SprintContractSchema, type SprintContract } from './sprint-contract.js';
+export {
+  SprintContractSchema,
+  SprintWorkerSpecSchema,
+  type SprintContract,
+  type SprintWorkerSpec,
+} from './sprint-contract.js';
 export { TaskLedgerSchema, type TaskLedger } from './task-ledger.js';
 export { TemplateSchema, type Template } from './template.js';
 export { ToolCallSchema, type ToolCall } from './tool-call.js';

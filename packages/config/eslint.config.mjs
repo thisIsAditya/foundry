@@ -88,7 +88,6 @@ export default tseslint.config(
               from: [
                 path.join(repoRoot, 'apps/worker'),
                 path.join(repoRoot, 'packages/document-intelligence'),
-                path.join(repoRoot, 'packages/agent-runtime'),
                 path.join(repoRoot, 'packages/tools'),
               ],
             },

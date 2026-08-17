@@ -30,6 +30,7 @@ export {
   listProjects,
   listProjectsByWorkspaceId,
   toProject,
+  updateProjectCurrentPackRevision,
   type InsertProject,
 } from './repositories/projects.js';
 export {
@@ -81,4 +82,81 @@ export {
   type ContentBlockSearchHit,
   type InsertContentBlock,
 } from './repositories/content-blocks.js';
-export { appRlsRole, toPgTextArray, withWorkspaceScope } from './rls.js';
+export { appRlsRole, toPgTextArray, withUserScope, withWorkspaceScope } from './rls.js';
+export { truncateAppTables } from './truncate.js';
+export {
+  getPackRevisionById,
+  insertPackRevision,
+  toPackRevision,
+  updatePackRevisionProposedChanges,
+  type InsertPackRevision,
+} from './repositories/pack-revisions.js';
+export {
+  insertInterview,
+  listInterviewsByProjectId,
+  toInterview,
+  type InsertInterview,
+} from './repositories/interviews.js';
+export {
+  insertQuote,
+  listQuotesByInterviewIds,
+  toQuote,
+  type InsertQuote,
+} from './repositories/quotes.js';
+export {
+  insertBeachhead,
+  listBeachheadsByPackRevisionId,
+  toBeachhead,
+  updateBeachheadDmuId,
+  type InsertBeachhead,
+} from './repositories/beachheads.js';
+export { insertDmu, listDmusByPackRevisionId, toDmu, type InsertDmu } from './repositories/dmus.js';
+export {
+  getSprintById,
+  insertSprint,
+  toSprint,
+  updateSprintContract,
+  updateSprintStatus,
+  type InsertSprint,
+} from './repositories/sprints.js';
+export {
+  insertSprintProgressEvent,
+  listSprintProgressEvents,
+  type SprintProgressEvent,
+} from './repositories/sprint-progress-events.js';
+export {
+  getAgentDefinitionById,
+  getCurrentAgentDefinition,
+  toAgentDefinition,
+} from './repositories/agent-definitions.js';
+export {
+  completeAgentRun,
+  insertAgentRun,
+  toAgentRun,
+  type InsertAgentRun,
+} from './repositories/agent-runs.js';
+export { insertGate, toGate, type InsertGate } from './repositories/gates.js';
+export {
+  insertUsageRecord,
+  toUsageRecord,
+  type InsertUsageRecord,
+} from './repositories/usage-records.js';
+export {
+  getProviderConnectionById,
+  insertProviderConnection,
+  listProviderConnectionsByWorkspaceId,
+  toProviderConnection,
+  type InsertProviderConnection,
+} from './repositories/provider-connections.js';
+export {
+  countUserMcpServers,
+  deleteUserMcpServer,
+  getUserMcpServerById,
+  insertUserMcpServer,
+  listEnabledUserMcpServersByUserId,
+  listUserMcpServersByUserId,
+  toUserMcpServer,
+  updateUserMcpServerEnabled,
+  updateUserMcpServerHealth,
+  type InsertUserMcpServer,
+} from './repositories/user-mcp-servers.js';

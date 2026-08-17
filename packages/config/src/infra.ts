@@ -10,11 +10,22 @@ export const infra = {
   },
   queues: {
     ingestion: 'ingestion',
+    sprint: 'sprint',
   },
   ingestion: {
     concurrency: 8,
     attempts: 3,
     backoffMs: 5_000,
+  },
+  sprintQueue: {
+    concurrency: 4,
+    attempts: 1,
+    lockDurationMs: 5 * 60_000,
+  },
+  stream: {
+    channelPrefix: 'stream:',
+    logPrefix: 'stream-log:',
+    seqPrefix: 'stream-seq:',
   },
 } as const;
 

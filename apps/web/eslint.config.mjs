@@ -4,7 +4,12 @@ import globals from 'globals';
 export default [
   ...config,
   {
-    files: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'lib/trpc/provider.tsx'],
+    files: [
+      'app/**/*.{ts,tsx}',
+      'components/**/*.{ts,tsx}',
+      'lib/trpc/provider.tsx',
+      'lib/stream/**/*.{ts,tsx}',
+    ],
     languageOptions: {
       globals: {
         ...globals.browser,

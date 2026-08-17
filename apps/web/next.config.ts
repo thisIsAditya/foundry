@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(dir, '../..'),
   transpilePackages: [
     '@foundry/api-contracts',
+    '@foundry/agent-runtime',
     '@foundry/config',
     '@foundry/db',
     '@foundry/domain',
@@ -27,6 +28,13 @@ const nextConfig: NextConfig = {
     '@opentelemetry/sdk-node',
     '@opentelemetry/auto-instrumentations-node',
     '@opentelemetry/exporter-trace-otlp-http',
+    'ai',
+    '@ai-sdk/anthropic',
+    '@ai-sdk/openai',
+    '@ai-sdk/amazon-bedrock',
+    '@ai-sdk/gateway',
+    '@ai-sdk/openai-compatible',
+    '@ai-sdk/mcp',
   ],
   experimental: {
     serverActions: {

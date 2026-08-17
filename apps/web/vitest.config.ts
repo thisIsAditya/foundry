@@ -17,6 +17,8 @@ export default defineConfig({
       TEST_DATABASE_URL: 'postgres://foundry:foundry@localhost:5432/foundry_test',
       BETTER_AUTH_URL: 'http://localhost:3000',
       BETTER_AUTH_SECRET: 'test-secret-test-secret-test-32by',
+      FOUNDRY_SECRETS_KEY: '0'.repeat(64),
+      ALLOW_MCP_LOOPBACK: 'true',
     },
   },
 });

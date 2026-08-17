@@ -22,7 +22,9 @@
     "node": ">=24 <25"
   },
   "dependencies": {
-    "@foundry/domain": "workspace:*"
+    "@foundry/config": "workspace:*",
+    "@foundry/domain": "workspace:*",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@foundry/config": "workspace:*",

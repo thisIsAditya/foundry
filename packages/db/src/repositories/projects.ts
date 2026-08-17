@@ -35,6 +35,7 @@ export type InsertProject = {
   businessCategory?: string | null;
   founderObjective?: FounderObjective;
   currentPhase?: JourneyPhase;
+  currentPackRevisionId?: Project['currentPackRevisionId'];
 };
 
 export function toProject(row: ProjectRow): Project {
@@ -108,4 +109,19 @@ export async function listProjectsByWorkspaceId(
     order by created_at asc
   `;
   return rows.map(toProject);
+}
+
+export async function updateProjectCurrentPackRevision(
+  sql: Sql,
+  id: ProjectId,
+  packRevisionId: Project['currentPackRevisionId'],
+): Promise<Project> {
+  const rows = await sql<ProjectRow[]>`
+    update projects
+    set current_pack_revision_id = ${packRevisionId},
+        updated_at = now()
+    where id = ${id}
+    returning *
+  `;
+  return toProject(requireRow(rows, 'updateProjectCurrentPackRevision'));
 }

@@ -1,6 +1,15 @@
-import { CreateProjectInputSchema, ListProjectsInputSchema } from '@foundry/api-contracts';
+import {
+  AnswerClarificationInputSchema,
+  CreateProjectInputSchema,
+  ListProjectsInputSchema,
+} from '@foundry/api-contracts';
 
-import { router, workspaceProcedure, workspaceReadProcedure } from '../trpc';
+import {
+  projectAnswerProcedure,
+  router,
+  workspaceProcedure,
+  workspaceReadProcedure,
+} from '../trpc';
 
 export const projectRouter = router({
   create: workspaceProcedure
@@ -18,4 +27,17 @@ export const projectRouter = router({
   list: workspaceReadProcedure.input(ListProjectsInputSchema).query(async ({ ctx, input }) => {
     return ctx.services.projectService.list(ctx.membership, input.workspaceId);
   }),
+  answerClarification: projectAnswerProcedure
+    .meta({ invalidates: ['project.getDeskSummary', 'sprint.getActivity'] })
+    .input(AnswerClarificationInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.actor.type !== 'user') {
+        throw new Error('projectAnswerProcedure requires a user actor');
+      }
+      return ctx.services.projectService.answerClarification(
+        { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
+        input,
+        ctx.correlationId,
+      );
+    }),
 });

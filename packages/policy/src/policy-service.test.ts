@@ -45,4 +45,13 @@ describe('PolicyService', () => {
   it('allows members to upload evidence', () => {
     expect(policy.can(membership('member'), 'evidence.upload')).toBe(true);
   });
+
+  it('allows members to connect providers and run sprints', () => {
+    const member = membership('member');
+    expect(policy.can(member, 'provider.connect')).toBe(true);
+    expect(policy.can(member, 'sprint.run')).toBe(true);
+    expect(policy.can(member, 'project.answer')).toBe(true);
+    expect(policy.can(membership('viewer'), 'provider.connect')).toBe(false);
+    expect(policy.can(membership('viewer'), 'sprint.read')).toBe(true);
+  });
 });

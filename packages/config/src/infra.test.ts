@@ -24,7 +24,9 @@ describe('infra constants', () => {
     expect(infra.names.ecrWeb).toBe('foundry-web');
     expect(infra.names.ecrWorker).toBe('foundry-worker');
     expect(infra.queues.ingestion).toBe('ingestion');
+    expect(infra.queues.sprint).toBe('sprint');
     expect(infra.ingestion.concurrency).toBe(8);
+    expect(infra.sprintQueue.attempts).toBe(1);
   });
 
   it('names ECS and SSM resources from the environment', () => {

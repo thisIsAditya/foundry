@@ -15,6 +15,10 @@ export const ProviderFamilies = [
 export const ProviderFamilySchema = z.enum(ProviderFamilies);
 export type ProviderFamily = z.infer<typeof ProviderFamilySchema>;
 
+export const ProviderAuthModes = ['platform_env', 'api_key', 'aws_iam_role', 'none'] as const;
+export const ProviderAuthModeSchema = z.enum(ProviderAuthModes);
+export type ProviderAuthMode = z.infer<typeof ProviderAuthModeSchema>;
+
 export const ProviderHealthStatuses = ['unknown', 'ok', 'error'] as const;
 export const ProviderHealthStatusSchema = z.enum(ProviderHealthStatuses);
 export type ProviderHealthStatus = z.infer<typeof ProviderHealthStatusSchema>;

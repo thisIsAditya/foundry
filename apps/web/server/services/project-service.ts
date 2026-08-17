@@ -1,13 +1,22 @@
-import type { CreateProjectInput } from '@foundry/api-contracts';
+import type { AnswerClarificationInput, CreateProjectInput } from '@foundry/api-contracts';
+import {
+  buildModel,
+  diagnoseClarification,
+  type ProviderSecrets,
+  type SecretBox,
+  type StreamBus,
+} from '@foundry/agent-runtime';
 import { limits } from '@foundry/config/limits';
 import {
+  getProjectById,
   insertProject,
   listProjectsByWorkspaceId,
+  listProviderConnectionsByWorkspaceId,
+  updatePackRevisionProposedChanges,
   withWorkspaceScope,
   type PoolSql,
 } from '@foundry/db';
 import {
-  ProjectSchema,
   type Project,
   type UserId,
   type WorkspaceId,
@@ -15,15 +24,32 @@ import {
 } from '@foundry/domain';
 import { AppError } from '@foundry/observability';
 import { PolicyService } from '@foundry/policy';
+import type { LanguageModel } from 'ai';
+import { randomUUID } from 'node:crypto';
 import superjson from 'superjson';
+import { z } from 'zod';
 
 import { withIdempotency, type CoordinationStore } from '../coordination';
+import { ensurePackRevision, loadPackSnapshot, readClarifications } from './pack-snapshot';
+
+const AnswerResultSchema = z.object({
+  runId: z.string().min(1),
+  text: z.string(),
+});
+
+export type ProjectRuntimeDeps = {
+  streamBus: StreamBus;
+  secretBox: SecretBox;
+  secrets: ProviderSecrets;
+  languageModel?: LanguageModel;
+};
 
 export class ProjectService {
   constructor(
     private readonly sql: PoolSql,
     private readonly coordination: CoordinationStore,
     private readonly policyService: PolicyService,
+    private readonly runtime: ProjectRuntimeDeps,
   ) {}
 
   async create(
@@ -43,16 +69,22 @@ export class ProjectService {
       this.coordination,
       key,
       limits.idempotencyKeyTtlSeconds,
-      (raw) => ProjectSchema.parse(superjson.parse(raw)),
+      (raw) => superjson.parse(raw) as Project,
       (value) => superjson.stringify(value),
       async () => {
         return withWorkspaceScope(this.sql, [input.workspaceId], async (tx) => {
-          return insertProject(tx, {
+          const created = await insertProject(tx, {
             workspaceId: input.workspaceId,
             name: input.name,
             ...(input.geography === undefined ? {} : { geography: input.geography }),
             ...(input.objective === undefined ? {} : { founderObjective: input.objective }),
           });
+          await ensurePackRevision(tx, created, actor.userId);
+          const reloaded = await getProjectById(tx, created.id);
+          if (reloaded === null) {
+            throw new Error('project disappeared after create');
+          }
+          return reloaded;
         });
       },
     );
@@ -69,5 +101,100 @@ export class ProjectService {
     return withWorkspaceScope(this.sql, [workspaceId], async (tx) =>
       listProjectsByWorkspaceId(tx, workspaceId),
     );
+  }
+
+  async answerClarification(
+    actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
+    input: AnswerClarificationInput,
+    correlationId: string,
+  ): Promise<{ runId: string; text: string }> {
+    if (!this.policyService.can(actor.membership, 'project.answer')) {
+      throw new AppError({
+        code: 'policy_forbidden',
+        explanation: 'Your role cannot answer clarifications on this project.',
+        nextAction: 'Ask a workspace admin to change your role.',
+      });
+    }
+
+    const key = `idem:${actor.userId}:project.answerClarification:${input.idempotencyKey}`;
+    return withIdempotency(
+      this.coordination,
+      key,
+      limits.idempotencyKeyTtlSeconds,
+      (raw) => AnswerResultSchema.parse(superjson.parse(raw)),
+      (value) => superjson.stringify(value),
+      async () => {
+        const runId = randomUUID();
+        const snapshot = await withWorkspaceScope(
+          this.sql,
+          [actor.project.workspaceId],
+          async (tx) => {
+            const pack = await ensurePackRevision(tx, actor.project, actor.userId);
+            const clarifications = [
+              ...readClarifications(pack.proposedChanges),
+              {
+                questionId: input.questionId,
+                answer: input.answer,
+                answeredAt: new Date().toISOString(),
+              },
+            ];
+            await updatePackRevisionProposedChanges(tx, pack.id, { clarifications });
+            const project = await getProjectById(tx, actor.project.id);
+            if (project === null) {
+              throw new AppError({
+                code: 'not_found',
+                explanation: 'Project not found.',
+                nextAction: 'Reload the desk and retry.',
+                correlationId,
+              });
+            }
+            return loadPackSnapshot(tx, project);
+          },
+          actor.userId,
+        );
+
+        const model = await this.resolveModel(actor.project.workspaceId);
+        const diagnosed = await diagnoseClarification({
+          runId,
+          questionId: input.questionId,
+          answer: input.answer,
+          snapshot,
+          model,
+          publish: async (event) => {
+            await this.runtime.streamBus.publish(actor.project.id, event);
+          },
+        });
+        return { runId, text: diagnosed.text };
+      },
+    );
+  }
+
+  private async resolveModel(workspaceId: WorkspaceId): Promise<LanguageModel> {
+    if (this.runtime.languageModel !== undefined) {
+      return this.runtime.languageModel;
+    }
+    const connections = await withWorkspaceScope(this.sql, [workspaceId], async (tx) =>
+      listProviderConnectionsByWorkspaceId(tx, workspaceId),
+    );
+    const connection = connections.find((item) => item.healthStatus === 'ok') ?? connections[0];
+    if (connection === undefined) {
+      throw new AppError({
+        code: 'provider_unavailable',
+        explanation: 'No model provider is connected for this workspace.',
+        nextAction: 'Connect Anthropic (or another provider) in workspace settings.',
+      });
+    }
+    const allowed = connection.allowedModels;
+    const modelId =
+      Array.isArray(allowed) && typeof allowed[0] === 'string'
+        ? allowed[0]
+        : limits.provider.defaultAnthropicModel;
+    const built = await buildModel(
+      connection,
+      modelId,
+      this.runtime.secrets,
+      this.runtime.secretBox,
+    );
+    return built.model;
   }
 }
