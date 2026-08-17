@@ -26,6 +26,58 @@ export const CriticOutputSchema = z.object({
 });
 export type CriticOutput = z.infer<typeof CriticOutputSchema>;
 
+export const CofounderDecisionSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('answer'),
+    text: z.string().min(1),
+  }),
+  z.object({
+    action: z.literal('start_research'),
+    objective: z.string().min(1),
+    whyNow: z.string().min(1),
+    text: z.string().min(1),
+  }),
+  z.object({
+    action: z.literal('propose_draft_revision'),
+    objective: z.string().min(1),
+    text: z.string().min(1),
+  }),
+  z.object({
+    action: z.literal('create_founder_task'),
+    title: z.string().min(1),
+    explanation: z.string().min(1),
+    text: z.string().min(1),
+  }),
+  z.object({
+    action: z.literal('create_job'),
+    objective: z.string().min(1),
+    jobKind: z.enum(['research', 'draft', 'analysis', 'clarification', 'synthesis']),
+    whyNow: z.string().min(1),
+    text: z.string().min(1),
+  }),
+  z.object({
+    action: z.literal('ask_targeted_question'),
+    question: z.string().min(1),
+    whyNotResearchable: z.string().min(1),
+    text: z.string().min(1),
+  }),
+]);
+export type CofounderDecision = z.infer<typeof CofounderDecisionSchema>;
+
+export const InitialDraftSectionSchema = z.object({
+  key: z.string().min(1),
+  provenance: z.enum(['founder_input', 'assumption', 'open_question', 'not_applicable']),
+  summary: z.string().min(1),
+  reason: z.string().min(1).optional(),
+});
+export type InitialDraftSection = z.infer<typeof InitialDraftSectionSchema>;
+
+export const InitialDraftSchema = z.object({
+  sections: z.array(InitialDraftSectionSchema),
+  founderMessage: z.string().min(1),
+});
+export type InitialDraft = z.infer<typeof InitialDraftSchema>;
+
 export type RuntimeAgentDefinition = AgentDefinition & {
   modelProfile: string;
   toolAllowlist: string[];

@@ -23,12 +23,14 @@ import { evaluateGateC, PolicyService, type GateCEvaluation } from '@foundry/pol
 import superjson from 'superjson';
 
 import { withIdempotency, type CoordinationStore } from '../coordination';
+import type { ScoringService } from './scoring-service';
 
 export class MetricService {
   constructor(
     private readonly sql: PoolSql,
     private readonly coordination: CoordinationStore,
     private readonly policyService: PolicyService,
+    private readonly scoringService?: ScoringService,
   ) {}
 
   async listDefinitions(actor: {
@@ -105,7 +107,7 @@ export class MetricService {
       });
     }
     const key = `idem:${actor.userId}:metric.record:${input.idempotencyKey}`;
-    return withIdempotency(
+    const observation = await withIdempotency(
       this.coordination,
       key,
       limits.idempotencyKeyTtlSeconds,
@@ -124,6 +126,8 @@ export class MetricService {
           return insertMetricObservation(tx, { metricId: definition.id, value: input.value });
         }),
     );
+    await this.scoringService?.recalculate(actor.project);
+    return observation;
   }
 
   async evaluateGateC(actor: {

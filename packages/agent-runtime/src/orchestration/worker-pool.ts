@@ -84,7 +84,7 @@ function buildWorkerPrompt(contract: SprintContract, snapshot: PackSnapshot): st
   }));
   return [
     `Sprint objective: ${contract.objective}`,
-    `Why now: ${contract.whyNow}`,
+    `Why now: ${contract.whyNow ?? 'Not specified'}`,
     `Phase: ${contract.phase}`,
     `Interviews on file: ${snapshot.interviews.length} (non-friend: ${
       snapshot.interviews.filter((interview) => interview.participantType === 'non_friend').length

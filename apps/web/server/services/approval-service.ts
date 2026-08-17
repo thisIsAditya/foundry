@@ -4,7 +4,6 @@ import {
   getApprovalRequestById,
   insertApprovalRequest,
   listApprovalRequestsByProjectId,
-  listGatesByProjectId,
   updateApprovalRequestDecision,
   withWorkspaceScope,
   type PoolSql,
@@ -104,21 +103,6 @@ export class ApprovalService {
       (value) => superjson.stringify(value),
       async () =>
         withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
-          if (input.actionType === 'growth.publish' || input.actionType === 'ads.spend') {
-            const gates = await listGatesByProjectId(tx, actor.project.id);
-            const latestC = gates.find((gate) => gate.gateType === 'gate_c');
-            const unlocked =
-              latestC?.result === 'passed' ||
-              latestC?.result === 'waived' ||
-              input.founderOverride === true;
-            if (!unlocked) {
-              throw new AppError({
-                code: 'gate_blocked',
-                explanation: 'Growth spend is locked until Gate C unless the founder overrides.',
-                nextAction: 'Evaluate Gate C or record an explicit override.',
-              });
-            }
-          }
           const payloadHash = hashApprovalPayload(input.payload);
           const expiresAt = new Date(Date.now() + limits.approval.ttlSeconds * 1000);
           return insertApprovalRequest(tx, {

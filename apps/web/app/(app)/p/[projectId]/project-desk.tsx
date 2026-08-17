@@ -1,6 +1,6 @@
 'use client';
 
-import { AnswerClarificationInputSchema } from '@foundry/api-contracts';
+import { SendConversationInputSchema, type OverviewSummary } from '@foundry/api-contracts';
 import {
   BeachheadIdSchema,
   InterviewParticipantTypes,
@@ -133,16 +133,15 @@ function AskCoFounder({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
   const stream = useProjectStream(projectId);
   const idempotencyKey = useRef(crypto.randomUUID());
-  const [questionId, setQuestionId] = useState('problem');
   const [answer, setAnswer] = useState('');
-  const mutation = useMutation(trpc.project.answerClarification.mutationOptions());
+  const history = useQuery(trpc.conversation.list.queryOptions({ projectId, limit: 20 }));
+  const mutation = useMutation(trpc.conversation.send.mutationOptions());
 
   async function onSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    const input = AnswerClarificationInputSchema.parse({
+    const input = SendConversationInputSchema.parse({
       projectId,
-      questionId,
-      answer,
+      text: answer,
       idempotencyKey: idempotencyKey.current,
     });
     try {
@@ -155,6 +154,7 @@ function AskCoFounder({ projectId }: { projectId: string }) {
   }
 
   const errorMessage = errorMessageOf(mutation.error);
+  const chronological = [...(history.data?.items ?? [])].reverse();
 
   return (
     <section id="ask" className="card stack scroll-mt-6">
@@ -171,8 +171,10 @@ function AskCoFounder({ projectId }: { projectId: string }) {
             <button
               key={chip.id}
               type="button"
-              className={questionId === chip.id ? 'badge badge-info' : 'badge'}
-              onClick={() => setQuestionId(chip.id)}
+              className="badge"
+              onClick={() =>
+                setAnswer((current) => (current.length > 0 ? current : `${chip.label}: `))
+              }
             >
               {chip.label}
             </button>
@@ -196,6 +198,16 @@ function AskCoFounder({ projectId }: { projectId: string }) {
         </div>
       </form>
       {errorMessage === null ? null : <p className="alert">{errorMessage}</p>}
+      {chronological.length === 0 ? null : (
+        <ol className="stack" aria-label="Conversation">
+          {chronological.map((message) => (
+            <li key={message.id}>
+              <p className="muted">{message.actor === 'founder' ? 'You' : 'Co-founder'}</p>
+              <p>{message.text}</p>
+            </li>
+          ))}
+        </ol>
+      )}
       <div aria-live="polite">
         <p className="hint mb-1">Reply</p>
         <pre className="panel min-h-24 whitespace-pre-wrap font-sans text-sm">
@@ -483,6 +495,14 @@ const SPRINT_STATUS_LABELS: Record<SprintStatus, string> = {
   stalled: 'Stalled',
   closed: 'Finished',
   failed: 'Failed',
+  proposed: 'Proposed',
+  queued: 'Queued',
+  needs_founder: 'Needs you',
+  needs_approval: 'Needs approval',
+  complete: 'Complete',
+  blocked: 'Blocked',
+  canceled: 'Canceled',
+  expired: 'Expired',
 };
 
 function SprintPanel({
@@ -665,6 +685,57 @@ function GateAProgress({
   );
 }
 
+function OverviewStrip({ overview }: { overview: OverviewSummary }) {
+  return (
+    <section className="card stack" aria-label="Plan overview">
+      <div>
+        <h2 className="card-title">Plan health</h2>
+        <p className="hint">
+          {overview.overallScore === null
+            ? 'Score pending — the first draft is still assumption-heavy.'
+            : `Overall score ${String(Math.round(overview.overallScore))} of 100. Missing data counts as unknown, not as a pass.`}
+        </p>
+      </div>
+      <p className="muted">
+        {overview.waitingFounderTasks} founder task
+        {overview.waitingFounderTasks === 1 ? '' : 's'} waiting.
+        {overview.revisionPendingReview ? ' A plan revision is ready to review.' : ''}
+      </p>
+      {overview.proposedResearchJob === null ? null : (
+        <p>
+          Proposed research: {overview.proposedResearchJob.objective}. Review it before it starts.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function BusinessModelStatusList({ projectId }: { projectId: string }) {
+  const trpc = useTRPC();
+  const sections = useQuery(trpc.pack.listBusinessModelSections.queryOptions({ projectId }));
+  if (sections.data === undefined) {
+    return null;
+  }
+  return (
+    <section className="card stack" aria-label="Business model sections">
+      <div>
+        <h2 className="card-title">17-section business model</h2>
+        <p className="hint">
+          Status of each section. Open the pack below for the canonical details.
+        </p>
+      </div>
+      <ul className="stack">
+        {sections.data.map((section) => (
+          <li key={section.key} className="flex flex-wrap gap-2">
+            <span className="badge">{section.status.replaceAll('_', ' ')}</span>
+            <span>{section.title}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function ProjectDesk({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
   const desk = useQuery(trpc.project.getDeskSummary.queryOptions({ projectId }));
@@ -708,6 +779,8 @@ export function ProjectDesk({ projectId }: { projectId: string }) {
       </Callout>
 
       {desk.data === undefined ? null : <GateAProgress gateA={desk.data.gateA} />}
+      {desk.data === undefined ? null : <OverviewStrip overview={desk.data.overview} />}
+      {desk.data === undefined ? null : <BusinessModelStatusList projectId={projectId} />}
 
       <AskCoFounder projectId={projectId} />
       <InterviewCapture projectId={projectId} />

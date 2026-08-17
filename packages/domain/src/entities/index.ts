@@ -34,12 +34,34 @@ export {
   type PackSectionBody,
 } from './pack-section.js';
 export { CompetitorSchema, type Competitor } from './competitor.js';
+export {
+  ConversationBlockSchema,
+  ConversationMessageSchema,
+  ConversationReferenceSchema,
+  type ConversationBlock,
+  type ConversationMessage,
+  type ConversationReference,
+} from './conversation-message.js';
+export { ConversationSummarySchema, type ConversationSummary } from './conversation-summary.js';
 export { ContentBlockSchema, type ContentBlock } from './content-block.js';
 export { DecisionSchema, type Decision } from './decision.js';
 export { DmuSchema, type Dmu } from './dmu.js';
 export { DocumentSchema, type Document } from './document.js';
 export { EvidenceItemSchema, type EvidenceItem } from './evidence-item.js';
 export { ExperimentSchema, type Experiment } from './experiment.js';
+export {
+  FounderPreferenceSchema,
+  FounderPreferenceScopeSchema,
+  type FounderPreference,
+  type FounderPreferenceScope,
+} from './founder-preference.js';
+export {
+  FounderTaskEvidenceSchema,
+  FounderTaskPreparationSchema,
+  FounderTaskSchema,
+  type FounderTask,
+  type FounderTaskPreparation,
+} from './founder-task.js';
 export { GateSchema, type Gate } from './gate.js';
 export {
   IntegrationConnectionSchema,
@@ -69,6 +91,7 @@ export { NotificationEndpointSchema, type NotificationEndpoint } from './notific
 export { OfferSchema, type Offer } from './offer.js';
 export { PersonaSchema, type Persona } from './persona.js';
 export { PhaseSchema, type Phase } from './phase.js';
+export { PlanScoreSchema, type PlanScore } from './plan-score.js';
 export { PolicySchema, type Policy } from './policy.js';
 export { ProblemSchema, type Problem } from './problem.js';
 export { ProgressLedgerEntrySchema, type ProgressLedgerEntry } from './progress-ledger.js';
@@ -78,6 +101,7 @@ export { ProposedChangeSchema, type ProposedChange } from './proposed-change.js'
 export { ProviderConnectionSchema, type ProviderConnection } from './provider-connection.js';
 export { QuoteSchema, type Quote } from './quote.js';
 export { RenderJobSchema, type RenderJob } from './render-job.js';
+export { ResearchFindingSchema, type ResearchFinding } from './research-finding.js';
 export { SourceSchema, type Source } from './source.js';
 export { SourceSnapshotSchema, type SourceSnapshot } from './source-snapshot.js';
 export { SprintSchema, type Sprint } from './sprint.js';

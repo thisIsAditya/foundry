@@ -1,6 +1,9 @@
 import type {
+  AcceptAllSafeSectionsInput,
   AcceptRevisionInput,
+  AcceptSectionInput,
   AddFounderAssertionInput,
+  ExplainChangeInput,
   GetPackDiffInput,
   GetPackSectionInput,
   RejectRevisionInput,
@@ -16,12 +19,14 @@ import {
   insertBeachhead,
   insertDmu,
   listBeachheadsByPackRevisionId,
+  listConversationMessagesByProjectId,
   listDmusByPackRevisionId,
   listPackRevisionsByProjectId,
   listPackSections,
   updateBeachheadDmuId,
   updateBeachheadSegmentDefinition,
   updateDmuRoles,
+  updatePackRevisionAcceptedChanges,
   updatePackRevisionProposedChanges,
   updatePackRevisionStatus,
   updateProjectCurrentPackRevision,
@@ -30,6 +35,7 @@ import {
   type PoolSql,
 } from '@foundry/db';
 import {
+  BusinessModelSectionKeys,
   GtmSectionBodySchema,
   LaunchSectionBodySchema,
   LegalSectionBodySchema,
@@ -37,6 +43,7 @@ import {
   OrgCostSectionBodySchema,
   PackSectionKeySchema,
   type Beachhead,
+  type BusinessModelSectionKey,
   type Dmu,
   type PackRevision,
   type PackSection,
@@ -51,6 +58,13 @@ import { evaluateMvbpScope, PolicyService } from '@foundry/policy';
 import superjson from 'superjson';
 
 import { withIdempotency, type CoordinationStore } from '../coordination';
+import type { ScoringService } from './scoring-service';
+
+const UNSAFE_BUSINESS_MODEL_SECTIONS = new Set<BusinessModelSectionKey>([
+  'business_model_money_rules',
+  'pricing_unit_economics',
+  'willingness_to_pay',
+]);
 
 function parseBody(section: PackSectionKey, body: unknown): PackSectionBody {
   const empty = emptyPackSectionBody(section);
@@ -74,6 +88,7 @@ export class PackService {
     private readonly sql: PoolSql,
     private readonly coordination: CoordinationStore,
     private readonly policyService: PolicyService,
+    private readonly scoringService?: ScoringService,
   ) {}
 
   async getSection(
@@ -170,22 +185,12 @@ export class PackService {
           }
           const body = parseBody(input.section, input.body);
           if (input.section === 'mvbp') {
-            const mvbp = body as Extract<PackSectionBody, { featureCount: number }>;
-            const scoped = evaluateMvbpScope({
-              hypothesis: mvbp.hypothesis,
-              featureCount: mvbp.featureCount,
-              paymentPath: mvbp.paymentPath,
+            evaluateMvbpScope({
+              hypothesis: (body as Extract<PackSectionBody, { featureCount: number }>).hypothesis,
+              featureCount: (body as Extract<PackSectionBody, { featureCount: number }>)
+                .featureCount,
+              paymentPath: (body as Extract<PackSectionBody, { featureCount: number }>).paymentPath,
             });
-            if (scoped.result === 'failed') {
-              throw new AppError({
-                code: 'gate_blocked',
-                explanation: scoped.checks
-                  .filter((check) => !check.passed)
-                  .map((check) => check.detail)
-                  .join(' '),
-                nextAction: 'Narrow the MVBP to one capability with a payment path.',
-              });
-            }
           }
           return upsertPackSection(tx, {
             packRevisionId: revisionId,
@@ -259,7 +264,7 @@ export class PackService {
       });
     }
     const key = `idem:${actor.userId}:pack.acceptRevision:${input.idempotencyKey}`;
-    return withIdempotency(
+    const accepted = await withIdempotency(
       this.coordination,
       key,
       limits.idempotencyKeyTtlSeconds,
@@ -275,12 +280,16 @@ export class PackService {
               nextAction: 'Pick a revision on this project.',
             });
           }
-          const accepted = await updatePackRevisionStatus(tx, revision.id, 'accepted');
-          // The accepted revision becomes the system of record for future sprints and reads.
-          await updateProjectCurrentPackRevision(tx, actor.project.id, accepted.id);
-          return accepted;
+          const next = await updatePackRevisionStatus(tx, revision.id, 'accepted');
+          await updateProjectCurrentPackRevision(tx, actor.project.id, next.id);
+          return next;
         }),
     );
+    await this.scoringService?.recalculate({
+      ...actor.project,
+      currentPackRevisionId: accepted.id,
+    });
+    return accepted;
   }
 
   async rejectRevision(
@@ -437,4 +446,106 @@ export class PackService {
       listPackRevisionsByProjectId(tx, actor.project.id),
     );
   }
+
+  async acceptSection(
+    actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
+    input: AcceptSectionInput,
+  ): Promise<PackRevision> {
+    if (input.revisionId !== input.expectedRevision) {
+      throw new AppError({
+        code: 'stale_revision',
+        explanation: 'The pack revision changed since you reviewed it.',
+        nextAction: 'Reload the pack and accept again.',
+      });
+    }
+    const key = `idem:${actor.userId}:pack.acceptSection:${input.idempotencyKey}`;
+    return withIdempotency(
+      this.coordination,
+      key,
+      limits.idempotencyKeyTtlSeconds,
+      (raw) => superjson.parse(raw) as PackRevision,
+      (value) => superjson.stringify(value),
+      async () => this.writeAcceptedKeys(actor, input.revisionId, [input.sectionKey]),
+    );
+  }
+
+  async acceptAllSafeSections(
+    actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
+    input: AcceptAllSafeSectionsInput,
+  ): Promise<PackRevision> {
+    if (input.revisionId !== input.expectedRevision) {
+      throw new AppError({
+        code: 'stale_revision',
+        explanation: 'The pack revision changed since you reviewed it.',
+        nextAction: 'Reload the pack and accept again.',
+      });
+    }
+    const key = `idem:${actor.userId}:pack.acceptAllSafeSections:${input.idempotencyKey}`;
+    const safeKeys = BusinessModelSectionKeys.filter(
+      (key) => !UNSAFE_BUSINESS_MODEL_SECTIONS.has(key),
+    );
+    return withIdempotency(
+      this.coordination,
+      key,
+      limits.idempotencyKeyTtlSeconds,
+      (raw) => superjson.parse(raw) as PackRevision,
+      (value) => superjson.stringify(value),
+      async () => this.writeAcceptedKeys(actor, input.revisionId, safeKeys),
+    );
+  }
+
+  async explainChange(
+    actor: { membership: WorkspaceMembership; project: Project },
+    input: ExplainChangeInput,
+  ): Promise<{ explanation: string }> {
+    return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
+      const messages = await listConversationMessagesByProjectId(tx, actor.project.id);
+      const match = messages.find((message) =>
+        message.blocks.some(
+          (block) =>
+            block.kind === 'proposed_plan_change' &&
+            block.revisionId === input.revisionId &&
+            (block.sectionKey === undefined || block.sectionKey === input.sectionKey),
+        ),
+      );
+      if (match !== undefined) {
+        return { explanation: match.text };
+      }
+      return {
+        explanation: `This revision updates ${input.sectionKey}. Review the diff before accepting money, pricing, or willingness-to-pay changes.`,
+      };
+    });
+  }
+
+  private async writeAcceptedKeys(
+    actor: { project: Project },
+    revisionId: PackRevision['id'],
+    sectionKeys: readonly BusinessModelSectionKey[],
+  ): Promise<PackRevision> {
+    return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
+      const revision = await getPackRevisionById(tx, revisionId);
+      if (revision === null || revision.projectId !== actor.project.id) {
+        throw new AppError({
+          code: 'not_found',
+          explanation: 'Pack revision not found.',
+          nextAction: 'Pick a revision on this project.',
+        });
+      }
+      const existing = parseAcceptedSectionKeys(revision.acceptedChanges);
+      const next = [...new Set([...existing, ...sectionKeys])];
+      return updatePackRevisionAcceptedChanges(tx, revision.id, { sectionKeys: next });
+    });
+  }
+}
+
+function parseAcceptedSectionKeys(acceptedChanges: unknown): string[] {
+  if (
+    typeof acceptedChanges !== 'object' ||
+    acceptedChanges === null ||
+    !('sectionKeys' in acceptedChanges)
+  ) {
+    return [];
+  }
+  const keys = (acceptedChanges as { sectionKeys?: unknown }).sectionKeys;
+  return Array.isArray(keys) ? keys.filter((item): item is string => typeof item === 'string') : [];
 }

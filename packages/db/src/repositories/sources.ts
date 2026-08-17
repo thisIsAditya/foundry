@@ -1,6 +1,7 @@
 import {
   DataClassificationSchema,
   ProjectIdSchema,
+  SourceCategorySchema,
   SourceIdSchema,
   SourceKindSchema,
   SourceSchema,
@@ -9,6 +10,7 @@ import {
   type DataClassification,
   type ProjectId,
   type Source,
+  type SourceCategory,
   type SourceId,
   type SourceKind,
   type SourceStatus,
@@ -29,6 +31,9 @@ const SourceRowSchema = z.object({
   size_bytes: z.coerce.number().int().nullable(),
   s3_key: z.string().nullable(),
   source_url: z.string().nullable(),
+  source_category: SourceCategorySchema.nullable(),
+  geographic_scope: z.string().nullable(),
+  reliability_notes: z.string().nullable(),
   data_classification: DataClassificationSchema,
   failure_reason: z.string().nullable(),
   created_by_user_id: UserIdSchema.nullable(),
@@ -47,6 +52,9 @@ export type InsertSource = {
   sizeBytes?: number | null;
   s3Key?: string | null;
   sourceUrl?: string | null;
+  sourceCategory?: SourceCategory | null;
+  geographicScope?: string | null;
+  reliabilityNotes?: string | null;
   dataClassification?: DataClassification;
   createdByUserId?: UserId | null;
 };
@@ -62,6 +70,9 @@ export function toSource(row: SourceRow): Source {
     sizeBytes: row.size_bytes,
     s3Key: row.s3_key,
     sourceUrl: row.source_url,
+    sourceCategory: row.source_category,
+    geographicScope: row.geographic_scope,
+    reliabilityNotes: row.reliability_notes,
     dataClassification: row.data_classification,
     failureReason: row.failure_reason,
     createdByUserId: row.created_by_user_id,
@@ -87,6 +98,9 @@ export async function insertSource(sql: Sql, input: InsertSource): Promise<Sourc
             size_bytes,
             s3_key,
             source_url,
+            source_category,
+            geographic_scope,
+            reliability_notes,
             data_classification,
             created_by_user_id
           )
@@ -99,6 +113,9 @@ export async function insertSource(sql: Sql, input: InsertSource): Promise<Sourc
             ${input.sizeBytes ?? null},
             ${input.s3Key ?? null},
             ${input.sourceUrl ?? null},
+            ${input.sourceCategory ?? null},
+            ${input.geographicScope ?? null},
+            ${input.reliabilityNotes ?? null},
             ${input.dataClassification ?? 'internal'},
             ${input.createdByUserId ?? null}
           )
@@ -115,6 +132,9 @@ export async function insertSource(sql: Sql, input: InsertSource): Promise<Sourc
             size_bytes,
             s3_key,
             source_url,
+            source_category,
+            geographic_scope,
+            reliability_notes,
             data_classification,
             created_by_user_id
           )
@@ -128,6 +148,9 @@ export async function insertSource(sql: Sql, input: InsertSource): Promise<Sourc
             ${input.sizeBytes ?? null},
             ${input.s3Key ?? null},
             ${input.sourceUrl ?? null},
+            ${input.sourceCategory ?? null},
+            ${input.geographicScope ?? null},
+            ${input.reliabilityNotes ?? null},
             ${input.dataClassification ?? 'internal'},
             ${input.createdByUserId ?? null}
           )

@@ -76,12 +76,17 @@ export class SprintService {
             id: sprintId,
             projectId: project.id,
             status: 'draft',
+            ...(input.jobKind === undefined ? {} : { jobKind: input.jobKind }),
             contract: buildSprintContract({
               sprintId,
               packRevisionId: pack.id,
               phase: project.currentPhase,
               objective: input.objectiveHint ?? 'Diagnose the problem and collect Gate A evidence.',
               snapshot,
+              ...(input.whyNow === undefined ? {} : { whyNow: input.whyNow }),
+              ...(input.roleLabel === undefined ? {} : { roleLabel: input.roleLabel }),
+              ...(input.jobKind === undefined ? {} : { jobKind: input.jobKind }),
+              owner: input.jobKind === 'research' ? 'co_founder' : 'ai',
               ...(agentDefinition === null
                 ? {}
                 : {
@@ -257,7 +262,14 @@ export class SprintService {
             });
           }
           const closedReason = status === 'closed' ? 'stopped_by_founder' : null;
-          return updateSprintStatus(tx, sprint.id, status, closedReason);
+          const updated = await updateSprintStatus(tx, sprint.id, status, closedReason);
+          await this.streamBus.publish(updated.projectId, {
+            type: 'job_state_changed',
+            jobId: updated.id,
+            fromStatus: sprint.status,
+            toStatus: updated.status,
+          });
+          return updated;
         }),
     );
   }

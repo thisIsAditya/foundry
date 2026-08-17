@@ -36,6 +36,10 @@ describe('project procedures', () => {
     expect(desk.phase).toBe('diagnose');
     expect(desk.moneyRulesSet).toBe(false);
     expect(desk.nextAction).toBe('Set canonical MoneyRules.');
+    expect(desk.overview.runningAiWork).toEqual([]);
+    expect(
+      desk.overview.overallScore === null || typeof desk.overview.overallScore === 'number',
+    ).toBe(true);
   });
 
   it('answers a clarification through a mocked model and publishes text_delta', async () => {

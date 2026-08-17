@@ -99,9 +99,15 @@ export async function runSprint(job: SprintJobData, io: SprintRunnerIO): Promise
   const critique = evaluateCritique({ snapshot, synthesis, gateA });
   await io.saveGate(gateA);
 
-  const failedClosed = critique.recommendation === 'KILL' || stall.rounds > contract.maxStalls;
+  const failedClosed = stall.rounds > contract.maxStalls;
   const status: SprintStatus = failedClosed ? 'failed' : 'closed';
   await io.close(status, critique.summary);
+  await io.publish({
+    type: 'job_state_changed',
+    jobId: job.sprintId,
+    fromStatus: 'running',
+    toStatus: status,
+  });
   await io.publish({
     type: 'sprint_progress',
     sprintId: job.sprintId,

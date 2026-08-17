@@ -23,12 +23,14 @@ import { evaluateGateB, PolicyService, type GateBEvaluation } from '@foundry/pol
 import superjson from 'superjson';
 
 import { withIdempotency, type CoordinationStore } from '../coordination';
+import type { ScoringService } from './scoring-service';
 
 export class ExperimentService {
   constructor(
     private readonly sql: PoolSql,
     private readonly coordination: CoordinationStore,
     private readonly policyService: PolicyService,
+    private readonly scoringService?: ScoringService,
   ) {}
 
   async create(
@@ -73,7 +75,7 @@ export class ExperimentService {
       });
     }
     const key = `idem:${actor.userId}:wtp.record:${input.idempotencyKey}`;
-    return withIdempotency(
+    const recorded = await withIdempotency(
       this.coordination,
       key,
       limits.idempotencyKeyTtlSeconds,
@@ -106,6 +108,8 @@ export class ExperimentService {
           });
         }),
     );
+    await this.scoringService?.recalculate(actor.project);
+    return recorded;
   }
 
   async listWtp(actor: { membership: WorkspaceMembership; project: Project }): Promise<WtpEvent[]> {

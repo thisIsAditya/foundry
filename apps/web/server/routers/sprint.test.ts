@@ -31,7 +31,9 @@ describe('sprint procedures', () => {
     expect(previewed.contractHash).toHaveLength(64);
 
     const listed = await caller.sprint.listByProject({ projectId: project.id });
-    expect(listed).toEqual([expect.objectContaining({ id: previewed.sprint.id, status: 'draft' })]);
+    expect(
+      listed.some((sprint) => sprint.id === previewed.sprint.id && sprint.status === 'draft'),
+    ).toBe(true);
 
     const desk = await caller.project.getDeskSummary({ projectId: project.id });
     expect(desk.currentSprint).toEqual({

@@ -32,10 +32,14 @@ export {
 export { buildSprintContract } from './contracts/sprint-contract.js';
 export {
   AgentRunOutputSchema,
+  CofounderDecisionSchema,
   CriticOutputSchema,
+  InitialDraftSchema,
   ProposedPackChangeSchema,
   type AgentRunOutput,
+  type CofounderDecision,
   type CriticOutput,
+  type InitialDraft,
   type ProposedPackChange,
 } from './contracts/output-schema.js';
 export type { ClarificationAnswer, PackSnapshot } from './contracts/pack-snapshot.js';
@@ -46,7 +50,29 @@ export {
   type SequencedStreamEvent,
   type StreamBus,
 } from './streaming/bus.js';
+export {
+  assembleCofounderContext,
+  formatCofounderContext,
+  type CofounderContext,
+  type CofounderContextSnapshot,
+} from './contracts/cofounder-context.js';
 export { diagnoseClarification, type DiagnoseInput } from './orchestration/diagnose.js';
+export {
+  runCofounderTurn,
+  type CofounderActions,
+  type CofounderTurnResult,
+} from './orchestration/cofounder-turn.js';
+export {
+  extractPreferencesFromText,
+  type ExtractedPreference,
+} from './orchestration/extract-preferences.js';
+export {
+  CONVERSATION_SUMMARY_MESSAGE_THRESHOLD,
+  shouldSummarizeConversation,
+  summarizeConversation,
+} from './orchestration/summarize-conversation.js';
+export { buildInitialDraft } from './orchestration/generate-initial-draft.js';
+export { baselineResearchTemplate } from './orchestration/research-templates.js';
 export {
   runSprint,
   SprintJobDataSchema,
@@ -81,8 +107,11 @@ export {
 export {
   BUILD_PROMPT_INSTRUCTIONS_V1,
   BUSINESS_MODEL_ANALYST_INSTRUCTIONS_V1,
+  COFOUNDER_TURN_INSTRUCTIONS_V1,
   COMPLIANCE_INSTRUCTIONS_V1,
+  CONVERSATION_SUMMARY_INSTRUCTIONS_V1,
   GTM_FIRST_100_INSTRUCTIONS_V1,
+  INITIAL_DRAFT_INSTRUCTIONS_V1,
   IP_PRIVACY_INSTRUCTIONS_V1,
   LAUNCH_INSTRUCTIONS_V1,
   LEGAL_GUIDE_INSTRUCTIONS_V1,

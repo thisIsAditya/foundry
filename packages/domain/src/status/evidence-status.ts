@@ -47,3 +47,9 @@ export type ExperimentStatus = z.infer<typeof ExperimentStatusSchema>;
 export const DataClassifications = ['public', 'internal', 'confidential', 'restricted'] as const;
 export const DataClassificationSchema = z.enum(DataClassifications);
 export type DataClassification = z.infer<typeof DataClassificationSchema>;
+
+export {
+  SourceCategories,
+  SourceCategorySchema,
+  type SourceCategory,
+} from './conversation-status.js';

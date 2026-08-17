@@ -26,5 +26,29 @@ export const StreamEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('warning'), runId: z.string(), warning: z.unknown() }),
   z.object({ type: z.literal('blocked'), runId: z.string(), reason: z.unknown() }),
   z.object({ type: z.literal('message_completed'), runId: z.string() }),
+  z.object({
+    type: z.literal('job_state_changed'),
+    jobId: z.string(),
+    fromStatus: z.string(),
+    toStatus: z.string(),
+  }),
+  z.object({
+    type: z.literal('founder_task_created'),
+    founderTaskId: z.string(),
+    title: z.string(),
+  }),
+  z.object({
+    type: z.literal('score_changed'),
+    projectId: z.string(),
+    revisionId: z.string(),
+    overall: z.number(),
+    dimensions: z.unknown(),
+    deltaFromPrevious: z.number().nullable(),
+  }),
+  z.object({
+    type: z.literal('conversation_message_appended'),
+    messageId: z.string(),
+    actor: z.string(),
+  }),
 ]);
 export type StreamEvent = z.infer<typeof StreamEventSchema>;

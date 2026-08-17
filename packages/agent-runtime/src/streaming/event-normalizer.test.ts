@@ -18,4 +18,18 @@ describe('stream event normalizer', () => {
       normalize({ type: 'provider-raw', payload: { secret: 'nope' } }, { runId: 'run-1' }),
     ).toBeNull();
   });
+
+  it('passes through job, founder-task, score, and conversation events', () => {
+    expect(
+      normalize(
+        { type: 'job_state_changed', jobId: 'job-1', fromStatus: 'running', toStatus: 'closed' },
+        { runId: 'run-1' },
+      ),
+    ).toEqual({
+      type: 'job_state_changed',
+      jobId: 'job-1',
+      fromStatus: 'running',
+      toStatus: 'closed',
+    });
+  });
 });

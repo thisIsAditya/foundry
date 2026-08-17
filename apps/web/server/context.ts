@@ -22,18 +22,25 @@ import { getCoordinationStore, type CoordinationStore } from './coordination';
 import { createBullmqJobQueue, createMemoryJobQueue, type JobQueue } from './queue/job-queue';
 import { ArtifactService } from './services/artifact-service';
 import { ApprovalService } from './services/approval-service';
+import { ConversationService } from './services/conversation-service';
 import { DecisionService } from './services/decision-service';
 import { DocumentService } from './services/document-service';
 import { ExperimentService } from './services/experiment-service';
+import { FounderTaskService } from './services/founder-task-service';
+import { InitialDraftService } from './services/initial-draft-service';
 import { IntegrationService } from './services/integration-service';
 import { InterviewService } from './services/interview-service';
+import { JobService } from './services/job-service';
 import { McpServerService } from './services/mcp-server-service';
 import { MemberService } from './services/member-service';
 import { MetricService } from './services/metric-service';
 import { MoneyRulesService } from './services/money-rules-service';
 import { PackService } from './services/pack-service';
+import { PlanSectionAggregatorService } from './services/plan-section-aggregator';
 import { ProjectService } from './services/project-service';
 import { ProviderService, type CapabilityProbe } from './services/provider-service';
+import { ResearchFindingService } from './services/research-finding-service';
+import { ScoringService } from './services/scoring-service';
 import { SprintService } from './services/sprint-service';
 import { WorkspaceService } from './services/workspace-service';
 import { createMemoryObjectStore, type ObjectStore } from './storage/object-store';
@@ -69,6 +76,13 @@ export type ServiceContainer = {
   metricService: MetricService;
   integrationService: IntegrationService;
   memberService: MemberService;
+  scoringService: ScoringService;
+  founderTaskService: FounderTaskService;
+  conversationService: ConversationService;
+  jobService: JobService;
+  planSectionAggregatorService: PlanSectionAggregatorService;
+  initialDraftService: InitialDraftService;
+  researchFindingService: ResearchFindingService;
 };
 
 export type Context = {
@@ -102,6 +116,41 @@ export function createServices(
   policyService: PolicyService,
   extras: ServiceExtras,
 ): ServiceContainer {
+  const scoringService = new ScoringService(sql, extras.streamBus);
+  const founderTaskService = new FounderTaskService(
+    sql,
+    coordination,
+    policyService,
+    extras.streamBus,
+  );
+  const sprintService = new SprintService(
+    sql,
+    coordination,
+    policyService,
+    extras.jobQueue,
+    extras.streamBus,
+  );
+  const conversationService = new ConversationService(
+    sql,
+    coordination,
+    policyService,
+    {
+      streamBus: extras.streamBus,
+      secretBox: extras.secretBox,
+      secrets: extras.secrets,
+      ...(extras.languageModel === undefined ? {} : { languageModel: extras.languageModel }),
+    },
+    sprintService,
+    founderTaskService,
+    scoringService,
+  );
+  const initialDraftService = new InitialDraftService(
+    sql,
+    extras.streamBus,
+    sprintService,
+    founderTaskService,
+    scoringService,
+  );
   return {
     policyService,
     workspaceService: new WorkspaceService(sql, coordination),
@@ -110,6 +159,10 @@ export function createServices(
       secretBox: extras.secretBox,
       secrets: extras.secrets,
       ...(extras.languageModel === undefined ? {} : { languageModel: extras.languageModel }),
+      conversationService,
+      initialDraftService,
+      scoringService,
+      founderTaskService,
     }),
     documentService: new DocumentService(
       sql,
@@ -118,7 +171,7 @@ export function createServices(
       extras.objectStore,
       extras.jobQueue,
     ),
-    interviewService: new InterviewService(sql, coordination, policyService),
+    interviewService: new InterviewService(sql, coordination, policyService, scoringService),
     providerService: new ProviderService(
       sql,
       coordination,
@@ -134,15 +187,9 @@ export function createServices(
       extras.allowMcpLoopback === true,
       extras.mcpFactory,
     ),
-    sprintService: new SprintService(
-      sql,
-      coordination,
-      policyService,
-      extras.jobQueue,
-      extras.streamBus,
-    ),
-    moneyRulesService: new MoneyRulesService(sql, coordination, policyService),
-    experimentService: new ExperimentService(sql, coordination, policyService),
+    sprintService,
+    moneyRulesService: new MoneyRulesService(sql, coordination, policyService, scoringService),
+    experimentService: new ExperimentService(sql, coordination, policyService, scoringService),
     artifactService: new ArtifactService(
       sql,
       coordination,
@@ -150,12 +197,19 @@ export function createServices(
       extras.objectStore,
       extras.jobQueue,
     ),
-    packService: new PackService(sql, coordination, policyService),
+    packService: new PackService(sql, coordination, policyService, scoringService),
     approvalService: new ApprovalService(sql, coordination, policyService, extras.jobQueue),
     decisionService: new DecisionService(sql, coordination, policyService),
-    metricService: new MetricService(sql, coordination, policyService),
+    metricService: new MetricService(sql, coordination, policyService, scoringService),
     integrationService: new IntegrationService(sql, coordination, policyService, extras.secretBox),
     memberService: new MemberService(sql, coordination, policyService),
+    scoringService,
+    founderTaskService,
+    conversationService,
+    jobService: new JobService(sql, coordination, policyService, sprintService),
+    planSectionAggregatorService: new PlanSectionAggregatorService(sql, policyService),
+    initialDraftService,
+    researchFindingService: new ResearchFindingService(sql),
   };
 }
 

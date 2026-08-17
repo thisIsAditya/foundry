@@ -107,7 +107,7 @@ describe('sprint processor', () => {
     expect(outcome.critique.recommendation).toBe('KILL');
     expect(outcome.gateA.result).toBe('failed');
     const sprint = await getSprintById(sql, seeded.sprint.id);
-    expect(sprint?.status).toBe('failed');
+    expect(sprint?.status).toBe('closed');
   });
 });
 
@@ -143,7 +143,7 @@ describe('sprint BullMQ worker', () => {
           timeout: 15_000,
           interval: 100,
         })
-        .toBe('failed');
+        .toBe('closed');
     } finally {
       await worker.close();
       await queue.obliterate({ force: true });

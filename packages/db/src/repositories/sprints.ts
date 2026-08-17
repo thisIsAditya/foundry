@@ -1,9 +1,13 @@
 import {
+  AiJobKindSchema,
+  AiJobOwnerSchema,
   ProjectIdSchema,
   SprintContractSchema,
   SprintIdSchema,
   SprintSchema,
   SprintStatusSchema,
+  type AiJobKind,
+  type AiJobOwner,
   type ProjectId,
   type Sprint,
   type SprintContract,
@@ -20,6 +24,9 @@ const SprintRowSchema = z.object({
   id: SprintIdSchema,
   project_id: ProjectIdSchema,
   status: SprintStatusSchema,
+  job_kind: AiJobKindSchema,
+  owner: AiJobOwnerSchema,
+  parent_job_id: SprintIdSchema.nullable(),
   contract_json: z.unknown(),
   budget_reserved_usd: z.string(),
   budget_used_usd: z.string(),
@@ -34,6 +41,9 @@ export type InsertSprint = {
   id?: SprintId;
   projectId: ProjectId;
   status?: SprintStatus;
+  jobKind?: AiJobKind;
+  owner?: AiJobOwner;
+  parentJobId?: SprintId | null;
   contract: SprintContract;
   budgetReservedUsd?: string;
   budgetUsedUsd?: string;
@@ -44,6 +54,9 @@ export function toSprint(row: SprintRow): Sprint {
     id: row.id,
     projectId: row.project_id,
     status: row.status,
+    jobKind: row.job_kind,
+    owner: row.owner,
+    parentJobId: row.parent_job_id,
     contract: SprintContractSchema.parse(row.contract_json),
     budgetReservedUsd: row.budget_reserved_usd,
     budgetUsedUsd: row.budget_used_usd,
@@ -63,11 +76,14 @@ export async function insertSprint(sql: Sql, input: InsertSprint): Promise<Sprin
     id === undefined
       ? await sql<SprintRow[]>`
           insert into sprints (
-            project_id, status, contract_json, budget_reserved_usd, budget_used_usd
+            project_id, status, job_kind, owner, parent_job_id, contract_json, budget_reserved_usd, budget_used_usd
           )
           values (
             ${input.projectId},
             ${input.status ?? 'draft'},
+            ${input.jobKind ?? input.contract.jobKind},
+            ${input.owner ?? input.contract.owner},
+            ${input.parentJobId ?? input.contract.parentJobId},
             ${jsonParam(sql, input.contract)},
             ${input.budgetReservedUsd ?? '0'},
             ${input.budgetUsedUsd ?? '0'}
@@ -76,12 +92,15 @@ export async function insertSprint(sql: Sql, input: InsertSprint): Promise<Sprin
         `
       : await sql<SprintRow[]>`
           insert into sprints (
-            id, project_id, status, contract_json, budget_reserved_usd, budget_used_usd
+            id, project_id, status, job_kind, owner, parent_job_id, contract_json, budget_reserved_usd, budget_used_usd
           )
           values (
             ${id},
             ${input.projectId},
             ${input.status ?? 'draft'},
+            ${input.jobKind ?? input.contract.jobKind},
+            ${input.owner ?? input.contract.owner},
+            ${input.parentJobId ?? input.contract.parentJobId},
             ${jsonParam(sql, input.contract)},
             ${input.budgetReservedUsd ?? '0'},
             ${input.budgetUsedUsd ?? '0'}

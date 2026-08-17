@@ -20,6 +20,7 @@ import {
   getSprintById,
   insertAgentRun,
   insertGate,
+  insertResearchFinding,
   insertSprintProgressEvent,
   insertUsageRecord,
   listEnabledUserMcpServersByUserId,
@@ -31,6 +32,7 @@ import {
 } from '@foundry/db';
 import { AppError } from '@foundry/observability';
 import { PolicyService } from '@foundry/policy';
+import { PackSectionKeySchema, PackSectionKeyToBusinessModelSectionKey } from '@foundry/domain';
 
 import { loadPackSnapshot } from '../pack-snapshot.js';
 import { proposePackRevisionFromSynthesis } from './propose-pack-revision.js';
@@ -136,7 +138,7 @@ export async function processSprintJob(
     return runtime;
   };
 
-  return runSprint(job, {
+  const outcome = await runSprint(job, {
     async loadSprint() {
       const sprint = await withWorkspaceScope(deps.sql, workspaceIds, async (tx) =>
         getSprintById(tx, job.sprintId),
@@ -213,4 +215,34 @@ export async function processSprintJob(
       );
     },
   });
+
+  const sprint = await withWorkspaceScope(deps.sql, workspaceIds, async (tx) =>
+    getSprintById(tx, job.sprintId),
+  );
+  if (sprint !== null && sprint.jobKind === 'research') {
+    const affectedSectionKeys = outcome.synthesis.proposedPackChanges.flatMap((change) => {
+      const parsed = PackSectionKeySchema.safeParse(change.targetSection);
+      if (!parsed.success) {
+        return [];
+      }
+      const mapped = PackSectionKeyToBusinessModelSectionKey[parsed.data];
+      return mapped === undefined ? [] : [mapped];
+    });
+    await withWorkspaceScope(deps.sql, workspaceIds, async (tx) => {
+      await insertResearchFinding(tx, {
+        projectId: job.projectId,
+        jobId: job.sprintId,
+        claim: outcome.synthesis.result.slice(0, 2000),
+        confidence: {
+          label: 'unverified',
+          basis: 'sprint_synthesis',
+          reviewerUserId: null,
+          expiresAt: null,
+        },
+        affectedSectionKeys,
+        extractionMethod: 'web_search',
+      });
+    });
+  }
+  return outcome;
 }

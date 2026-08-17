@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { PackRevisionIdSchema, SprintContractIdSchema, SprintIdSchema } from '../ids.js';
-import { GateTypeSchema } from '../status/execution-status.js';
+import { AiJobKindSchema, AiJobOwnerSchema, GateTypeSchema } from '../status/execution-status.js';
 import { JourneyPhaseSchema } from '../status/journey-status.js';
 import { CostEstimateSchema } from '../value-objects/cost-estimate.js';
 import { InstantSchema } from '../value-objects/primitives.js';
@@ -19,7 +19,11 @@ export const SprintContractSchema = z.object({
   id: SprintContractIdSchema,
   sprintId: SprintIdSchema,
   objective: z.string().min(1),
-  whyNow: z.string().min(1),
+  whyNow: z.string().min(1).optional(),
+  roleLabel: z.string().min(1).optional(),
+  owner: AiJobOwnerSchema.default('ai'),
+  jobKind: AiJobKindSchema.default('analysis'),
+  parentJobId: SprintIdSchema.nullable().default(null),
   phase: JourneyPhaseSchema,
   packRevisionId: PackRevisionIdSchema,
   relevantEvidence: z.array(z.string()),

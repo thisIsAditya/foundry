@@ -20,4 +20,6 @@ export const TOOL_RISK_CLASSES: Record<string, RiskClass> = {
   'ops.migration_proposal': 'draft',
   'filing.submit': 'forbidden',
   'side_effect.request': 'side_effect',
+  academic_search: 'read',
+  market_report_search: 'read',
 };

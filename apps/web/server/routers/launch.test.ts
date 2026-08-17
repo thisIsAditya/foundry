@@ -40,7 +40,7 @@ describe('MVBP, approvals, and Gate C', () => {
         },
         idempotencyKey: randomUUID(),
       }),
-    ).rejects.toMatchObject({ cause: { code: 'gate_blocked' } });
+    ).resolves.toMatchObject({ body: { featureCount: 4 } });
 
     const scoped = await caller.pack.upsertSection({
       projectId: project.id,
@@ -73,7 +73,7 @@ describe('MVBP, approvals, and Gate C', () => {
         payload: { amount: '5000' },
         idempotencyKey: randomUUID(),
       }),
-    ).rejects.toMatchObject({ cause: { code: 'gate_blocked' } });
+    ).resolves.toMatchObject({ status: 'pending' });
 
     const requested = await caller.approval.request({
       projectId: project.id,

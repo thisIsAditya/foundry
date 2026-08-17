@@ -91,6 +91,7 @@ export {
   insertPackRevision,
   listPackRevisionsByProjectId,
   toPackRevision,
+  updatePackRevisionAcceptedChanges,
   updatePackRevisionProposedChanges,
   updatePackRevisionStatus,
   type InsertPackRevision,
@@ -262,6 +263,118 @@ export {
   toDecision,
   type InsertDecision,
 } from './repositories/decisions.js';
+export {
+  getLatestPlanScoreByPackRevisionId,
+  insertPlanScore,
+  listPlanScoresByPackRevisionId,
+  listPlanScoresByProjectId,
+  toPlanScore,
+  type InsertPlanScore,
+} from './repositories/plan-scores.js';
+export {
+  insertConversationMessage,
+  getConversationMessageById,
+  listConversationMessagesByProjectId,
+  listConversationMessagesPage,
+  toConversationMessage,
+  type InsertConversationMessage,
+} from './repositories/conversation-messages.js';
+export {
+  getLatestConversationSummaryByProjectId,
+  insertConversationSummary,
+  listConversationSummariesByProjectId,
+  toConversationSummary,
+  type InsertConversationSummary,
+} from './repositories/conversation-summaries.js';
+export {
+  confirmFounderPreference,
+  correctFounderPreference,
+  getFounderPreferenceById,
+  listFounderPreferencesByProjectId,
+  listFounderPreferencesByWorkspaceId,
+  toFounderPreference,
+  upsertFounderPreference,
+  type InsertFounderPreference,
+} from './repositories/founder-preferences.js';
+export {
+  getFounderTaskById,
+  insertFounderTask,
+  listFounderTasksByProjectId,
+  toFounderTask,
+  updateFounderTaskCompletion,
+  updateFounderTaskPreparation,
+  updateFounderTaskStatus,
+  type InsertFounderTask,
+} from './repositories/founder-tasks.js';
+export {
+  insertResearchFinding,
+  listResearchFindingsByJobId,
+  listResearchFindingsByProjectId,
+  toResearchFinding,
+  type InsertResearchFinding,
+} from './repositories/research-findings.js';
+export {
+  insertCitation,
+  listCitationsBySourceSnapshotId,
+  toCitation,
+  type InsertCitation,
+} from './repositories/citations.js';
+export {
+  insertEvidenceItem,
+  listEvidenceItemsByProjectId,
+  toEvidenceItem,
+  type InsertEvidenceItem,
+} from './repositories/evidence-items.js';
+export {
+  insertAssumption,
+  listAssumptionsByProjectId,
+  toAssumption,
+  updateAssumptionStatus,
+  type InsertAssumption,
+} from './repositories/assumptions.js';
+export {
+  insertPersona,
+  listPersonasByPackRevisionId,
+  toPersona,
+  type InsertPersona,
+} from './repositories/personas.js';
+export {
+  insertAlternative,
+  listAlternativesByPackRevisionId,
+  listAlternativesByProjectId,
+  toAlternative,
+  type InsertAlternative,
+} from './repositories/alternatives.js';
+export {
+  insertCompetitor,
+  listCompetitorsByProjectId,
+  toCompetitor,
+  type InsertCompetitor,
+} from './repositories/competitors.js';
+export {
+  insertWedge,
+  listWedgesByPackRevisionId,
+  toWedge,
+  type InsertWedge,
+} from './repositories/wedges.js';
+export {
+  insertProblem,
+  listProblemsByPackRevisionId,
+  toProblem,
+  type InsertProblem,
+} from './repositories/problems.js';
+export {
+  insertBusinessModel,
+  listBusinessModelsByPackRevisionId,
+  toBusinessModel,
+  type InsertBusinessModel,
+} from './repositories/business-models.js';
+export {
+  insertOffer,
+  listOffersByBusinessModelId,
+  toOffer,
+  type InsertOffer,
+} from './repositories/offers.js';
 export {
   insertIntegrationConnection,
   listIntegrationConnectionsByWorkspaceId,

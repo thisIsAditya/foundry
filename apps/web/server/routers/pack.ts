@@ -1,9 +1,15 @@
 import {
+  AcceptAllSafeSectionsInputSchema,
   AcceptRevisionInputSchema,
+  AcceptSectionInputSchema,
   AddFounderAssertionInputSchema,
+  ExplainChangeInputSchema,
   ExportPackInputSchema,
+  GetBusinessModelSectionInputSchema,
   GetPackDiffInputSchema,
   GetPackSectionInputSchema,
+  ListBusinessModelSectionsInputSchema,
+  ListRevisionsInputSchema,
   RejectRevisionInputSchema,
   UpsertBeachheadInputSchema,
   UpsertDmuInputSchema,
@@ -114,6 +120,60 @@ export const packRouter = router({
       }
       return ctx.services.packService.rejectRevision(
         { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
+        input,
+      );
+    }),
+  listBusinessModelSections: artifactReadProcedure
+    .input(ListBusinessModelSectionsInputSchema)
+    .query(async ({ ctx }) => {
+      return ctx.services.planSectionAggregatorService.listAll({
+        membership: ctx.membership,
+        project: ctx.project,
+      });
+    }),
+  getBusinessModelSection: artifactReadProcedure
+    .input(GetBusinessModelSectionInputSchema)
+    .query(async ({ ctx, input }) => {
+      return ctx.services.planSectionAggregatorService.getSection(
+        { membership: ctx.membership, project: ctx.project },
+        input.key,
+      );
+    }),
+  listRevisions: artifactReadProcedure.input(ListRevisionsInputSchema).query(async ({ ctx }) => {
+    return ctx.services.packService.listRevisions({
+      membership: ctx.membership,
+      project: ctx.project,
+    });
+  }),
+  acceptSection: artifactWriteProcedure
+    .meta({ invalidates: mutationInvalidations['pack.acceptSection'] })
+    .input(AcceptSectionInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.actor.type !== 'user') {
+        throw new Error('pack.acceptSection requires a user actor');
+      }
+      return ctx.services.packService.acceptSection(
+        { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
+        input,
+      );
+    }),
+  acceptAllSafeSections: artifactWriteProcedure
+    .meta({ invalidates: mutationInvalidations['pack.acceptAllSafeSections'] })
+    .input(AcceptAllSafeSectionsInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.actor.type !== 'user') {
+        throw new Error('pack.acceptAllSafeSections requires a user actor');
+      }
+      return ctx.services.packService.acceptAllSafeSections(
+        { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
+        input,
+      );
+    }),
+  explainChange: artifactReadProcedure
+    .input(ExplainChangeInputSchema)
+    .query(async ({ ctx, input }) => {
+      return ctx.services.packService.explainChange(
+        { membership: ctx.membership, project: ctx.project },
         input,
       );
     }),

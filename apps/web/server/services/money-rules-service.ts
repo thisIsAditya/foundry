@@ -29,12 +29,14 @@ import superjson from 'superjson';
 
 import { withIdempotency, type CoordinationStore } from '../coordination';
 import { ensurePackRevision } from './pack-snapshot';
+import type { ScoringService } from './scoring-service';
 
 export class MoneyRulesService {
   constructor(
     private readonly sql: PoolSql,
     private readonly coordination: CoordinationStore,
     private readonly policyService: PolicyService,
+    private readonly scoringService?: ScoringService,
   ) {}
 
   async getCurrent(actor: {
@@ -65,7 +67,7 @@ export class MoneyRulesService {
       });
     }
     const key = `idem:${actor.userId}:moneyRules.set:${input.idempotencyKey}`;
-    return withIdempotency(
+    const result = await withIdempotency(
       this.coordination,
       key,
       limits.idempotencyKeyTtlSeconds,
@@ -105,6 +107,8 @@ export class MoneyRulesService {
           return { moneyRules, unitEconomics };
         }),
     );
+    await this.scoringService?.recalculate(actor.project);
+    return result;
   }
 
   async upsertMarket(

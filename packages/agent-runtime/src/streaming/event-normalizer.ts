@@ -20,6 +20,18 @@ export type AiSdkStreamPart = {
   question?: unknown;
   warning?: unknown;
   reason?: unknown;
+  jobId?: unknown;
+  fromStatus?: unknown;
+  toStatus?: unknown;
+  founderTaskId?: unknown;
+  title?: unknown;
+  projectId?: unknown;
+  revisionId?: unknown;
+  overall?: unknown;
+  dimensions?: unknown;
+  deltaFromPrevious?: unknown;
+  messageId?: unknown;
+  actor?: unknown;
 };
 
 export type DomainStreamPart = {
@@ -85,6 +97,35 @@ export function normalize(
       return { type: 'warning', runId: ctx.runId, warning: part.warning };
     case 'blocked':
       return { type: 'blocked', runId: ctx.runId, reason: part.reason };
+    case 'job_state_changed':
+      return {
+        type: 'job_state_changed',
+        jobId: String(part.jobId ?? ctx.sprintId ?? ''),
+        fromStatus: String(part.fromStatus ?? ''),
+        toStatus: String(part.toStatus ?? ''),
+      };
+    case 'founder_task_created':
+      return {
+        type: 'founder_task_created',
+        founderTaskId: String(part.founderTaskId ?? ''),
+        title: String(part.title ?? ''),
+      };
+    case 'score_changed':
+      return {
+        type: 'score_changed',
+        projectId: String(part.projectId ?? ''),
+        revisionId: String(part.revisionId ?? ''),
+        overall: typeof part.overall === 'number' ? part.overall : 0,
+        dimensions: part.dimensions,
+        deltaFromPrevious:
+          typeof part.deltaFromPrevious === 'number' ? part.deltaFromPrevious : null,
+      };
+    case 'conversation_message_appended':
+      return {
+        type: 'conversation_message_appended',
+        messageId: String(part.messageId ?? ''),
+        actor: String(part.actor ?? ''),
+      };
     default:
       return null;
   }

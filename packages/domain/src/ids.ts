@@ -177,3 +177,21 @@ export type ToolDefinitionId = z.infer<typeof ToolDefinitionIdSchema>;
 
 export const ToolCallIdSchema = brandedUuid('ToolCallId');
 export type ToolCallId = z.infer<typeof ToolCallIdSchema>;
+
+export const ConversationMessageIdSchema = brandedUuid('ConversationMessageId');
+export type ConversationMessageId = z.infer<typeof ConversationMessageIdSchema>;
+
+export const ConversationSummaryIdSchema = brandedUuid('ConversationSummaryId');
+export type ConversationSummaryId = z.infer<typeof ConversationSummaryIdSchema>;
+
+export const FounderPreferenceIdSchema = brandedUuid('FounderPreferenceId');
+export type FounderPreferenceId = z.infer<typeof FounderPreferenceIdSchema>;
+
+export const FounderTaskIdSchema = brandedUuid('FounderTaskId');
+export type FounderTaskId = z.infer<typeof FounderTaskIdSchema>;
+
+export const ResearchFindingIdSchema = brandedUuid('ResearchFindingId');
+export type ResearchFindingId = z.infer<typeof ResearchFindingIdSchema>;
+
+export const PlanScoreIdSchema = brandedUuid('PlanScoreId');
+export type PlanScoreId = z.infer<typeof PlanScoreIdSchema>;

@@ -17,6 +17,10 @@ export function buildSprintContract(input: {
   phase: JourneyPhase;
   objective: string;
   whyNow?: string;
+  roleLabel?: string;
+  owner?: 'co_founder' | 'ai' | 'founder';
+  jobKind?: 'research' | 'draft' | 'analysis' | 'clarification' | 'synthesis';
+  parentJobId?: SprintId | null;
   snapshot?: PackSnapshot;
   /** Current agent definition for the sprint's worker (plan §Slice 2). Omit to fall back to the mock worker. */
   agent?: { name: string; toolAllowlist: string[] };
@@ -28,6 +32,10 @@ export function buildSprintContract(input: {
     sprintId: input.sprintId,
     objective: input.objective,
     whyNow: input.whyNow ?? 'Unblock the next evidence-gathering step.',
+    roleLabel: input.roleLabel,
+    owner: input.owner ?? 'ai',
+    jobKind: input.jobKind ?? 'analysis',
+    parentJobId: input.parentJobId ?? null,
     phase: input.phase,
     packRevisionId: input.packRevisionId,
     relevantEvidence: input.snapshot?.quotes.map((quote) => quote.id) ?? [],

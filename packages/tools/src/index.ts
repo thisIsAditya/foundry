@@ -19,6 +19,7 @@ import {
   paymentLinkDraftTool,
   sideEffectRequestTool,
 } from './launch.js';
+import { academicSearchTool, marketReportSearchTool } from './research.js';
 
 export {
   marketCalculatorTool,
@@ -39,6 +40,7 @@ export {
   paymentLinkDraftTool,
   sideEffectRequestTool,
 } from './launch.js';
+export { academicSearchTool, marketReportSearchTool } from './research.js';
 export { TOOL_RISK_CLASSES } from './risk-classes.js';
 
 /**
@@ -62,4 +64,6 @@ export const ALL_TOOLS: Record<string, Tool> = {
   'ops.migration_proposal': opsMigrationProposalTool,
   'filing.submit': filingSubmitTool,
   'side_effect.request': sideEffectRequestTool,
+  academic_search: academicSearchTool,
+  market_report_search: marketReportSearchTool,
 };

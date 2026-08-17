@@ -153,3 +153,17 @@ export async function updatePackRevisionProposedChanges(
   `;
   return parsePackRevision(requireRow(rows, 'updatePackRevisionProposedChanges'));
 }
+
+export async function updatePackRevisionAcceptedChanges(
+  sql: Sql,
+  id: PackRevisionId,
+  acceptedChanges: unknown,
+): Promise<PackRevision> {
+  const rows = await sql<PackRevisionRow[]>`
+    update pack_revisions
+    set accepted_changes = ${jsonParam(sql, acceptedChanges)}
+    where id = ${id}
+    returning *
+  `;
+  return parsePackRevision(requireRow(rows, 'updatePackRevisionAcceptedChanges'));
+}

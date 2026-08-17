@@ -1,4 +1,9 @@
-import type { AnswerClarificationInput, CreateProjectInput } from '@foundry/api-contracts';
+import type {
+  AnswerClarificationInput,
+  CreateProjectInput,
+  OverviewSummary,
+} from '@foundry/api-contracts';
+import { toAiJobSummary } from '@foundry/api-contracts';
 import {
   diagnoseClarification,
   resolveWorkspaceModel,
@@ -10,9 +15,13 @@ import { limits } from '@foundry/config/limits';
 import {
   countStaleArtifactVersions,
   getCurrentMoneyRules,
+  getLatestPlanScoreByPackRevisionId,
   getProjectById,
   insertProject,
   listApprovalRequestsByProjectId,
+  listAssumptionsByProjectId,
+  listConversationMessagesPage,
+  listFounderTasksByProjectId,
   listInterviewsByProjectId,
   listPackRevisionsByProjectId,
   listProjectsByWorkspaceId,
@@ -39,7 +48,11 @@ import superjson from 'superjson';
 import { z } from 'zod';
 
 import { withIdempotency, type CoordinationStore } from '../coordination';
+import type { ConversationService } from './conversation-service';
+import type { FounderTaskService } from './founder-task-service';
+import type { InitialDraftService } from './initial-draft-service';
 import { ensurePackRevision, loadPackSnapshot, readClarifications } from './pack-snapshot';
+import type { ScoringService } from './scoring-service';
 import { hashContract } from './sprint-service';
 
 const AnswerResultSchema = z.object({
@@ -52,6 +65,10 @@ export type ProjectRuntimeDeps = {
   secretBox: SecretBox;
   secrets: ProviderSecrets;
   languageModel?: LanguageModel;
+  conversationService?: ConversationService;
+  initialDraftService?: InitialDraftService;
+  scoringService?: ScoringService;
+  founderTaskService?: FounderTaskService;
 };
 
 export class ProjectService {
@@ -82,20 +99,37 @@ export class ProjectService {
       (raw) => superjson.parse(raw) as Project,
       (value) => superjson.stringify(value),
       async () => {
-        return withWorkspaceScope(this.sql, [input.workspaceId], async (tx) => {
-          const created = await insertProject(tx, {
-            workspaceId: input.workspaceId,
-            name: input.name,
-            ...(input.geography === undefined ? {} : { geography: input.geography }),
-            ...(input.objective === undefined ? {} : { founderObjective: input.objective }),
+        const createdProject = await withWorkspaceScope(
+          this.sql,
+          [input.workspaceId],
+          async (tx) => {
+            const created = await insertProject(tx, {
+              workspaceId: input.workspaceId,
+              name: input.name,
+              ...(input.geography === undefined ? {} : { geography: input.geography }),
+              ...(input.objective === undefined ? {} : { founderObjective: input.objective }),
+            });
+            await ensurePackRevision(tx, created, actor.userId);
+            const reloaded = await getProjectById(tx, created.id);
+            if (reloaded === null) {
+              throw new Error('project disappeared after create');
+            }
+            return reloaded;
+          },
+        );
+        try {
+          await this.runtime.initialDraftService?.generate({
+            userId: actor.userId,
+            membership: actor.membership,
+            project: createdProject,
           });
-          await ensurePackRevision(tx, created, actor.userId);
-          const reloaded = await getProjectById(tx, created.id);
-          if (reloaded === null) {
-            throw new Error('project disappeared after create');
-          }
-          return reloaded;
-        });
+        } catch {
+          return createdProject;
+        }
+        const refreshed = await withWorkspaceScope(this.sql, [input.workspaceId], async (tx) =>
+          getProjectById(tx, createdProject.id),
+        );
+        return refreshed ?? createdProject;
       },
     );
   }
@@ -131,6 +165,7 @@ export class ProjectService {
     dmu: { id: string; buyer: string | null } | null;
     currentSprint: { id: SprintId; status: SprintStatus; contractHash: string } | null;
     pendingPackRevisionId: PackRevisionId | null;
+    overview: OverviewSummary;
   }> {
     if (!this.policyService.can(actor.membership, 'project.list')) {
       throw new AppError({
@@ -140,15 +175,31 @@ export class ProjectService {
       });
     }
     return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
-      const [interviews, moneyRules, staleArtifactCount, pendingApprovals, sprints, packRevisions] =
-        await Promise.all([
-          listInterviewsByProjectId(tx, actor.project.id),
-          getCurrentMoneyRules(tx, actor.project.id),
-          countStaleArtifactVersions(tx, actor.project.id),
-          listApprovalRequestsByProjectId(tx, actor.project.id, 'pending'),
-          listSprintsByProjectId(tx, actor.project.id),
-          listPackRevisionsByProjectId(tx, actor.project.id),
-        ]);
+      const [
+        interviews,
+        moneyRules,
+        staleArtifactCount,
+        pendingApprovals,
+        sprints,
+        packRevisions,
+        founderTasks,
+        recentMessages,
+        assumptions,
+        planScore,
+      ] = await Promise.all([
+        listInterviewsByProjectId(tx, actor.project.id),
+        getCurrentMoneyRules(tx, actor.project.id),
+        countStaleArtifactVersions(tx, actor.project.id),
+        listApprovalRequestsByProjectId(tx, actor.project.id, 'pending'),
+        listSprintsByProjectId(tx, actor.project.id),
+        listPackRevisionsByProjectId(tx, actor.project.id),
+        listFounderTasksByProjectId(tx, actor.project.id),
+        listConversationMessagesPage(tx, actor.project.id, { limit: 20 }),
+        listAssumptionsByProjectId(tx, actor.project.id),
+        actor.project.currentPackRevisionId === null
+          ? Promise.resolve(null)
+          : getLatestPlanScoreByPackRevisionId(tx, actor.project.currentPackRevisionId),
+      ]);
       const moneyRulesSet = moneyRules !== null;
       const latestSprint = sprints[0] ?? null;
       const currentSprint =
@@ -212,6 +263,29 @@ export class ProjectService {
       } else if (staleArtifactCount > 0) {
         nextAction = 'Regenerate stale artifacts.';
       }
+      const jobSummaries = sprints.map((sprint) => toAiJobSummary({ sprint }));
+      const proposedResearchJob =
+        jobSummaries.find(
+          (job) =>
+            job.jobKind === 'research' && (job.status === 'proposed' || job.status === 'queued'),
+        ) ?? null;
+      const overview: OverviewSummary = {
+        overallScore: planScore?.overall ?? null,
+        dimensions: planScore?.dimensions ?? null,
+        topAssumptions: assumptions
+          .filter((item) => item.status === 'untested')
+          .slice(0, 3)
+          .map((item) => item.statement),
+        proposedResearchJob,
+        runningAiWork: jobSummaries.filter(
+          (job) => job.status === 'running' || job.status === 'queued',
+        ),
+        waitingFounderTasks: founderTasks.filter(
+          (item) => item.status === 'proposed' || item.status === 'active',
+        ).length,
+        revisionPendingReview: pendingPackRevisionId !== null,
+        latestCofounderMessage: recentMessages.find((item) => item.actor === 'co_founder') ?? null,
+      };
       return {
         project: actor.project,
         packRevisionId: actor.project.currentPackRevisionId,
@@ -225,6 +299,7 @@ export class ProjectService {
         dmu,
         currentSprint,
         pendingPackRevisionId,
+        overview,
       };
     });
   }
@@ -234,6 +309,18 @@ export class ProjectService {
     input: AnswerClarificationInput,
     correlationId: string,
   ): Promise<{ runId: string; text: string }> {
+    if (this.runtime.conversationService !== undefined) {
+      const sent = await this.runtime.conversationService.send(
+        actor,
+        {
+          projectId: input.projectId,
+          text: input.answer,
+          idempotencyKey: input.idempotencyKey,
+        },
+        correlationId,
+      );
+      return { runId: sent.runId, text: sent.text };
+    }
     if (!this.policyService.can(actor.membership, 'project.answer')) {
       throw new AppError({
         code: 'policy_forbidden',

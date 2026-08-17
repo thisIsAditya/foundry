@@ -14,6 +14,7 @@ import { PolicyService } from '@foundry/policy';
 import superjson from 'superjson';
 
 import { withIdempotency, type CoordinationStore } from '../coordination';
+import type { ScoringService } from './scoring-service';
 
 export type InterviewSummary = {
   interview: Interview;
@@ -25,6 +26,7 @@ export class InterviewService {
     private readonly sql: PoolSql,
     private readonly coordination: CoordinationStore,
     private readonly policyService: PolicyService,
+    private readonly scoringService?: ScoringService,
   ) {}
 
   async addInterview(
@@ -39,7 +41,7 @@ export class InterviewService {
       });
     }
     const key = `idem:${actor.userId}:evidence.addInterview:${input.idempotencyKey}`;
-    return withIdempotency(
+    const created = await withIdempotency(
       this.coordination,
       key,
       limits.idempotencyKeyTtlSeconds,
@@ -60,6 +62,8 @@ export class InterviewService {
           return { interview, quotes };
         }),
     );
+    await this.scoringService?.recalculate(actor.project);
+    return created;
   }
 
   async listInterviews(actor: {

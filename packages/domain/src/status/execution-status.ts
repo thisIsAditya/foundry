@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { canTransition, nextStates } from './transition.js';
+
 export const SprintStatuses = [
   'draft',
   'contracted',
@@ -8,9 +10,99 @@ export const SprintStatuses = [
   'stalled',
   'closed',
   'failed',
+  'proposed',
+  'queued',
+  'needs_founder',
+  'needs_approval',
+  'complete',
+  'blocked',
+  'canceled',
+  'expired',
 ] as const;
 export const SprintStatusSchema = z.enum(SprintStatuses);
 export type SprintStatus = z.infer<typeof SprintStatusSchema>;
+
+export const AiJobOwners = ['co_founder', 'ai', 'founder'] as const;
+export const AiJobOwnerSchema = z.enum(AiJobOwners);
+export type AiJobOwner = z.infer<typeof AiJobOwnerSchema>;
+
+export const AiJobKinds = ['research', 'draft', 'analysis', 'clarification', 'synthesis'] as const;
+export const AiJobKindSchema = z.enum(AiJobKinds);
+export type AiJobKind = z.infer<typeof AiJobKindSchema>;
+
+const sprintAllowed: Readonly<Record<SprintStatus, readonly SprintStatus[]>> = {
+  draft: ['contracted', 'proposed', 'canceled'],
+  contracted: ['running', 'queued', 'canceled'],
+  running: ['paused', 'stalled', 'closed', 'failed', 'needs_founder', 'needs_approval', 'complete'],
+  paused: ['running', 'canceled'],
+  stalled: ['running', 'needs_founder', 'failed', 'canceled'],
+  closed: [],
+  failed: [],
+  proposed: ['queued', 'canceled'],
+  queued: ['running', 'canceled', 'expired'],
+  needs_founder: ['running', 'paused', 'canceled', 'blocked'],
+  needs_approval: ['running', 'complete', 'canceled', 'blocked'],
+  complete: [],
+  blocked: ['running', 'canceled'],
+  canceled: [],
+  expired: [],
+};
+
+export function canTransitionSprintStatus(from: SprintStatus, to: SprintStatus): boolean {
+  return canTransition(sprintAllowed, from, to);
+}
+
+export function nextSprintStatuses(from: SprintStatus): readonly SprintStatus[] {
+  return nextStates(sprintAllowed, from);
+}
+
+export const ProductJobStatuses = [
+  'proposed',
+  'queued',
+  'running',
+  'needs_founder',
+  'needs_approval',
+  'complete',
+  'blocked',
+  'failed',
+  'canceled',
+  'expired',
+] as const;
+export const ProductJobStatusSchema = z.enum(ProductJobStatuses);
+export type ProductJobStatus = z.infer<typeof ProductJobStatusSchema>;
+
+export function toProductJobStatus(status: SprintStatus): ProductJobStatus {
+  switch (status) {
+    case 'draft':
+      return 'proposed';
+    case 'contracted':
+      return 'queued';
+    case 'running':
+      return 'running';
+    case 'paused':
+    case 'stalled':
+      return 'needs_founder';
+    case 'needs_founder':
+      return 'needs_founder';
+    case 'needs_approval':
+      return 'needs_approval';
+    case 'closed':
+    case 'complete':
+      return 'complete';
+    case 'blocked':
+      return 'blocked';
+    case 'failed':
+      return 'failed';
+    case 'proposed':
+      return 'proposed';
+    case 'queued':
+      return 'queued';
+    case 'canceled':
+      return 'canceled';
+    case 'expired':
+      return 'expired';
+  }
+}
 
 export const AgentRunStatuses = ['running', 'completed', 'failed'] as const;
 export const AgentRunStatusSchema = z.enum(AgentRunStatuses);

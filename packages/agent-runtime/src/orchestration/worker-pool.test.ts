@@ -6,6 +6,7 @@ import {
   PackRevisionIdSchema,
   ProjectIdSchema,
   SprintContractIdSchema,
+  SprintContractSchema,
   SprintIdSchema,
   type SprintContract,
 } from '@foundry/domain';
@@ -33,7 +34,7 @@ const packRevisionId = PackRevisionIdSchema.parse('cccccccc-cccc-4ccc-8ccc-ccccc
 const projectId = ProjectIdSchema.parse('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
 
 function contract(workerName: string): SprintContract {
-  return {
+  return SprintContractSchema.parse({
     id: SprintContractIdSchema.parse('dddddddd-dddd-4ddd-8ddd-dddddddddddd'),
     sprintId: SprintIdSchema.parse('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
     objective: 'Synthesize Gate A evidence',
@@ -61,7 +62,7 @@ function contract(workerName: string): SprintContract {
     workers: [{ name: workerName, readsOnly: false, writeTargets: ['pack'] }],
     gateType: 'gate_a',
     createdAt: new Date('2026-04-01T00:00:00.000Z'),
-  };
+  });
 }
 
 function snapshot(): PackSnapshot {

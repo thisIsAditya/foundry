@@ -8,6 +8,7 @@ import {
   ProjectIdSchema,
   SprintContractIdSchema,
   SprintIdSchema,
+  SprintSchema,
   WorkspaceIdSchema,
   type Sprint,
 } from '@foundry/domain';
@@ -52,7 +53,7 @@ function snapshot(interviews: PackSnapshot['interviews']): PackSnapshot {
 }
 
 function sprint(): Sprint {
-  return {
+  return SprintSchema.parse({
     id: sprintId,
     projectId,
     status: 'draft',
@@ -90,7 +91,7 @@ function sprint(): Sprint {
     closedReason: null,
     createdAt: new Date('2026-04-01T00:00:00.000Z'),
     updatedAt: new Date('2026-04-01T00:00:00.000Z'),
-  };
+  });
 }
 
 function ioFor(pack: PackSnapshot): { io: SprintRunnerIO; gates: GateAEvaluation[] } {
@@ -170,5 +171,6 @@ describe('sprint runner', () => {
     );
     expect(outcome.critique.recommendation).toBe('KILL');
     expect(outcome.critique.instantFailFlags).toContain('gate_a_simulated_or_friend_only');
+    expect(outcome.status).toBe('closed');
   });
 });

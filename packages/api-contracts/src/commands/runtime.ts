@@ -74,6 +74,9 @@ export type ToggleMcpServerInput = z.infer<typeof ToggleMcpServerInputSchema>;
 export const PreviewSprintInputSchema = z.object({
   projectId: ProjectIdSchema,
   objectiveHint: z.string().min(1).optional(),
+  jobKind: z.enum(['research', 'draft', 'analysis', 'clarification', 'synthesis']).optional(),
+  whyNow: z.string().min(1).optional(),
+  roleLabel: z.string().min(1).optional(),
   idempotencyKey: IdempotencyKeySchema,
 });
 export type PreviewSprintInput = z.infer<typeof PreviewSprintInputSchema>;

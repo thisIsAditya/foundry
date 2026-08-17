@@ -26,6 +26,8 @@
     "@foundry/domain": "workspace:*",
     "@foundry/observability": "workspace:*",
     "@foundry/policy": "workspace:*",
+    "@foundry/scoring": "workspace:*",
+    "@foundry/tools": "workspace:*",
     "@foundry/ui": "workspace:*",
     "@tanstack/react-query": "5.101.4",
     "@trpc/client": "11.18.0",

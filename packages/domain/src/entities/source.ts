@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ProjectIdSchema, SourceIdSchema, UserIdSchema } from '../ids.js';
 import {
   DataClassificationSchema,
+  SourceCategorySchema,
   SourceKindSchema,
   SourceStatusSchema,
 } from '../status/evidence-status.js';
@@ -18,6 +19,9 @@ export const SourceSchema = z.object({
   sizeBytes: z.number().int().nonnegative().nullable().default(null),
   s3Key: z.string().nullable().default(null),
   sourceUrl: z.string().nullable().default(null),
+  sourceCategory: SourceCategorySchema.nullable().default(null),
+  geographicScope: z.string().nullable().default(null),
+  reliabilityNotes: z.string().nullable().default(null),
   dataClassification: DataClassificationSchema.default('internal'),
   failureReason: z.string().nullable().default(null),
   createdByUserId: UserIdSchema.nullable().default(null),
