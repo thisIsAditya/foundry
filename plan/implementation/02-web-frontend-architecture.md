@@ -35,8 +35,9 @@ Each screen in `plan/06-web-and-mobile-experience.md` §6 maps to a small, expli
 | Pack section view | `pack.getSection`, `pack.getDiff` | `pack.acceptRevision`, `pack.rejectRevision`, `pack.addFounderAssertion` |
 | Evidence Library | `evidence.list`, `evidence.search`, `evidence.getCitation` | `evidence.createUploadIntent`, `evidence.registerUrl`, `evidence.deleteSource` |
 | Approvals queue | `approval.list`, `approval.getPayload` | `approval.approve`, `approval.reject` |
+| Decisions / Gate C | `decision.list` | `decision.record`, `gate.evaluate` |
 | Artifact Viewer | `artifact.list`, `artifact.getVersion` | `artifact.generate`, `artifact.regenerate`, `artifact.export` |
-| Workspace settings | `provider.listConnections`, `budget.getSummary`, `member.list` | `provider.connect`, `provider.setModelProfilePolicy`, `member.invite` |
+| Workspace settings | `provider.listConnections`, `integration.list`, `member.list` | `provider.connect`, `integration.connect`, `member.invite` |
 | Account settings → MCP servers | `mcpServer.list` | `mcpServer.add`, `mcpServer.remove`, `mcpServer.toggle`, `mcpServer.testConnection` |
 
 MCP servers are a **user**-level setting, not a workspace one — the screen lives under the founder's personal account settings, not `(app)/w/[workspaceId]/settings`, and the list a founder sees is never shared with teammates (`08-agent-runtime-implementation.md` §11, `09-authentication-and-security.md` §7a).

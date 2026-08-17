@@ -1,1 +1,218 @@
 @import 'tailwindcss';
+@import '@foundry/ui/theme.css';
+
+@layer base {
+  html {
+    height: 100%;
+  }
+
+  body {
+    @apply min-h-dvh bg-surface font-sans text-sm text-text antialiased;
+  }
+
+  a {
+    @apply text-text underline-offset-2 hover:underline;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-1 ring-text ring-offset-2 ring-offset-surface;
+  }
+}
+
+@layer components {
+  .page {
+    @apply mx-auto w-full max-w-3xl px-6 py-10;
+  }
+
+  .page-title {
+    @apply text-xl font-medium tracking-tight;
+  }
+
+  .lede {
+    @apply mt-1 text-sm text-text-muted;
+  }
+
+  .stack {
+    @apply flex flex-col gap-6;
+  }
+
+  .field {
+    @apply flex min-w-0 flex-1 flex-col gap-1;
+  }
+
+  .field > span,
+  .field > label {
+    @apply text-sm text-text-muted;
+  }
+
+  .input,
+  .textarea {
+    @apply w-full rounded-sm border border-border bg-surface-raised px-3 text-sm text-text;
+  }
+
+  .input {
+    @apply h-9;
+  }
+
+  .textarea {
+    @apply min-h-28 py-2;
+  }
+
+  .btn {
+    @apply inline-flex h-9 shrink-0 items-center justify-center rounded-sm bg-text px-3 text-sm font-medium text-surface-raised disabled:opacity-40;
+  }
+
+  .btn-secondary {
+    @apply inline-flex h-9 shrink-0 items-center justify-center rounded-sm border border-border bg-surface-raised px-3 text-sm text-text disabled:opacity-40;
+  }
+
+  .row-form {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-end;
+  }
+
+  .list {
+    @apply divide-y divide-border border-y border-border;
+  }
+
+  .list-row {
+    @apply flex items-center justify-between gap-4 py-3;
+  }
+
+  .muted {
+    @apply text-sm text-text-muted;
+  }
+
+  .alert {
+    @apply text-sm text-status-danger;
+  }
+
+  .panel {
+    @apply rounded-sm border border-border bg-surface-raised p-4;
+  }
+
+  .nav-link {
+    @apply rounded-sm px-1 py-1 text-sm text-text-muted no-underline hover:text-text hover:no-underline;
+  }
+
+  .nav-link[aria-current='page'] {
+    @apply font-medium text-text;
+  }
+
+  /* Cards group related content with a border + optional accent, replacing bare stacked forms. */
+  .card {
+    @apply rounded-md border border-border bg-surface-raised p-5;
+  }
+
+  .card-accent {
+    @apply rounded-md border border-status-info/30 bg-status-info/5 p-5;
+  }
+
+  .card-title {
+    @apply text-sm font-medium text-text;
+  }
+
+  .card-done {
+    @apply rounded-md border border-status-success/30 bg-status-success/5 p-5;
+  }
+
+  /* Small pill labels used for status/phase/count chips. */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-medium text-text-muted;
+  }
+
+  .badge-info {
+    @apply border-status-info/30 bg-status-info/10 text-status-info;
+  }
+
+  .badge-success {
+    @apply border-status-success/30 bg-status-success/10 text-status-success;
+  }
+
+  .badge-warning {
+    @apply border-status-warning/30 bg-status-warning/10 text-status-warning;
+  }
+
+  .badge-draft {
+    @apply border-status-draft/30 bg-status-draft/10 text-status-draft;
+  }
+
+  /* Guidance callout: "here is what to do next and why". */
+  .callout {
+    @apply flex flex-col gap-2 rounded-md border border-status-info/25 bg-status-info/5 p-5;
+  }
+
+  .callout-eyebrow {
+    @apply text-xs font-semibold tracking-wide text-status-info uppercase;
+  }
+
+  .callout-title {
+    @apply text-base font-medium text-text;
+  }
+
+  /* Numbered / checked step used in the founder journey stepper and checklists. */
+  .step-list {
+    @apply flex flex-col gap-3;
+  }
+
+  .step-row {
+    @apply flex items-start gap-3;
+  }
+
+  .step-marker {
+    @apply mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-medium;
+  }
+
+  .step-marker-done {
+    @apply border-status-success bg-status-success text-surface-raised;
+  }
+
+  .step-marker-current {
+    @apply border-status-info text-status-info;
+  }
+
+  .step-marker-todo {
+    @apply border-border text-text-muted;
+  }
+
+  /* Horizontal progress bar for Gate A / journey completion. */
+  .progress-track {
+    @apply h-1.5 w-full overflow-hidden rounded-full bg-border;
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full bg-status-info transition-[width];
+  }
+
+  /* Journey stepper across the top of the desk. */
+  .journey {
+    @apply flex flex-wrap items-center gap-x-1 gap-y-2;
+  }
+
+  .journey-dot {
+    @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-medium;
+  }
+
+  .journey-dot-done {
+    @apply border-status-success bg-status-success text-surface-raised;
+  }
+
+  .journey-dot-current {
+    @apply border-text bg-text text-surface-raised;
+  }
+
+  .journey-dot-todo {
+    @apply border-border text-text-muted;
+  }
+
+  .journey-connector {
+    @apply h-px w-3 shrink-0 bg-border sm:w-6;
+  }
+
+  .hint {
+    @apply text-xs text-text-muted;
+  }
+
+  .empty-state {
+    @apply flex flex-col items-center gap-2 rounded-md border border-dashed border-border px-6 py-10 text-center;
+  }
+}

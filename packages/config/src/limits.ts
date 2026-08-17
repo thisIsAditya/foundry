@@ -24,6 +24,9 @@ export const limits = {
   },
   interactive: {
     diagnoseTimeoutMs: 15_000,
+    // Local models (Ollama) can take much longer than a hosted API to load and generate,
+    // especially on a cold start, so they get a far more generous budget.
+    diagnoseTimeoutMsLocal: 120_000,
     maxToolRiskClass: 'compute',
   },
   stream: {
@@ -47,6 +50,25 @@ export const limits = {
   gateB: {
     ruleVersion: 1,
     minIndependentMoneySignals: 1,
+  },
+  gateC: {
+    ruleVersion: 1,
+    requiredMetricKeys: [
+      'paying_strangers',
+      'repeat_usage',
+      'contribution_margin',
+      'retention',
+      'distribution',
+    ] as const,
+  },
+  mvbp: {
+    maxFeaturesWithoutWaiver: 3,
+  },
+  approval: {
+    ttlSeconds: 24 * 60 * 60,
+  },
+  notification: {
+    weeklyDigestCron: '0 9 * * 1',
   },
   money: {
     decimalScale: 4,

@@ -4,6 +4,7 @@ import {
   UpsertMarketModelInputSchema,
 } from '@foundry/api-contracts';
 
+import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
 import { moneyReadProcedure, moneyWriteProcedure, router } from '../trpc';
 
 export const moneyRulesRouter = router({
@@ -14,7 +15,7 @@ export const moneyRulesRouter = router({
     });
   }),
   setCurrent: moneyWriteProcedure
-    .meta({ invalidates: ['moneyRules.getCurrent', 'artifact.list'] })
+    .meta({ invalidates: mutationInvalidations['moneyRules.setCurrent'] })
     .input(SetMoneyRulesInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {
@@ -26,7 +27,7 @@ export const moneyRulesRouter = router({
       );
     }),
   upsertMarket: moneyWriteProcedure
-    .meta({ invalidates: ['moneyRules.getCurrent', 'artifact.list'] })
+    .meta({ invalidates: mutationInvalidations['moneyRules.upsertMarket'] })
     .input(UpsertMarketModelInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {

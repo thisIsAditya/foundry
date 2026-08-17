@@ -27,7 +27,7 @@ export async function buildModel(
       return gatewayProvider(connection, modelId, secrets, box);
     case 'openai_compatible':
     case 'ollama':
-      return openAICompatibleProvider(connection, modelId, box);
+      return await openAICompatibleProvider(connection, modelId, box);
     default: {
       const family: never = connection.providerFamily;
       throw new AppError({

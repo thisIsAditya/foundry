@@ -2,9 +2,9 @@ import { createSql, type PoolSql } from '@foundry/db';
 
 import { getEnv } from './env';
 
-let sql: PoolSql | undefined;
+const globalForSql = globalThis as typeof globalThis & { foundrySql?: PoolSql };
 
 export function getSql(): PoolSql {
-  sql ??= createSql(getEnv().DATABASE_URL);
-  return sql;
+  globalForSql.foundrySql ??= createSql(getEnv().DATABASE_URL);
+  return globalForSql.foundrySql;
 }

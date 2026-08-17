@@ -114,6 +114,32 @@ export async function getPackRevisionById(
   return row === undefined ? null : parsePackRevision(row);
 }
 
+export async function listPackRevisionsByProjectId(
+  sql: Sql,
+  projectId: ProjectId,
+): Promise<PackRevision[]> {
+  const rows = await sql<PackRevisionRow[]>`
+    select * from pack_revisions where project_id = ${projectId} order by revision_number asc
+  `;
+  return rows.map(parsePackRevision);
+}
+
+export async function updatePackRevisionStatus(
+  sql: Sql,
+  id: PackRevisionId,
+  status: PackRevisionStatus,
+): Promise<PackRevision> {
+  const acceptedAt = status === 'accepted' ? new Date() : null;
+  const rows = await sql<PackRevisionRow[]>`
+    update pack_revisions
+    set status = ${status},
+        accepted_at = ${acceptedAt}
+    where id = ${id}
+    returning *
+  `;
+  return parsePackRevision(requireRow(rows, 'updatePackRevisionStatus'));
+}
+
 export async function updatePackRevisionProposedChanges(
   sql: Sql,
   id: PackRevisionId,

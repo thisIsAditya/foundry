@@ -1,15 +1,18 @@
 import {
+  AddInterviewInputSchema,
   ConfirmUploadInputSchema,
   CreateUploadIntentInputSchema,
   ListEvidenceInputSchema,
+  ListInterviewsInputSchema,
   SearchEvidenceInputSchema,
 } from '@foundry/api-contracts';
 
+import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
 import { projectProcedure, projectReadProcedure, protectedProcedure, router } from '../trpc';
 
 export const evidenceRouter = router({
   createUploadIntent: projectProcedure
-    .meta({ invalidates: ['evidence.list'] })
+    .meta({ invalidates: mutationInvalidations['evidence.createUploadIntent'] })
     .input(CreateUploadIntentInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {
@@ -21,8 +24,26 @@ export const evidenceRouter = router({
         ctx.correlationId,
       );
     }),
+  addInterview: projectProcedure
+    .meta({ invalidates: mutationInvalidations['evidence.addInterview'] })
+    .input(AddInterviewInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.actor.type !== 'user') {
+        throw new Error('projectProcedure requires a user actor');
+      }
+      return ctx.services.interviewService.addInterview(
+        { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
+        input,
+      );
+    }),
+  listInterviews: projectReadProcedure.input(ListInterviewsInputSchema).query(async ({ ctx }) => {
+    return ctx.services.interviewService.listInterviews({
+      membership: ctx.membership,
+      project: ctx.project,
+    });
+  }),
   confirmUpload: protectedProcedure
-    .meta({ invalidates: ['evidence.list'] })
+    .meta({ invalidates: mutationInvalidations['evidence.confirmUpload'] })
     .input(ConfirmUploadInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {

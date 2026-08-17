@@ -12,6 +12,6 @@ export const PlatformRoles = ['founder', 'admin', 'test'] as const;
 export const PlatformRoleSchema = z.enum(PlatformRoles);
 export type PlatformRole = z.infer<typeof PlatformRoleSchema>;
 
-export const WorkspaceRoles = ['owner', 'admin', 'member', 'viewer'] as const;
+export const WorkspaceRoles = ['owner', 'admin', 'member', 'viewer', 'reviewer'] as const;
 export const WorkspaceRoleSchema = z.enum(WorkspaceRoles);
 export type WorkspaceRole = z.infer<typeof WorkspaceRoleSchema>;

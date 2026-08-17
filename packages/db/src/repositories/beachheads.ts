@@ -82,3 +82,14 @@ export async function updateBeachheadDmuId(
   `;
   return parseBeachhead(requireRow(rows, 'updateBeachheadDmuId'));
 }
+
+export async function updateBeachheadSegmentDefinition(
+  sql: Sql,
+  id: BeachheadId,
+  segmentDefinition: string,
+): Promise<Beachhead> {
+  const rows = await sql<BeachheadRow[]>`
+    update beachheads set segment_definition = ${segmentDefinition} where id = ${id} returning *
+  `;
+  return parseBeachhead(requireRow(rows, 'updateBeachheadSegmentDefinition'));
+}

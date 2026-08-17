@@ -1,5 +1,12 @@
 export { evaluateGateA, type GateACheck, type GateAEvaluation, type GateAInput } from './gate-a.js';
 export { evaluateGateB, type GateBCheck, type GateBEvaluation, type GateBInput } from './gate-b.js';
+export { evaluateGateC, type GateCCheck, type GateCEvaluation, type GateCInput } from './gate-c.js';
+export {
+  evaluateMvbpScope,
+  type MvbpScopeCheck,
+  type MvbpScopeEvaluation,
+  type MvbpScopeInput,
+} from './mvbp-scope.js';
 export { calculateMarketSize, type MarketCalculatorInput } from './calculators/market.js';
 export { calculateUnitEconomics, type UnitEconomicsInput } from './calculators/unit-economics.js';
 export { calculateSensitivity } from './calculators/sensitivity.js';

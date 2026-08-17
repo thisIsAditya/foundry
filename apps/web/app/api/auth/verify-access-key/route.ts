@@ -4,19 +4,39 @@ import { UserIdSchema } from '@foundry/domain';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import { ACCESS_KEY_COOKIE } from '../../../../lib/access-key';
 import { getAuth } from '../../../../lib/auth';
+import { getEnv } from '../../../../lib/env';
+import { resolveLocalAdminPin } from '../../../../lib/local-admin-pin';
 import { getSql } from '../../../../lib/sql';
 import { getCoordinationStore } from '../../../../server/coordination';
 
-const BodySchema = z.object({
-  key: z.string().min(1),
-});
+const BodySchema = z
+  .object({
+    key: z.string().min(1).optional(),
+    pin: z.string().min(1).optional(),
+  })
+  .refine((value) => value.key !== undefined || value.pin !== undefined, {
+    message: 'A key or pin is required.',
+  });
 
 function clientIp(req: Request): string {
   return (
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
     req.headers.get('x-real-ip') ??
     'unknown'
+  );
+}
+
+function unauthorized(): NextResponse {
+  return NextResponse.json(
+    {
+      code: 'unauthorized',
+      explanation: 'That access key is not valid.',
+      retryable: false,
+      nextAction: 'Check the key and try again.',
+    },
+    { status: 401 },
   );
 }
 
@@ -67,17 +87,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = await getAuth().api.verifyApiKey({ body: { key: parsed.data.key } });
+  let key = parsed.data.key;
+  if (key === undefined && parsed.data.pin !== undefined && getEnv().NODE_ENV === 'development') {
+    key = resolveLocalAdminPin(parsed.data.pin);
+  }
+  if (key === undefined) {
+    return unauthorized();
+  }
+
+  const result = await getAuth().api.verifyApiKey({ body: { key } });
   if (!result.valid || result.key === null || result.key === undefined) {
-    return NextResponse.json(
-      {
-        code: 'unauthorized',
-        explanation: 'That access key is not valid.',
-        retryable: false,
-        nextAction: 'Check the key and try again.',
-      },
-      { status: 401 },
-    );
+    return unauthorized();
   }
 
   const rawUserId =
@@ -85,29 +105,21 @@ export async function POST(req: Request) {
       ? result.key.referenceId
       : undefined;
   if (rawUserId === undefined) {
-    return NextResponse.json(
-      {
-        code: 'unauthorized',
-        explanation: 'That access key is not valid.',
-        retryable: false,
-        nextAction: 'Check the key and try again.',
-      },
-      { status: 401 },
-    );
+    return unauthorized();
   }
 
   const user = await getUserById(getSql(), UserIdSchema.parse(rawUserId));
   if (user === null || (user.role !== 'admin' && user.role !== 'test')) {
-    return NextResponse.json(
-      {
-        code: 'unauthorized',
-        explanation: 'That access key is not valid.',
-        retryable: false,
-        nextAction: 'Check the key and try again.',
-      },
-      { status: 401 },
-    );
+    return unauthorized();
   }
 
-  return NextResponse.json({ valid: true, displayName: user.name });
+  const response = NextResponse.json({ valid: true, displayName: user.name });
+  response.cookies.set(ACCESS_KEY_COOKIE, key, {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    secure: getEnv().NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  return response;
 }

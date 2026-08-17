@@ -8,4 +8,9 @@ export {
   type Source,
   type Workspace,
 } from '@foundry/domain';
-export { DeskSummarySchema, type DeskSummary } from './desk-summary.js';
+export {
+  DeskSummarySchema,
+  GateAProgressSchema,
+  type DeskSummary,
+  type GateAProgress,
+} from './desk-summary.js';

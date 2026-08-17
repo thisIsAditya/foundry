@@ -17,6 +17,14 @@ export {
 export { buildModel } from './providers/registry.js';
 export { probeProviderCapabilities } from './providers/capability-probe.js';
 export {
+  resolveWorkspaceModel,
+  type ResolvedWorkspaceModel,
+} from './providers/resolve-workspace-model.js';
+export {
+  readAgentCapabilities,
+  type AgentRuntimeCapabilities,
+} from './agents/agent-definition-runtime.js';
+export {
   MODEL_PROFILES,
   profileSatisfied,
   type ModelProfileName,
@@ -25,8 +33,10 @@ export { buildSprintContract } from './contracts/sprint-contract.js';
 export {
   AgentRunOutputSchema,
   CriticOutputSchema,
+  ProposedPackChangeSchema,
   type AgentRunOutput,
   type CriticOutput,
+  type ProposedPackChange,
 } from './contracts/output-schema.js';
 export type { ClarificationAnswer, PackSnapshot } from './contracts/pack-snapshot.js';
 export { normalize, type AiSdkStreamPart, type RunContext } from './streaming/event-normalizer.js';
@@ -44,6 +54,14 @@ export {
   type SprintOutcome,
   type SprintRunnerIO,
 } from './orchestration/sprint-runner.js';
+export {
+  runMockWorker,
+  runModelWorker,
+  runWorkerPool,
+  type ResolveWorkerRuntime,
+  type WorkerResult,
+  type WorkerRuntime,
+} from './orchestration/worker-pool.js';
 export { evaluateCritique } from './critique/critic-runtime.js';
 export { assertPublicHttpUrl } from './mcp/ssrf.js';
 export { applyMcpRiskPolicy, type McpToolMeta } from './mcp/mcp-risk-policy.js';
@@ -54,7 +72,23 @@ export {
   type McpToolProbe,
 } from './mcp/mcp-bridge.js';
 export {
+  defaultMcpToolClientFactory,
+  loadUserMcpTools,
+  type LoadedMcpTools,
+  type McpToolClientFactory,
+  type McpToolClientLike,
+} from './mcp/load-user-mcp-tools.js';
+export {
+  BUILD_PROMPT_INSTRUCTIONS_V1,
   BUSINESS_MODEL_ANALYST_INSTRUCTIONS_V1,
+  COMPLIANCE_INSTRUCTIONS_V1,
+  GTM_FIRST_100_INSTRUCTIONS_V1,
+  IP_PRIVACY_INSTRUCTIONS_V1,
+  LAUNCH_INSTRUCTIONS_V1,
+  LEGAL_GUIDE_INSTRUCTIONS_V1,
+  OPS_RUNTIME_INSTRUCTIONS_V1,
   ORCHESTRATOR_INSTRUCTIONS_V1,
+  ORG_COST_INSTRUCTIONS_V1,
+  PRD_SCOPER_INSTRUCTIONS_V1,
   PRICING_ANALYST_INSTRUCTIONS_V1,
 } from './agents/instructions.js';

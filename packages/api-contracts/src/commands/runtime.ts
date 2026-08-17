@@ -95,3 +95,8 @@ export const GetSprintActivityInputSchema = z.object({
   cursor: z.number().int().nonnegative().optional(),
 });
 export type GetSprintActivityInput = z.infer<typeof GetSprintActivityInputSchema>;
+
+export const ListSprintsInputSchema = z.object({
+  projectId: ProjectIdSchema,
+});
+export type ListSprintsInput = z.infer<typeof ListSprintsInputSchema>;

@@ -110,4 +110,69 @@ describe('evidence procedures', () => {
     const listed = await caller.evidence.list({ projectId: project.id });
     expect(listed).toEqual([]);
   });
+
+  it('captures interviews with quotes and lists quote counts', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `iv-${randomUUID()}@example.com`,
+    });
+    const workspace = await appRouter
+      .createCaller(await createTestContext(sql, user))
+      .workspace.create({ name: 'Acme', idempotencyKey: randomUUID() });
+    const caller = appRouter.createCaller(await createTestContext(sql, user));
+    const project = await caller.project.create({
+      workspaceId: workspace.id,
+      name: 'Venture',
+      idempotencyKey: randomUUID(),
+    });
+
+    const created = await caller.evidence.addInterview({
+      projectId: project.id,
+      participantType: 'non_friend',
+      consent: { given: true },
+      quotes: ['We waste hours reconciling invoices.', 'Nobody in our team owns this problem.'],
+      idempotencyKey: randomUUID(),
+    });
+    expect(created.quotes).toHaveLength(2);
+    expect(created.interview.participantType).toBe('non_friend');
+
+    const listed = await caller.evidence.listInterviews({ projectId: project.id });
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?.quoteCount).toBe(2);
+  });
+
+  it('excludes friend and simulated interviews from Gate A even though they are captured', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `iv-gate-${randomUUID()}@example.com`,
+    });
+    const workspace = await appRouter
+      .createCaller(await createTestContext(sql, user))
+      .workspace.create({ name: 'Acme', idempotencyKey: randomUUID() });
+    const caller = appRouter.createCaller(await createTestContext(sql, user));
+    const project = await caller.project.create({
+      workspaceId: workspace.id,
+      name: 'Venture',
+      idempotencyKey: randomUUID(),
+    });
+
+    await caller.evidence.addInterview({
+      projectId: project.id,
+      participantType: 'friend',
+      consent: { given: true },
+      quotes: ['Sounds like a great idea!'],
+      idempotencyKey: randomUUID(),
+    });
+    await caller.evidence.addInterview({
+      projectId: project.id,
+      participantType: 'non_friend',
+      consent: { given: true, simulated: true },
+      quotes: ['I would probably use this.'],
+      idempotencyKey: randomUUID(),
+    });
+
+    const desk = await caller.project.getDeskSummary({ projectId: project.id });
+    expect(desk.gateA.qualifyingInterviews).toBe(0);
+    expect(desk.gateA.passed).toBe(false);
+  });
 });

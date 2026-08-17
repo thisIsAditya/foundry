@@ -15,10 +15,12 @@ export async function probeProviderCapabilities(
 ): Promise<ProviderCapabilities> {
   const built = await buildModel(connection, modelId, secrets, box);
   try {
+    const timeoutMs =
+      connection.providerFamily === 'ollama' ? 60_000 : limits.provider.capabilityProbeTimeoutMs;
     const result = await generateText({
       model: built.model,
       prompt: 'Reply with the single word pong.',
-      abortSignal: AbortSignal.timeout(limits.provider.capabilityProbeTimeoutMs),
+      abortSignal: AbortSignal.timeout(timeoutMs),
     });
     if (result.text.trim().length === 0) {
       throw new AppError({

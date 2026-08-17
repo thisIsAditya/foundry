@@ -1,4 +1,4 @@
-import { tool } from 'ai';
+import { tool, type Tool } from 'ai';
 import {
   CostStructureSchema,
   DecimalStringSchema,
@@ -27,28 +27,28 @@ const UnitEconomicsToolInputSchema = z.object({
   costStructure: CostStructureSchema,
 });
 
-export const marketCalculatorTool = tool({
+export const marketCalculatorTool: Tool = tool({
   description:
     'Compute bottom-up TAM/SAM/SOM from accounts, units, periods, and the canonical MoneyRules price. Do not use this tool to invent a market from an unexamined idea or to bypass MoneyRules.',
   inputSchema: MarketToolInputSchema,
   execute: async (input) => calculateMarketSize(input),
 });
 
-export const unitEconomicsCalculatorTool = tool({
+export const unitEconomicsCalculatorTool: Tool = tool({
   description:
     'Compute contribution, gross margin, LTV, CAC, and payback from MoneyRules. Never compute these figures in prose.',
   inputSchema: UnitEconomicsToolInputSchema,
   execute: async (input) => calculateUnitEconomics(input),
 });
 
-export const sensitivityCalculatorTool = tool({
+export const sensitivityCalculatorTool: Tool = tool({
   description:
     'Run percentage shocks on price, CAC, COGS, and lifetime. Use after unit economics, not instead of it.',
   inputSchema: UnitEconomicsToolInputSchema,
   execute: async (input) => calculateSensitivity(input),
 });
 
-export const reconciliationCheckerTool = tool({
+export const reconciliationCheckerTool: Tool = tool({
   description:
     'Check that market size and unit economics use the same canonical MoneyRules price and currency. Do not treat a matching total as evidence.',
   inputSchema: z.object({

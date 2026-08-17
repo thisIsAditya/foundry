@@ -133,9 +133,9 @@ function createAuth() {
 
 export type Auth = ReturnType<typeof createAuth>;
 
-let auth: Auth | undefined;
+const globalForAuth = globalThis as typeof globalThis & { foundryAuth?: Auth };
 
 export function getAuth(): Auth {
-  auth ??= createAuth();
-  return auth;
+  globalForAuth.foundryAuth ??= createAuth();
+  return globalForAuth.foundryAuth;
 }

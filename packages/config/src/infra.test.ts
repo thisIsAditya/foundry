@@ -26,6 +26,7 @@ describe('infra constants', () => {
     expect(infra.queues.ingestion).toBe('ingestion');
     expect(infra.queues.sprint).toBe('sprint');
     expect(infra.queues.render).toBe('render');
+    expect(infra.queues.notification).toBe('notification');
     expect(infra.ingestion.concurrency).toBe(8);
     expect(infra.sprintQueue.attempts).toBe(1);
     expect(infra.renderQueue.concurrency).toBe(4);

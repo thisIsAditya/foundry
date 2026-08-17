@@ -1,7 +1,16 @@
-import { type WorkspaceMembership, type WorkspaceRole } from '@foundry/domain';
+import { type RiskClass, type WorkspaceMembership, type WorkspaceRole } from '@foundry/domain';
+
+const riskRank: Record<RiskClass, number> = {
+  read: 0,
+  compute: 1,
+  draft: 2,
+  side_effect: 3,
+  forbidden: 4,
+};
 
 const roleRank: Record<WorkspaceRole, number> = {
   viewer: 0,
+  reviewer: 0,
   member: 1,
   admin: 2,
   owner: 3,
@@ -23,6 +32,14 @@ export const PolicyActions = [
   'money.write',
   'artifact.read',
   'artifact.generate',
+  'approval.read',
+  'approval.decide',
+  'decision.record',
+  'integration.read',
+  'integration.connect',
+  'metric.read',
+  'metric.write',
+  'member.manage',
 ] as const;
 export type PolicyAction = (typeof PolicyActions)[number];
 
@@ -46,15 +63,53 @@ export class PolicyService {
       case 'sprint.read':
       case 'money.read':
       case 'artifact.read':
+      case 'approval.read':
+      case 'integration.read':
+      case 'metric.read':
         return roleAtLeast(membership.role, 'viewer');
       case 'project.create':
-      case 'project.answer':
       case 'evidence.upload':
       case 'provider.connect':
       case 'sprint.run':
       case 'money.write':
       case 'artifact.generate':
+      case 'approval.decide':
+      case 'decision.record':
+      case 'integration.connect':
+      case 'metric.write':
         return roleAtLeast(membership.role, 'member');
+      case 'project.answer':
+        return membership.role === 'reviewer' || roleAtLeast(membership.role, 'member');
+      case 'member.manage':
+        return roleAtLeast(membership.role, 'admin');
     }
+  }
+
+  /**
+   * Narrows a tool map to the contract allowlist, capped by a maximum risk class
+   * (08 §11, plan §Slice 2). Unknown or forbidden tools are always dropped.
+   */
+  filterTools<T>(
+    tools: Record<string, T>,
+    riskClasses: Record<string, RiskClass>,
+    options: { allowlist: readonly string[]; maxRiskClass: RiskClass },
+  ): Record<string, T> {
+    const allowed = new Set(options.allowlist);
+    const maxRank = riskRank[options.maxRiskClass];
+    const result: Record<string, T> = {};
+    for (const [name, definition] of Object.entries(tools)) {
+      if (!allowed.has(name)) {
+        continue;
+      }
+      const riskClass = riskClasses[name];
+      if (riskClass === undefined || riskClass === 'forbidden') {
+        continue;
+      }
+      if (riskRank[riskClass] > maxRank) {
+        continue;
+      }
+      result[name] = definition;
+    }
+    return result;
   }
 }

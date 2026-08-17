@@ -43,7 +43,9 @@ export {
 export {
   insertWorkspaceMembership,
   listWorkspaceMembershipsByUserId,
+  listWorkspaceMembershipsByWorkspaceId,
   toWorkspaceMembership,
+  updateWorkspaceMembershipRole,
   type InsertWorkspaceMembership,
 } from './repositories/workspace-memberships.js';
 export {
@@ -87,8 +89,10 @@ export { truncateAppTables } from './truncate.js';
 export {
   getPackRevisionById,
   insertPackRevision,
+  listPackRevisionsByProjectId,
   toPackRevision,
   updatePackRevisionProposedChanges,
+  updatePackRevisionStatus,
   type InsertPackRevision,
 } from './repositories/pack-revisions.js';
 export {
@@ -108,12 +112,21 @@ export {
   listBeachheadsByPackRevisionId,
   toBeachhead,
   updateBeachheadDmuId,
+  updateBeachheadSegmentDefinition,
   type InsertBeachhead,
 } from './repositories/beachheads.js';
-export { insertDmu, listDmusByPackRevisionId, toDmu, type InsertDmu } from './repositories/dmus.js';
+export {
+  insertDmu,
+  listDmusByPackRevisionId,
+  toDmu,
+  updateDmuRoles,
+  type InsertDmu,
+  type UpdateDmuRoles,
+} from './repositories/dmus.js';
 export {
   getSprintById,
   insertSprint,
+  listSprintsByProjectId,
   toSprint,
   updateSprintContract,
   updateSprintStatus,
@@ -217,3 +230,42 @@ export {
   toTemplate,
   updateRenderJobStatus,
 } from './repositories/templates.js';
+export {
+  getMetricDefinitionById,
+  insertMetricDefinition,
+  insertMetricObservation,
+  listMetricDefinitionsByProjectId,
+  listMetricObservationsByProjectId,
+  toMetricDefinition,
+  toMetricObservation,
+  type InsertMetricDefinition,
+  type InsertMetricObservation,
+} from './repositories/metrics.js';
+export {
+  emptyPackSectionBody,
+  getPackSection,
+  listPackSections,
+  toPackSection,
+  upsertPackSection,
+} from './repositories/pack-sections.js';
+export {
+  getApprovalRequestById,
+  insertApprovalRequest,
+  listApprovalRequestsByProjectId,
+  toApprovalRequest,
+  updateApprovalRequestDecision,
+  type InsertApprovalRequest,
+} from './repositories/approvals.js';
+export {
+  insertDecision,
+  listDecisionsByProjectId,
+  toDecision,
+  type InsertDecision,
+} from './repositories/decisions.js';
+export {
+  insertIntegrationConnection,
+  listIntegrationConnectionsByWorkspaceId,
+  revokeIntegrationConnection,
+  toIntegrationConnection,
+  type InsertIntegrationConnection,
+} from './repositories/integrations.js';

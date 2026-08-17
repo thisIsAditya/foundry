@@ -159,6 +159,10 @@ export function primaryExtensionFor(artifactType: ArtifactRenderContext['artifac
     case 'company_pack':
     case 'evidence_report':
     case 'slide_outline':
+    case 'mvbp_prd':
+    case 'first_100_plan':
+    case 'launch_checklist':
+    case 'operating_playbook':
       return 'md';
   }
 }

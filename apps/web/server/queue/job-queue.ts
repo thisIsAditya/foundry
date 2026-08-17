@@ -1,7 +1,12 @@
 import { SprintJobDataSchema, type SprintJobData } from '@foundry/agent-runtime';
 import { RenderJobDataSchema, type RenderJobData } from '@foundry/artifacts';
 import { infra } from '@foundry/config/infra';
-import { ProjectIdSchema, SourceIdSchema, WorkspaceIdSchema } from '@foundry/domain';
+import {
+  ApprovalRequestIdSchema,
+  ProjectIdSchema,
+  SourceIdSchema,
+  WorkspaceIdSchema,
+} from '@foundry/domain';
 import { Queue } from 'bullmq';
 import { z } from 'zod';
 
@@ -14,26 +19,39 @@ export const IngestionJobDataSchema = z.object({
 export type IngestionJobData = z.infer<typeof IngestionJobDataSchema>;
 export type { SprintJobData, RenderJobData };
 
+export const NotificationJobDataSchema = z.object({
+  kind: z.enum(['execute_approval', 'weekly_digest', 'compliance_reminder']),
+  projectId: ProjectIdSchema,
+  workspaceId: WorkspaceIdSchema,
+  correlationId: z.string().min(1),
+  approvalId: ApprovalRequestIdSchema.optional(),
+});
+export type NotificationJobData = z.infer<typeof NotificationJobDataSchema>;
+
 export type JobQueue = {
   enqueueIngestion(data: IngestionJobData): Promise<void>;
   enqueueSprint(data: SprintJobData): Promise<void>;
   enqueueRender(data: RenderJobData): Promise<void>;
+  enqueueNotification(data: NotificationJobData): Promise<void>;
 };
 
 export type MemoryJobQueue = JobQueue & {
   readonly jobs: IngestionJobData[];
   readonly sprintJobs: SprintJobData[];
   readonly renderJobs: RenderJobData[];
+  readonly notificationJobs: NotificationJobData[];
 };
 
 export function createMemoryJobQueue(): MemoryJobQueue {
   const jobs: IngestionJobData[] = [];
   const sprintJobs: SprintJobData[] = [];
   const renderJobs: RenderJobData[] = [];
+  const notificationJobs: NotificationJobData[] = [];
   return {
     jobs,
     sprintJobs,
     renderJobs,
+    notificationJobs,
     async enqueueIngestion(data) {
       if (jobs.some((job) => job.sourceId === data.sourceId)) {
         return;
@@ -53,6 +71,10 @@ export function createMemoryJobQueue(): MemoryJobQueue {
       }
       RenderJobDataSchema.parse(data);
       renderJobs.push(data);
+    },
+    async enqueueNotification(data) {
+      NotificationJobDataSchema.parse(data);
+      notificationJobs.push(data);
     },
   };
 }
@@ -85,6 +107,15 @@ export function createBullmqJobQueue(redisUrl: string): JobQueue {
       removeOnFail: 5000,
     },
   });
+  const notification = new Queue(infra.queues.notification, {
+    connection,
+    defaultJobOptions: {
+      attempts: infra.notificationQueue.attempts,
+      backoff: { type: 'exponential', delay: infra.notificationQueue.backoffMs },
+      removeOnComplete: 1000,
+      removeOnFail: 5000,
+    },
+  });
 
   return {
     async enqueueIngestion(data) {
@@ -110,6 +141,17 @@ export function createBullmqJobQueue(redisUrl: string): JobQueue {
     async enqueueRender(data) {
       try {
         await render.add('render', data, { jobId: `render-${data.artifactVersionId}` });
+      } catch (error) {
+        if (error instanceof Error && /already exists/i.test(error.message)) {
+          return;
+        }
+        throw error;
+      }
+    },
+    async enqueueNotification(data) {
+      const suffix = data.approvalId ?? `${data.kind}-${data.projectId}-${data.correlationId}`;
+      try {
+        await notification.add(data.kind, data, { jobId: `notification-${suffix}` });
       } catch (error) {
         if (error instanceof Error && /already exists/i.test(error.message)) {
           return;

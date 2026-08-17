@@ -80,8 +80,14 @@ This table is the authoritative list of every tRPC procedure in v1. It mirrors `
 | `approval` | `list` | query | `projectId`, `status?` | |
 | `approval` | `getPayload` | query | `approvalId` | |
 | `approval` | `approve` / `reject` | mutation | `approvalId`, `expectedPayloadHash` | |
+| `approval` | `request` | mutation | `actionType`, `payload` | Draft side effects; `filing.submit` is forbidden |
 | `decision` | `record` | mutation | `projectId`, `options`, `chosen`, `rationale`, `evidenceRefs` | |
 | `decision` | `list` | query | `projectId` | |
+| `metric` | `listDefinitions` / `listObservations` | query | `projectId` | Gate C inputs |
+| `metric` | `define` / `recordObservation` | mutation | metric fields | Thresholds must be registered before Gate C |
+| `gate` | `evaluate` | mutation | `projectId`, `gateType` | Domain function; founder/waiver still owns the pass |
+| `integration` | `list` / `connect` / `revoke` | query/mutation | `workspaceId`, … | Never returns raw secrets |
+| `member` | `list` / `invite` / `updateRole` | query/mutation | `workspaceId`, … | Professional reviewer uses `reviewer` |
 | `artifact` | `list` | query | `projectId` | |
 | `artifact` | `generate` / `regenerate` | mutation | `projectId`, `artifactType`, `templateVersion?` | Enqueues `render` job |
 | `artifact` | `getVersion` | query | `artifactId`, `version?` | |

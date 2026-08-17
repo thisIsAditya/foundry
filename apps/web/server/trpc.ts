@@ -19,7 +19,7 @@ import { writeAudit } from './middleware/audit';
 import { enforceRateLimit } from './middleware/rate-limit';
 
 export type ProcedureMeta = {
-  invalidates?: string[];
+  invalidates?: readonly string[];
 };
 
 export type WorkspaceContext = Context & {
@@ -383,3 +383,17 @@ export const artifactWriteProcedure = protectedProcedure.use(
   requireProjectAccess('artifact.generate'),
 );
 export const artifactReadProcedure = protectedProcedure.use(requireProjectAccess('artifact.read'));
+export const approvalReadProcedure = protectedProcedure.use(requireProjectAccess('approval.read'));
+export const approvalWriteProcedure = protectedProcedure.use(
+  requireProjectAccess('approval.decide'),
+);
+export const metricReadProcedure = protectedProcedure.use(requireProjectAccess('metric.read'));
+export const metricWriteProcedure = protectedProcedure.use(requireProjectAccess('metric.write'));
+export const memberReadProcedure = protectedProcedure.use(requireWorkspaceAccess('workspace.read'));
+export const memberWriteProcedure = protectedProcedure.use(requireWorkspaceAccess('member.manage'));
+export const integrationReadProcedure = protectedProcedure.use(
+  requireWorkspaceAccess('integration.read'),
+);
+export const integrationWriteProcedure = protectedProcedure.use(
+  requireWorkspaceAccess('integration.connect'),
+);

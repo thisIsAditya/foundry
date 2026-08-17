@@ -110,6 +110,10 @@ services:
       AWS_S3_FORCE_PATH_STYLE: 'true'
       AWS_ACCESS_KEY_ID: foundry
       AWS_SECRET_ACCESS_KEY: foundryfoundry
+      FOUNDRY_SECRETS_KEY: ${FOUNDRY_SECRETS_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

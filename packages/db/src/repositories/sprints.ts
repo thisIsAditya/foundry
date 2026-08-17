@@ -99,6 +99,13 @@ export async function getSprintById(sql: Sql, id: SprintId): Promise<Sprint | nu
   return row === undefined ? null : parseSprint(row);
 }
 
+export async function listSprintsByProjectId(sql: Sql, projectId: ProjectId): Promise<Sprint[]> {
+  const rows = await sql<SprintRow[]>`
+    select * from sprints where project_id = ${projectId} order by created_at desc
+  `;
+  return rows.map(parseSprint);
+}
+
 export async function updateSprintStatus(
   sql: Sql,
   id: SprintId,

@@ -14,16 +14,24 @@ import { PolicyService } from '@foundry/policy';
 import type { LanguageModel } from 'ai';
 import { randomUUID } from 'node:crypto';
 
+import { headersWithAccessKey } from '../lib/access-key';
 import { getAuth } from '../lib/auth';
 import { getEnv } from '../lib/env';
 import { getSql } from '../lib/sql';
 import { getCoordinationStore, type CoordinationStore } from './coordination';
 import { createBullmqJobQueue, createMemoryJobQueue, type JobQueue } from './queue/job-queue';
 import { ArtifactService } from './services/artifact-service';
+import { ApprovalService } from './services/approval-service';
+import { DecisionService } from './services/decision-service';
 import { DocumentService } from './services/document-service';
 import { ExperimentService } from './services/experiment-service';
+import { IntegrationService } from './services/integration-service';
+import { InterviewService } from './services/interview-service';
 import { McpServerService } from './services/mcp-server-service';
+import { MemberService } from './services/member-service';
+import { MetricService } from './services/metric-service';
 import { MoneyRulesService } from './services/money-rules-service';
+import { PackService } from './services/pack-service';
 import { ProjectService } from './services/project-service';
 import { ProviderService, type CapabilityProbe } from './services/provider-service';
 import { SprintService } from './services/sprint-service';
@@ -48,12 +56,19 @@ export type ServiceContainer = {
   workspaceService: WorkspaceService;
   projectService: ProjectService;
   documentService: DocumentService;
+  interviewService: InterviewService;
   providerService: ProviderService;
   mcpServerService: McpServerService;
   sprintService: SprintService;
   moneyRulesService: MoneyRulesService;
   experimentService: ExperimentService;
   artifactService: ArtifactService;
+  packService: PackService;
+  approvalService: ApprovalService;
+  decisionService: DecisionService;
+  metricService: MetricService;
+  integrationService: IntegrationService;
+  memberService: MemberService;
 };
 
 export type Context = {
@@ -103,6 +118,7 @@ export function createServices(
       extras.objectStore,
       extras.jobQueue,
     ),
+    interviewService: new InterviewService(sql, coordination, policyService),
     providerService: new ProviderService(
       sql,
       coordination,
@@ -134,6 +150,12 @@ export function createServices(
       extras.objectStore,
       extras.jobQueue,
     ),
+    packService: new PackService(sql, coordination, policyService),
+    approvalService: new ApprovalService(sql, coordination, policyService, extras.jobQueue),
+    decisionService: new DecisionService(sql, coordination, policyService),
+    metricService: new MetricService(sql, coordination, policyService),
+    integrationService: new IntegrationService(sql, coordination, policyService, extras.secretBox),
+    memberService: new MemberService(sql, coordination, policyService),
   };
 }
 
@@ -163,16 +185,15 @@ function extrasFromEnv(): ServiceExtras {
 }
 
 export async function createContext(req: Request): Promise<Context> {
-  const correlationId = req.headers.get('x-correlation-id') ?? randomUUID();
-  const session = await getAuth().api.getSession({ headers: req.headers });
+  const headers = headersWithAccessKey(req);
+  const correlationId = headers.get('x-correlation-id') ?? randomUUID();
+  const session = await getAuth().api.getSession({ headers });
   const sql = getSql();
   const coordination = getCoordinationStore();
   const policyService = new PolicyService();
   const extras = extrasFromEnv();
   const clientIp =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown';
+    headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? headers.get('x-real-ip') ?? 'unknown';
 
   if (session === null) {
     return {

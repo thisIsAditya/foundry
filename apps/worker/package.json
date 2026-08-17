@@ -26,6 +26,7 @@
     "@foundry/domain": "workspace:*",
     "@foundry/observability": "workspace:*",
     "@foundry/policy": "workspace:*",
+    "@foundry/tools": "workspace:*",
     "bullmq": "5.81.3",
     "ioredis": "5.11.1",
     "zod": "4.4.3"

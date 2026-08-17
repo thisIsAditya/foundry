@@ -1,8 +1,10 @@
 import { getDatabaseUrl } from './env.js';
-import { migrateUp } from './migrate.js';
+import { runMigrations, type MigrationDirection } from './migrate.js';
+
+const direction: MigrationDirection = process.argv.includes('down') ? 'down' : 'up';
 
 async function main(): Promise<void> {
-  await migrateUp(getDatabaseUrl());
+  await runMigrations(getDatabaseUrl(), direction, { verbose: true });
 }
 
 try {

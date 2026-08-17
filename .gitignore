@@ -6,6 +6,7 @@ coverage
 .env.local
 .env.*.local
 !.env.example
+.local-admin-pin
 *.log
 .DS_Store
 .idea

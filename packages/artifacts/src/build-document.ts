@@ -344,6 +344,11 @@ export function buildDocumentModel(ctx: ArtifactRenderContext): DocumentModel {
       return buildOnePageBriefDocument(ctx);
     case 'slide_outline':
       return buildSlideOutlineDocument(ctx);
+    case 'mvbp_prd':
+    case 'first_100_plan':
+    case 'launch_checklist':
+    case 'operating_playbook':
+      return buildOnePageBriefDocument(ctx);
     case 'market_economics_workbook':
       throw new Error('workbook artifacts do not use the document model');
   }

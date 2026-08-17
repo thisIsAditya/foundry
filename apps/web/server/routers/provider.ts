@@ -3,6 +3,7 @@ import {
   ListProviderConnectionsInputSchema,
 } from '@foundry/api-contracts';
 
+import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
 import { providerReadProcedure, providerWriteProcedure, router } from '../trpc';
 
 export const providerRouter = router({
@@ -12,7 +13,7 @@ export const providerRouter = router({
       return ctx.services.providerService.listConnections(ctx.membership, input.workspaceId);
     }),
   connect: providerWriteProcedure
-    .meta({ invalidates: ['provider.listConnections'] })
+    .meta({ invalidates: mutationInvalidations['provider.connect'] })
     .input(ConnectProviderInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {

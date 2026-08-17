@@ -135,37 +135,61 @@ export class McpServerService {
     );
   }
 
-  async remove(userId: UserId, mcpServerId: UserMcpServer['id']): Promise<{ ok: true }> {
-    await withUserScope(this.sql, userId, async (tx) => {
-      const existing = await getUserMcpServerById(tx, mcpServerId);
-      if (existing === null || existing.userId !== userId) {
-        throw new AppError({
-          code: 'not_found',
-          explanation: 'MCP server not found.',
-          nextAction: 'Refresh the list and retry.',
+  async remove(
+    userId: UserId,
+    mcpServerId: UserMcpServer['id'],
+    idempotencyKey: string,
+  ): Promise<{ ok: true }> {
+    const key = `idem:${userId}:mcpServer.remove:${idempotencyKey}`;
+    return withIdempotency(
+      this.coordination,
+      key,
+      limits.idempotencyKeyTtlSeconds,
+      (raw) => superjson.parse(raw) as { ok: true },
+      (value) => superjson.stringify(value),
+      async () => {
+        await withUserScope(this.sql, userId, async (tx) => {
+          const existing = await getUserMcpServerById(tx, mcpServerId);
+          if (existing === null || existing.userId !== userId) {
+            throw new AppError({
+              code: 'not_found',
+              explanation: 'MCP server not found.',
+              nextAction: 'Refresh the list and retry.',
+            });
+          }
+          await deleteUserMcpServer(tx, mcpServerId);
         });
-      }
-      await deleteUserMcpServer(tx, mcpServerId);
-    });
-    return { ok: true };
+        return { ok: true };
+      },
+    );
   }
 
   async toggle(
     userId: UserId,
     mcpServerId: UserMcpServer['id'],
     enabled: boolean,
+    idempotencyKey: string,
   ): Promise<McpServerSummary> {
-    return withUserScope(this.sql, userId, async (tx) => {
-      const existing = await getUserMcpServerById(tx, mcpServerId);
-      if (existing === null || existing.userId !== userId) {
-        throw new AppError({
-          code: 'not_found',
-          explanation: 'MCP server not found.',
-          nextAction: 'Refresh the list and retry.',
-        });
-      }
-      return toSummary(await updateUserMcpServerEnabled(tx, mcpServerId, enabled));
-    });
+    const key = `idem:${userId}:mcpServer.toggle:${enabled}:${idempotencyKey}`;
+    return withIdempotency(
+      this.coordination,
+      key,
+      limits.idempotencyKeyTtlSeconds,
+      (raw) => superjson.parse(raw) as McpServerSummary,
+      (value) => superjson.stringify(value),
+      async () =>
+        withUserScope(this.sql, userId, async (tx) => {
+          const existing = await getUserMcpServerById(tx, mcpServerId);
+          if (existing === null || existing.userId !== userId) {
+            throw new AppError({
+              code: 'not_found',
+              explanation: 'MCP server not found.',
+              nextAction: 'Refresh the list and retry.',
+            });
+          }
+          return toSummary(await updateUserMcpServerEnabled(tx, mcpServerId, enabled));
+        }),
+    );
   }
 
   async testConnection(

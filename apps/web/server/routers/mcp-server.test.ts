@@ -25,6 +25,34 @@ describe('mcpServer procedures', () => {
     const listed = await caller.mcpServer.list();
     expect(listed).toHaveLength(1);
     expect(listed[0]).not.toHaveProperty('headersEncrypted');
+
+    const toggleKey = randomUUID();
+    const toggled = await caller.mcpServer.toggle({
+      mcpServerId: added.id,
+      enabled: false,
+      idempotencyKey: toggleKey,
+    });
+    expect(toggled.enabled).toBe(false);
+    const toggledAgain = await caller.mcpServer.toggle({
+      mcpServerId: added.id,
+      enabled: false,
+      idempotencyKey: toggleKey,
+    });
+    expect(toggledAgain).toEqual(toggled);
+
+    const removeKey = randomUUID();
+    const removed = await caller.mcpServer.remove({
+      mcpServerId: added.id,
+      idempotencyKey: removeKey,
+    });
+    expect(removed).toEqual({ ok: true });
+    const removedAgain = await caller.mcpServer.remove({
+      mcpServerId: added.id,
+      idempotencyKey: removeKey,
+    });
+    expect(removedAgain).toEqual({ ok: true });
+
+    expect(await caller.mcpServer.list()).toHaveLength(0);
   });
 
   it('rejects a private URL before opening a client', async () => {

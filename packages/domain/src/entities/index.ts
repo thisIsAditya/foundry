@@ -15,6 +15,24 @@ export {
   type CompanyPack,
   type PackRevision,
 } from './company-pack.js';
+export {
+  GtmSectionBodySchema,
+  KillLineSchema,
+  LaunchSectionBodySchema,
+  LegalSectionBodySchema,
+  MvbpSectionBodySchema,
+  OrgCostSectionBodySchema,
+  PackSectionBodySchema,
+  PackSectionSchema,
+  type GtmSectionBody,
+  type KillLine,
+  type LaunchSectionBody,
+  type LegalSectionBody,
+  type MvbpSectionBody,
+  type OrgCostSectionBody,
+  type PackSection,
+  type PackSectionBody,
+} from './pack-section.js';
 export { CompetitorSchema, type Competitor } from './competitor.js';
 export { ContentBlockSchema, type ContentBlock } from './content-block.js';
 export { DecisionSchema, type Decision } from './decision.js';

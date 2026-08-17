@@ -1,3 +1,7 @@
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { z } from 'zod';
 
 const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value);
@@ -23,10 +27,21 @@ const EnvSchema = z.object({
   ANTHROPIC_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   OPENAI_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   AI_GATEWAY_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  OLLAMA_BASE_URL: z.preprocess(emptyToUndefined, z.url().optional()),
+  OLLAMA_MODEL: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   ALLOW_MCP_LOOPBACK: z.preprocess(emptyToUndefined, z.enum(['true', 'false']).optional()),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
+
+function loadLocalEnvFiles(): void {
+  const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../../..');
+  for (const file of [join(repoRoot, '.env.local'), join(repoRoot, '.env')]) {
+    if (existsSync(file)) {
+      process.loadEnvFile(file);
+    }
+  }
+}
 
 function readProcessEnv(): Record<string, string | undefined> {
   const phase = process.env.NEXT_PHASE;
@@ -52,6 +67,8 @@ function readProcessEnv(): Record<string, string | undefined> {
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
       OPENAI_API_KEY: process.env.OPENAI_API_KEY,
       AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
+      OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+      OLLAMA_MODEL: process.env.OLLAMA_MODEL,
       ALLOW_MCP_LOOPBACK: process.env.ALLOW_MCP_LOOPBACK,
     };
   }
@@ -61,6 +78,7 @@ function readProcessEnv(): Record<string, string | undefined> {
 let cached: Env | undefined;
 
 export function getEnv(): Env {
+  loadLocalEnvFiles();
   cached ??= EnvSchema.parse(readProcessEnv());
   return cached;
 }

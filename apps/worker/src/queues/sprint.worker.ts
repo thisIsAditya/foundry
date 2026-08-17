@@ -1,4 +1,9 @@
-import { SprintJobDataSchema, type StreamBus } from '@foundry/agent-runtime';
+import {
+  SprintJobDataSchema,
+  type ProviderSecrets,
+  type SecretBox,
+  type StreamBus,
+} from '@foundry/agent-runtime';
 import { infra } from '@foundry/config/infra';
 import { updateSprintStatus, withWorkspaceScope, type PoolSql } from '@foundry/db';
 import { Worker, type ConnectionOptions } from 'bullmq';
@@ -9,6 +14,8 @@ export type SprintWorkerDeps = {
   sql: PoolSql;
   connection: ConnectionOptions;
   streamBus: StreamBus;
+  secretBox: SecretBox;
+  secrets: ProviderSecrets;
   queueName?: string;
 };
 
@@ -20,6 +27,8 @@ export function startSprintWorker(deps: SprintWorkerDeps): Worker {
       await processSprintJob(SprintJobDataSchema.parse(job.data), {
         sql: deps.sql,
         streamBus: deps.streamBus,
+        secretBox: deps.secretBox,
+        secrets: deps.secrets,
       });
     },
     {

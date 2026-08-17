@@ -1,15 +1,32 @@
 import {
   ApproveSprintPlanInputSchema,
+  ControlSprintInputSchema,
   GetSprintActivityInputSchema,
   GetSprintInputSchema,
+  ListSprintsInputSchema,
   PreviewSprintInputSchema,
 } from '@foundry/api-contracts';
 
-import { router, sprintApproveProcedure, sprintReadProcedure, sprintWriteProcedure } from '../trpc';
+import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
+import {
+  router,
+  sprintApproveProcedure,
+  sprintReadByProjectProcedure,
+  sprintReadProcedure,
+  sprintWriteProcedure,
+} from '../trpc';
 
 export const sprintRouter = router({
+  listByProject: sprintReadByProjectProcedure
+    .input(ListSprintsInputSchema)
+    .query(async ({ ctx }) => {
+      return ctx.services.sprintService.listByProject({
+        membership: ctx.membership,
+        project: ctx.project,
+      });
+    }),
   preview: sprintWriteProcedure
-    .meta({ invalidates: ['sprint.getContract'] })
+    .meta({ invalidates: mutationInvalidations['sprint.preview'] })
     .input(PreviewSprintInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {
@@ -21,7 +38,7 @@ export const sprintRouter = router({
       );
     }),
   approvePlan: sprintApproveProcedure
-    .meta({ invalidates: ['sprint.getContract', 'sprint.getActivity'] })
+    .meta({ invalidates: mutationInvalidations['sprint.approvePlan'] })
     .input(ApproveSprintPlanInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {
@@ -44,6 +61,48 @@ export const sprintRouter = router({
         ctx.membership,
         input.sprintId,
         input.cursor ?? 0,
+      );
+    }),
+  pause: sprintApproveProcedure
+    .meta({ invalidates: mutationInvalidations['sprint.pause'] })
+    .input(ControlSprintInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.actor.type !== 'user') {
+        throw new Error('sprint.pause requires a user actor');
+      }
+      return ctx.services.sprintService.control(
+        { userId: ctx.actor.userId, membership: ctx.membership },
+        input.sprintId,
+        'paused',
+        input.idempotencyKey,
+      );
+    }),
+  resume: sprintApproveProcedure
+    .meta({ invalidates: mutationInvalidations['sprint.resume'] })
+    .input(ControlSprintInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.actor.type !== 'user') {
+        throw new Error('sprint.resume requires a user actor');
+      }
+      return ctx.services.sprintService.control(
+        { userId: ctx.actor.userId, membership: ctx.membership },
+        input.sprintId,
+        'running',
+        input.idempotencyKey,
+      );
+    }),
+  stop: sprintApproveProcedure
+    .meta({ invalidates: mutationInvalidations['sprint.stop'] })
+    .input(ControlSprintInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.actor.type !== 'user') {
+        throw new Error('sprint.stop requires a user actor');
+      }
+      return ctx.services.sprintService.control(
+        { userId: ctx.actor.userId, membership: ctx.membership },
+        input.sprintId,
+        'closed',
+        input.idempotencyKey,
       );
     }),
 });

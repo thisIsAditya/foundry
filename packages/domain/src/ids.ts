@@ -28,6 +28,9 @@ export type NotificationEndpointId = z.infer<typeof NotificationEndpointIdSchema
 export const PackRevisionIdSchema = brandedUuid('PackRevisionId');
 export type PackRevisionId = z.infer<typeof PackRevisionIdSchema>;
 
+export const PackSectionIdSchema = brandedUuid('PackSectionId');
+export type PackSectionId = z.infer<typeof PackSectionIdSchema>;
+
 export const PhaseIdSchema = brandedUuid('PhaseId');
 export type PhaseId = z.infer<typeof PhaseIdSchema>;
 

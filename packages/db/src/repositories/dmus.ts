@@ -5,6 +5,7 @@ import {
   PackRevisionIdSchema,
   type BeachheadId,
   type Dmu,
+  type DmuId,
   type PackRevisionId,
 } from '@foundry/domain';
 import { z } from 'zod';
@@ -92,4 +93,28 @@ export async function listDmusByPackRevisionId(
     select * from dmus where pack_revision_id = ${packRevisionId} order by created_at asc
   `;
   return rows.map(parseDmu);
+}
+
+export type UpdateDmuRoles = {
+  user?: string | null;
+  champion?: string | null;
+  buyer?: string | null;
+  approver?: string | null;
+  veto?: string | null;
+  procurement?: string | null;
+};
+
+export async function updateDmuRoles(sql: Sql, id: DmuId, input: UpdateDmuRoles): Promise<Dmu> {
+  const rows = await sql<DmuRow[]>`
+    update dmus set
+      "user" = coalesce(${input.user ?? null}, "user"),
+      champion = coalesce(${input.champion ?? null}, champion),
+      buyer = coalesce(${input.buyer ?? null}, buyer),
+      approver = coalesce(${input.approver ?? null}, approver),
+      veto = coalesce(${input.veto ?? null}, veto),
+      procurement = coalesce(${input.procurement ?? null}, procurement)
+    where id = ${id}
+    returning *
+  `;
+  return parseDmu(requireRow(rows, 'updateDmuRoles'));
 }

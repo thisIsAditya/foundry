@@ -3,6 +3,7 @@ import { limits } from '@foundry/config/limits';
 import { getProjectById, listWorkspaceMembershipsByUserId, withWorkspaceScope } from '@foundry/db';
 import { ProjectIdSchema, UserIdSchema } from '@foundry/domain';
 
+import { headersWithAccessKey } from '../../../../lib/access-key';
 import { getAuth } from '../../../../lib/auth';
 import { getSql } from '../../../../lib/sql';
 import { createContext } from '../../../../server/context';
@@ -24,7 +25,7 @@ export async function GET(
     return Response.json({ error: 'invalid_input' }, { status: 400 });
   }
 
-  const session = await getAuth().api.getSession({ headers: request.headers });
+  const session = await getAuth().api.getSession({ headers: headersWithAccessKey(request) });
   if (session === null) {
     return Response.json({ error: 'unauthorized' }, { status: 401 });
   }

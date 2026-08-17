@@ -5,6 +5,7 @@ import {
   ListProjectsInputSchema,
 } from '@foundry/api-contracts';
 
+import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
 import {
   projectAnswerProcedure,
   projectReadProcedure,
@@ -15,7 +16,7 @@ import {
 
 export const projectRouter = router({
   create: workspaceProcedure
-    .meta({ invalidates: ['project.list'] })
+    .meta({ invalidates: mutationInvalidations['project.create'] })
     .input(CreateProjectInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {
@@ -36,7 +37,7 @@ export const projectRouter = router({
     });
   }),
   answerClarification: projectAnswerProcedure
-    .meta({ invalidates: ['project.getDeskSummary', 'sprint.getActivity'] })
+    .meta({ invalidates: mutationInvalidations['project.answerClarification'] })
     .input(AnswerClarificationInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {

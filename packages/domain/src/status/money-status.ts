@@ -12,6 +12,10 @@ export const ArtifactTypes = [
   'one_page_brief',
   'slide_outline',
   'market_economics_workbook',
+  'mvbp_prd',
+  'first_100_plan',
+  'launch_checklist',
+  'operating_playbook',
 ] as const;
 export const ArtifactTypeSchema = z.enum(ArtifactTypes);
 export type ArtifactType = z.infer<typeof ArtifactTypeSchema>;

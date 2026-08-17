@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
-import { buildSprintContract, createMemoryStreamBus } from '@foundry/agent-runtime';
+import {
+  buildSprintContract,
+  createMemoryStreamBus,
+  createSecretBox,
+} from '@foundry/agent-runtime';
 import {
   getSprintById,
   insertInterview,
@@ -20,6 +24,9 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { startSprintWorker } from '../queues/sprint.worker.js';
 import { processSprintJob } from './process.js';
 import { sql } from '../test/harness.js';
+
+const secretBox = createSecretBox('0'.repeat(64));
+const secrets = {};
 
 async function seedSprint(options: { friendInterview?: boolean } = {}) {
   const owner = await insertUser(sql, {
@@ -81,7 +88,7 @@ describe('sprint processor', () => {
   it('runs mock worker synthesis and does not pass Gate A without real interviews', async () => {
     const seeded = await seedSprint();
     const bus = createMemoryStreamBus();
-    const outcome = await processSprintJob(seeded.job, { sql, streamBus: bus });
+    const outcome = await processSprintJob(seeded.job, { sql, streamBus: bus, secretBox, secrets });
     expect(outcome.gateA.result).toBe('failed');
     expect(outcome.critique.recommendation).toBe('PIVOT');
     const sprint = await getSprintById(sql, seeded.sprint.id);
@@ -94,6 +101,8 @@ describe('sprint processor', () => {
     const outcome = await processSprintJob(seeded.job, {
       sql,
       streamBus: createMemoryStreamBus(),
+      secretBox,
+      secrets,
     });
     expect(outcome.critique.recommendation).toBe('KILL');
     expect(outcome.gateA.result).toBe('failed');
@@ -118,6 +127,8 @@ describe('sprint BullMQ worker', () => {
       sql,
       connection,
       streamBus: createMemoryStreamBus(),
+      secretBox,
+      secrets,
       queueName,
     });
 

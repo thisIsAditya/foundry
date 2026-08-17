@@ -6,6 +6,7 @@ import {
   GetMoneyRulesInputSchema,
 } from '@foundry/api-contracts';
 
+import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
 import { artifactReadProcedure, artifactWriteProcedure, router } from '../trpc';
 
 export const artifactRouter = router({
@@ -16,7 +17,7 @@ export const artifactRouter = router({
     });
   }),
   generate: artifactWriteProcedure
-    .meta({ invalidates: ['artifact.list', 'artifact.getVersion'] })
+    .meta({ invalidates: mutationInvalidations['artifact.generate'] })
     .input(GenerateArtifactInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {
@@ -28,7 +29,7 @@ export const artifactRouter = router({
       );
     }),
   regenerate: artifactWriteProcedure
-    .meta({ invalidates: ['artifact.list', 'artifact.getVersion'] })
+    .meta({ invalidates: mutationInvalidations['artifact.regenerate'] })
     .input(GenerateArtifactInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {
@@ -40,7 +41,7 @@ export const artifactRouter = router({
       );
     }),
   generateWorkbook: artifactWriteProcedure
-    .meta({ invalidates: ['artifact.list'] })
+    .meta({ invalidates: mutationInvalidations['artifact.generateWorkbook'] })
     .input(GenerateWorkbookInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {

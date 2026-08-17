@@ -5,11 +5,12 @@ import {
   RecordWtpEventInputSchema,
 } from '@foundry/api-contracts';
 
+import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
 import { moneyReadProcedure, moneyWriteProcedure, router } from '../trpc';
 
 export const wtpRouter = router({
   createExperiment: moneyWriteProcedure
-    .meta({ invalidates: ['wtp.list'] })
+    .meta({ invalidates: mutationInvalidations['wtp.createExperiment'] })
     .input(CreateExperimentInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {
@@ -21,7 +22,7 @@ export const wtpRouter = router({
       );
     }),
   record: moneyWriteProcedure
-    .meta({ invalidates: ['wtp.list'] })
+    .meta({ invalidates: mutationInvalidations['wtp.record'] })
     .input(RecordWtpEventInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {
@@ -39,7 +40,7 @@ export const wtpRouter = router({
     });
   }),
   evaluateGateB: moneyWriteProcedure
-    .meta({ invalidates: ['wtp.list'] })
+    .meta({ invalidates: mutationInvalidations['wtp.evaluateGateB'] })
     .input(EvaluateGateBInputSchema)
     .mutation(async ({ ctx }) => {
       return ctx.services.experimentService.evaluateGateB({

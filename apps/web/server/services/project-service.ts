@@ -1,7 +1,7 @@
 import type { AnswerClarificationInput, CreateProjectInput } from '@foundry/api-contracts';
 import {
-  buildModel,
   diagnoseClarification,
+  resolveWorkspaceModel,
   type ProviderSecrets,
   type SecretBox,
   type StreamBus,
@@ -12,21 +12,27 @@ import {
   getCurrentMoneyRules,
   getProjectById,
   insertProject,
+  listApprovalRequestsByProjectId,
   listInterviewsByProjectId,
+  listPackRevisionsByProjectId,
   listProjectsByWorkspaceId,
   listProviderConnectionsByWorkspaceId,
+  listSprintsByProjectId,
   updatePackRevisionProposedChanges,
   withWorkspaceScope,
   type PoolSql,
 } from '@foundry/db';
 import {
+  type PackRevisionId,
   type Project,
+  type SprintId,
+  type SprintStatus,
   type UserId,
   type WorkspaceId,
   type WorkspaceMembership,
 } from '@foundry/domain';
 import { AppError } from '@foundry/observability';
-import { PolicyService } from '@foundry/policy';
+import { evaluateGateA, PolicyService } from '@foundry/policy';
 import type { LanguageModel } from 'ai';
 import { randomUUID } from 'node:crypto';
 import superjson from 'superjson';
@@ -34,6 +40,7 @@ import { z } from 'zod';
 
 import { withIdempotency, type CoordinationStore } from '../coordination';
 import { ensurePackRevision, loadPackSnapshot, readClarifications } from './pack-snapshot';
+import { hashContract } from './sprint-service';
 
 const AnswerResultSchema = z.object({
   runId: z.string().min(1),
@@ -114,6 +121,16 @@ export class ProjectService {
     staleArtifactCount: number;
     moneyRulesSet: boolean;
     nextAction: string;
+    gateA: {
+      qualifyingInterviews: number;
+      requiredInterviews: number;
+      passed: boolean;
+      checks: { id: string; passed: boolean; detail: string }[];
+    };
+    beachhead: { id: string; segmentDefinition: string } | null;
+    dmu: { id: string; buyer: string | null } | null;
+    currentSprint: { id: SprintId; status: SprintStatus; contractHash: string } | null;
+    pendingPackRevisionId: PackRevisionId | null;
   }> {
     if (!this.policyService.can(actor.membership, 'project.list')) {
       throw new AppError({
@@ -123,16 +140,74 @@ export class ProjectService {
       });
     }
     return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
-      const [interviews, moneyRules, staleArtifactCount] = await Promise.all([
-        listInterviewsByProjectId(tx, actor.project.id),
-        getCurrentMoneyRules(tx, actor.project.id),
-        countStaleArtifactVersions(tx, actor.project.id),
-      ]);
+      const [interviews, moneyRules, staleArtifactCount, pendingApprovals, sprints, packRevisions] =
+        await Promise.all([
+          listInterviewsByProjectId(tx, actor.project.id),
+          getCurrentMoneyRules(tx, actor.project.id),
+          countStaleArtifactVersions(tx, actor.project.id),
+          listApprovalRequestsByProjectId(tx, actor.project.id, 'pending'),
+          listSprintsByProjectId(tx, actor.project.id),
+          listPackRevisionsByProjectId(tx, actor.project.id),
+        ]);
       const moneyRulesSet = moneyRules !== null;
+      const latestSprint = sprints[0] ?? null;
+      const currentSprint =
+        latestSprint === null
+          ? null
+          : {
+              id: latestSprint.id,
+              status: latestSprint.status,
+              contractHash: hashContract(latestSprint.contract),
+            };
+      const pendingRevision = packRevisions
+        .filter(
+          (revision) =>
+            revision.status === 'draft' &&
+            revision.parentRevisionId === actor.project.currentPackRevisionId,
+        )
+        .sort((a, b) => b.revisionNumber - a.revisionNumber)[0];
+      const pendingPackRevisionId = pendingRevision?.id ?? null;
+      const snapshot =
+        actor.project.currentPackRevisionId === null
+          ? null
+          : await loadPackSnapshot(tx, actor.project);
+      const gateAEvaluation =
+        snapshot === null
+          ? null
+          : evaluateGateA({
+              interviews: snapshot.interviews,
+              quotes: snapshot.quotes,
+              beachheads: snapshot.beachheads,
+              dmus: snapshot.dmus,
+            });
+      const gateA = {
+        qualifyingInterviews: gateAEvaluation?.countedInterviewIds.length ?? 0,
+        requiredInterviews: limits.gateA.minNonFriendInterviews,
+        passed: gateAEvaluation?.result === 'passed',
+        checks: gateAEvaluation?.checks ?? [],
+      };
+      const latestBeachhead = snapshot?.beachheads[snapshot.beachheads.length - 1] ?? null;
+      const beachhead =
+        latestBeachhead === null
+          ? null
+          : { id: latestBeachhead.id, segmentDefinition: latestBeachhead.segmentDefinition };
+      const linkedDmu =
+        latestBeachhead === null
+          ? null
+          : (snapshot?.dmus.find((item) => item.beachheadId === latestBeachhead.id) ?? null);
+      const dmu = linkedDmu === null ? null : { id: linkedDmu.id, buyer: linkedDmu.buyer };
       let nextAction = 'Review the pack and continue the current phase.';
-      if (!moneyRulesSet) {
+      if (pendingApprovals.length > 0) {
+        nextAction = 'Review pending approvals.';
+      } else if (actor.project.currentPhase === 'product') {
+        nextAction = 'Scope the MVBP with a payment path and kill lines.';
+      } else if (actor.project.currentPhase === 'build_and_launch') {
+        nextAction = 'Complete the launch checklist and keep side effects approval-gated.';
+      } else if (actor.project.currentPhase === 'operate') {
+        nextAction = 'Record plan-versus-actual metrics and evaluate Gate C.';
+      } else if (!moneyRulesSet) {
         nextAction = 'Set canonical MoneyRules.';
-      } else if (interviews.length === 0) {
+      } else if (!gateA.passed) {
         nextAction = 'Capture interview evidence.';
       } else if (staleArtifactCount > 0) {
         nextAction = 'Regenerate stale artifacts.';
@@ -145,6 +220,11 @@ export class ProjectService {
         staleArtifactCount,
         moneyRulesSet,
         nextAction,
+        gateA,
+        beachhead,
+        dmu,
+        currentSprint,
+        pendingPackRevisionId,
       };
     });
   }
@@ -199,13 +279,20 @@ export class ProjectService {
           actor.userId,
         );
 
-        const model = await this.resolveModel(actor.project.workspaceId);
+        const resolved = await this.resolveModel(actor.project.workspaceId);
+        // Local models (e.g. Ollama) load and generate far slower than a hosted API,
+        // so give them a much longer budget before the abort signal fires.
+        const timeoutMs =
+          resolved.providerFamily === 'ollama'
+            ? limits.interactive.diagnoseTimeoutMsLocal
+            : limits.interactive.diagnoseTimeoutMs;
         const diagnosed = await diagnoseClarification({
           runId,
           questionId: input.questionId,
           answer: input.answer,
           snapshot,
-          model,
+          model: resolved.model,
+          timeoutMs,
           publish: async (event) => {
             await this.runtime.streamBus.publish(actor.project.id, event);
           },
@@ -215,32 +302,20 @@ export class ProjectService {
     );
   }
 
-  private async resolveModel(workspaceId: WorkspaceId): Promise<LanguageModel> {
+  private async resolveModel(
+    workspaceId: WorkspaceId,
+  ): Promise<{ model: LanguageModel; providerFamily: string | null }> {
     if (this.runtime.languageModel !== undefined) {
-      return this.runtime.languageModel;
+      return { model: this.runtime.languageModel, providerFamily: null };
     }
     const connections = await withWorkspaceScope(this.sql, [workspaceId], async (tx) =>
       listProviderConnectionsByWorkspaceId(tx, workspaceId),
     );
-    const connection = connections.find((item) => item.healthStatus === 'ok') ?? connections[0];
-    if (connection === undefined) {
-      throw new AppError({
-        code: 'provider_unavailable',
-        explanation: 'No model provider is connected for this workspace.',
-        nextAction: 'Connect Anthropic (or another provider) in workspace settings.',
-      });
-    }
-    const allowed = connection.allowedModels;
-    const modelId =
-      Array.isArray(allowed) && typeof allowed[0] === 'string'
-        ? allowed[0]
-        : limits.provider.defaultAnthropicModel;
-    const built = await buildModel(
-      connection,
-      modelId,
-      this.runtime.secrets,
-      this.runtime.secretBox,
-    );
-    return built.model;
+    const resolved = await resolveWorkspaceModel({
+      connections,
+      secrets: this.runtime.secrets,
+      secretBox: this.runtime.secretBox,
+    });
+    return { model: resolved.model, providerFamily: resolved.connection.providerFamily };
   }
 }

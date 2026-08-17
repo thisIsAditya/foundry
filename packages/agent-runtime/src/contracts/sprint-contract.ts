@@ -18,7 +18,11 @@ export function buildSprintContract(input: {
   objective: string;
   whyNow?: string;
   snapshot?: PackSnapshot;
+  /** Current agent definition for the sprint's worker (plan §Slice 2). Omit to fall back to the mock worker. */
+  agent?: { name: string; toolAllowlist: string[] };
 }): SprintContract {
+  const workerName = input.agent?.name ?? 'mock_worker';
+  const isMock = workerName === 'mock_worker';
   return SprintContractSchema.parse({
     id: SprintContractIdSchema.parse(randomUUID()),
     sprintId: input.sprintId,
@@ -31,7 +35,7 @@ export function buildSprintContract(input: {
       clarifications: input.snapshot?.clarifications ?? [],
     },
     outputSchema: { name: 'SprintSynthesis', version: 1 },
-    toolAllowlist: [],
+    toolAllowlist: input.agent?.toolAllowlist ?? [],
     riskPolicy: 'compute',
     budget: {
       provider: 'anthropic',
@@ -46,7 +50,7 @@ export function buildSprintContract(input: {
     promptVersion: 'orchestrator:1',
     maxWorkers: 1,
     maxStalls: limits.sprint.defaultMaxStalls,
-    workers: [{ name: 'mock_worker', readsOnly: true, writeTargets: [] }],
+    workers: [{ name: workerName, readsOnly: isMock, writeTargets: isMock ? [] : ['pack'] }],
     gateType: 'gate_a',
     createdAt: new Date(),
   });

@@ -12,6 +12,7 @@ export const infra = {
     ingestion: 'ingestion',
     sprint: 'sprint',
     render: 'render',
+    notification: 'notification',
   },
   ingestion: {
     concurrency: 8,
@@ -25,6 +26,11 @@ export const infra = {
   },
   renderQueue: {
     concurrency: 4,
+    attempts: 3,
+    backoffMs: 5_000,
+  },
+  notificationQueue: {
+    concurrency: 8,
     attempts: 3,
     backoffMs: 5_000,
   },

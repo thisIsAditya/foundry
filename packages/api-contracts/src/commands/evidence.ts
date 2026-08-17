@@ -1,4 +1,4 @@
-import { ProjectIdSchema, SourceIdSchema } from '@foundry/domain';
+import { InterviewParticipantTypeSchema, ProjectIdSchema, SourceIdSchema } from '@foundry/domain';
 import { z } from 'zod';
 
 import { IdempotencyKeySchema } from './idempotency.js';
@@ -28,3 +28,27 @@ export const SearchEvidenceInputSchema = z.object({
   query: z.string().min(1),
 });
 export type SearchEvidenceInput = z.infer<typeof SearchEvidenceInputSchema>;
+
+export const InterviewConsentInputSchema = z
+  .object({
+    given: z.boolean(),
+    simulated: z.boolean().optional(),
+    hypotheticalPitch: z.boolean().optional(),
+  })
+  .passthrough();
+export type InterviewConsentInput = z.infer<typeof InterviewConsentInputSchema>;
+
+export const AddInterviewInputSchema = z.object({
+  projectId: ProjectIdSchema,
+  participantType: InterviewParticipantTypeSchema,
+  consent: InterviewConsentInputSchema,
+  conductedAt: z.coerce.date().optional(),
+  quotes: z.array(z.string().min(1)).min(1),
+  idempotencyKey: IdempotencyKeySchema,
+});
+export type AddInterviewInput = z.infer<typeof AddInterviewInputSchema>;
+
+export const ListInterviewsInputSchema = z.object({
+  projectId: ProjectIdSchema,
+});
+export type ListInterviewsInput = z.infer<typeof ListInterviewsInputSchema>;

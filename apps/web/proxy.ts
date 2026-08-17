@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { headersWithAccessKey } from './lib/access-key';
 import { getAuth } from './lib/auth';
 
 export async function proxy(request: NextRequest) {
-  const session = await getAuth().api.getSession({ headers: request.headers });
+  const headers = headersWithAccessKey(request);
+  const session = await getAuth().api.getSession({ headers });
   if (session === null) {
     return NextResponse.redirect(new URL('/', request.url));
   }

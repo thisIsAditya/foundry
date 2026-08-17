@@ -4,6 +4,7 @@ import {
   ProjectIdSchema,
   SprintIdSchema,
   WorkspaceIdSchema,
+  type PackRevisionId,
   type Sprint,
   type SprintStatus,
 } from '@foundry/domain';
@@ -15,7 +16,7 @@ import type { AgentRunOutput, CriticOutput } from '../contracts/output-schema.js
 import type { PackSnapshot } from '../contracts/pack-snapshot.js';
 import { StallDetector } from './stall-detector.js';
 import { synthesizeSprint } from './synthesize.js';
-import { runWorkerPool } from './worker-pool.js';
+import { runWorkerPool, type ResolveWorkerRuntime, type WorkerResult } from './worker-pool.js';
 
 export const SprintJobDataSchema = z.object({
   sprintId: SprintIdSchema,
@@ -33,6 +34,7 @@ export type SprintOutcome = {
   synthesis: AgentRunOutput;
   critique: CriticOutput;
   gateA: GateAEvaluation;
+  packRevisionId: PackRevisionId | null;
 };
 
 export type SprintRunnerIO = {
@@ -43,6 +45,17 @@ export type SprintRunnerIO = {
   markRunning(): Promise<void>;
   saveGate(evaluation: GateAEvaluation): Promise<void>;
   close(status: SprintStatus, reason: string): Promise<void>;
+  /** Resolves a model + tools for a non-mock worker (plan §Slice 2). Omit to always use the mock worker. */
+  resolveWorkerRuntime?: ResolveWorkerRuntime;
+  /**
+   * Drafts a new pack revision from the synthesis, `status: 'draft'`, applied on top of
+   * (not mutating) the founder's current revision. Returns null when there is nothing to
+   * propose or no runtime is configured (plan §Slice 2 "Pack as system of record").
+   */
+  proposePackRevision?: (input: {
+    synthesis: AgentRunOutput;
+    workerResults: WorkerResult[];
+  }) => Promise<PackRevisionId | null>;
 };
 
 export async function runSprint(job: SprintJobData, io: SprintRunnerIO): Promise<SprintOutcome> {
@@ -58,8 +71,11 @@ export async function runSprint(job: SprintJobData, io: SprintRunnerIO): Promise
   await io.saveProgress('sprint_progress', { stage: 'contracted' });
 
   const stall = new StallDetector(contract.maxStalls);
-  stall.recordRound();
-  const workerResults = await runWorkerPool(contract, snapshot);
+  const workerResults = await runWorkerPool(contract, snapshot, io.resolveWorkerRuntime);
+  // One round per worker that actually ran, not one flat round for the whole pool (plan §Slice 2).
+  for (let i = 0; i < Math.max(workerResults.length, 1); i += 1) {
+    stall.recordRound();
+  }
   await io.publish({
     type: 'sprint_progress',
     sprintId: job.sprintId,
@@ -67,7 +83,12 @@ export async function runSprint(job: SprintJobData, io: SprintRunnerIO): Promise
   });
 
   const synthesis = synthesizeSprint(contract, snapshot, workerResults);
-  await io.publish({ type: 'proposal_ready', runId: job.sprintId, proposal: synthesis.result });
+  const packRevisionId = (await io.proposePackRevision?.({ synthesis, workerResults })) ?? null;
+  await io.publish({
+    type: 'proposal_ready',
+    runId: job.sprintId,
+    proposal: { text: synthesis.result, packRevisionId },
+  });
 
   const gateA = evaluateGateA({
     interviews: snapshot.interviews,
@@ -84,8 +105,13 @@ export async function runSprint(job: SprintJobData, io: SprintRunnerIO): Promise
   await io.publish({
     type: 'sprint_progress',
     sprintId: job.sprintId,
-    progress: { stage: 'closed', gateA: gateA.result, recommendation: critique.recommendation },
+    progress: {
+      stage: 'closed',
+      gateA: gateA.result,
+      recommendation: critique.recommendation,
+      packRevisionId,
+    },
   });
 
-  return { sprintId: job.sprintId, status, synthesis, critique, gateA };
+  return { sprintId: job.sprintId, status, synthesis, critique, gateA, packRevisionId };
 }

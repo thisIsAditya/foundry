@@ -1,9 +1,15 @@
-import type { AgentDefinition } from '@foundry/domain';
+import { PackSectionKeySchema, type AgentDefinition } from '@foundry/domain';
 import { z } from 'zod';
+
+export const ProposedPackChangeSchema = z.object({
+  targetSection: PackSectionKeySchema,
+  body: z.record(z.string(), z.unknown()),
+});
+export type ProposedPackChange = z.infer<typeof ProposedPackChangeSchema>;
 
 export const AgentRunOutputSchema = z.object({
   result: z.string().min(1),
-  proposedPackChanges: z.array(z.unknown()),
+  proposedPackChanges: z.array(ProposedPackChangeSchema),
   evidenceRefs: z.array(z.string()),
   assumptionsChanged: z.array(z.string()),
   unresolvedConflicts: z.array(z.string()),

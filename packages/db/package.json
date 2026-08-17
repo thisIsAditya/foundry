@@ -18,9 +18,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
     "test": "vitest run",
-    "migrate": "node-pg-migrate",
-    "migrate:up": "node-pg-migrate up",
-    "migrate:down": "node-pg-migrate down"
+    "migrate": "node --env-file-if-exists=../../.env --import tsx ./src/migrate-cli.ts",
+    "migrate:up": "node --env-file-if-exists=../../.env --import tsx ./src/migrate-cli.ts up",
+    "migrate:down": "node --env-file-if-exists=../../.env --import tsx ./src/migrate-cli.ts down"
   },
   "engines": {
     "node": ">=24 <25"
@@ -29,6 +29,7 @@
     "@foundry/domain": "workspace:*",
     "node-pg-migrate": "7.9.1",
     "postgres": "3.4.9",
+    "tsx": "4.21.0",
     "zod": "4.4.3"
   },
   "devDependencies": {

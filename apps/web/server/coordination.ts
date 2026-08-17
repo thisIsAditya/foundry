@@ -82,18 +82,20 @@ export function createRedisCoordinationStore(url: string): CoordinationStore {
   };
 }
 
-let store: CoordinationStore | undefined;
+const globalForCoordination = globalThis as typeof globalThis & {
+  foundryCoordination?: CoordinationStore;
+};
 
 export function getCoordinationStore(): CoordinationStore {
-  if (store !== undefined) {
-    return store;
+  if (globalForCoordination.foundryCoordination !== undefined) {
+    return globalForCoordination.foundryCoordination;
   }
   const redisUrl = getEnv().REDIS_URL;
-  store =
+  globalForCoordination.foundryCoordination =
     redisUrl === undefined
       ? createMemoryCoordinationStore()
       : createRedisCoordinationStore(redisUrl);
-  return store;
+  return globalForCoordination.foundryCoordination;
 }
 
 const pendingSentinel = '__pending__';

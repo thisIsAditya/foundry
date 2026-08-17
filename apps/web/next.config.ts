@@ -12,12 +12,14 @@ const nextConfig: NextConfig = {
     '@foundry/api-contracts',
     '@foundry/agent-runtime',
     '@foundry/config',
-    '@foundry/db',
     '@foundry/domain',
     '@foundry/observability',
     '@foundry/policy',
+    '@foundry/ui',
   ],
   serverExternalPackages: [
+    // postgres.js Query extends Promise; bundling it throws on V8's Promise #state.
+    '@foundry/db',
     'postgres',
     'pg',
     'ioredis',

@@ -1,6 +1,13 @@
 import { PackRevisionIdSchema, ProjectSchema } from '@foundry/domain';
 import { z } from 'zod';
 
+export const GateAProgressSchema = z.object({
+  qualifyingInterviews: z.number().int().nonnegative(),
+  requiredInterviews: z.number().int().nonnegative(),
+  passed: z.boolean(),
+});
+export type GateAProgress = z.infer<typeof GateAProgressSchema>;
+
 export const DeskSummarySchema = z.object({
   project: ProjectSchema,
   packRevisionId: PackRevisionIdSchema.nullable(),
@@ -9,5 +16,6 @@ export const DeskSummarySchema = z.object({
   staleArtifactCount: z.number().int().nonnegative(),
   moneyRulesSet: z.boolean(),
   nextAction: z.string().min(1),
+  gateA: GateAProgressSchema,
 });
 export type DeskSummary = z.infer<typeof DeskSummarySchema>;

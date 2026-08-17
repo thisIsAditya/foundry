@@ -1,11 +1,13 @@
 import type { PreviewSprintInput } from '@foundry/api-contracts';
-import { buildSprintContract, type StreamBus } from '@foundry/agent-runtime';
+import { buildSprintContract, readAgentCapabilities, type StreamBus } from '@foundry/agent-runtime';
 import { limits } from '@foundry/config/limits';
 import {
+  getCurrentAgentDefinition,
   getProjectById,
   getSprintById,
   insertSprint,
   listSprintProgressEvents,
+  listSprintsByProjectId,
   updateSprintStatus,
   withWorkspaceScope,
   type PoolSql,
@@ -68,6 +70,7 @@ export class SprintService {
             ...project,
             currentPackRevisionId: pack.id,
           });
+          const agentDefinition = await getCurrentAgentDefinition(tx, 'orchestrator');
           const sprintId = SprintIdSchema.parse(randomUUID());
           const created = await insertSprint(tx, {
             id: sprintId,
@@ -79,6 +82,14 @@ export class SprintService {
               phase: project.currentPhase,
               objective: input.objectiveHint ?? 'Diagnose the problem and collect Gate A evidence.',
               snapshot,
+              ...(agentDefinition === null
+                ? {}
+                : {
+                    agent: {
+                      name: agentDefinition.name,
+                      toolAllowlist: readAgentCapabilities(agentDefinition).toolAllowlist,
+                    },
+                  }),
             }),
           });
           return { sprint: created, contractHash: hashContract(created.contract) };
@@ -197,5 +208,57 @@ export class SprintService {
       }
       return listSprintProgressEvents(tx, sprintId, cursor);
     });
+  }
+
+  async listByProject(actor: {
+    membership: WorkspaceMembership;
+    project: Project;
+  }): Promise<Sprint[]> {
+    if (!this.policyService.can(actor.membership, 'sprint.read')) {
+      throw new AppError({
+        code: 'policy_forbidden',
+        explanation: 'Your role cannot read sprints.',
+        nextAction: 'Ask a workspace admin to change your role.',
+      });
+    }
+    return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) =>
+      listSprintsByProjectId(tx, actor.project.id),
+    );
+  }
+
+  async control(
+    actor: { userId: UserId; membership: WorkspaceMembership },
+    sprintId: SprintId,
+    status: 'paused' | 'running' | 'closed',
+    idempotencyKey: string,
+  ): Promise<Sprint> {
+    if (!this.policyService.can(actor.membership, 'sprint.run')) {
+      throw new AppError({
+        code: 'policy_forbidden',
+        explanation: 'Your role cannot control this sprint.',
+        nextAction: 'Ask a workspace admin to change your role.',
+      });
+    }
+    const key = `idem:${actor.userId}:sprint.control:${status}:${idempotencyKey}`;
+    return withIdempotency(
+      this.coordination,
+      key,
+      limits.idempotencyKeyTtlSeconds,
+      (raw) => superjson.parse(raw) as Sprint,
+      (value) => superjson.stringify(value),
+      async () =>
+        withWorkspaceScope(this.sql, [actor.membership.workspaceId], async (tx) => {
+          const sprint = await getSprintById(tx, sprintId);
+          if (sprint === null) {
+            throw new AppError({
+              code: 'not_found',
+              explanation: 'Sprint not found.',
+              nextAction: 'Pick a sprint you have access to.',
+            });
+          }
+          const closedReason = status === 'closed' ? 'stopped_by_founder' : null;
+          return updateSprintStatus(tx, sprint.id, status, closedReason);
+        }),
+    );
   }
 }

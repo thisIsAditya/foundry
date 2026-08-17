@@ -8,6 +8,10 @@ export const ARTIFACT_DEPENDENCIES: Record<ArtifactType, readonly ArtifactDepend
   one_page_brief: ['pack_revision', 'money_rules', 'interview'],
   slide_outline: ['pack_revision', 'money_rules', 'interview', 'beachhead', 'wtp_event'],
   market_economics_workbook: ['money_rules', 'market_model', 'unit_economics_model', 'beachhead'],
+  mvbp_prd: ['pack_revision', 'money_rules'],
+  first_100_plan: ['pack_revision', 'money_rules', 'wtp_event'],
+  launch_checklist: ['pack_revision', 'money_rules'],
+  operating_playbook: ['pack_revision', 'money_rules'],
 };
 
 export function dependentsOf(kind: ArtifactDependencyKind): ArtifactType[] {

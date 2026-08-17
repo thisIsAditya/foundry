@@ -13,8 +13,8 @@ export default defineConfig({
     testTimeout: 30_000,
     env: {
       NODE_ENV: 'test',
-      DATABASE_URL: 'postgres://foundry:foundry@localhost:5432/foundry_test',
-      TEST_DATABASE_URL: 'postgres://foundry:foundry@localhost:5432/foundry_test',
+      DATABASE_URL: 'postgres://foundry:foundry@localhost:5432/foundry_test_worker',
+      TEST_DATABASE_URL: 'postgres://foundry:foundry@localhost:5432/foundry_test_worker',
       REDIS_URL: 'redis://localhost:6379',
     },
   },
