@@ -20,6 +20,11 @@ export const devEnvironment: EnvironmentConfig = {
     minCount: 1,
     maxCount: 1,
   },
+  worker: {
+    cpu: 256,
+    memoryMiB: 512,
+    desiredCount: 1,
+  },
   logRetentionDays: 7,
   monthlyBudgetUsd: 80,
 };

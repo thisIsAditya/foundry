@@ -35,6 +35,37 @@ services:
       - '1025:1025'
       - '8025:8025'
 
+  minio:
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: foundry
+      MINIO_ROOT_PASSWORD: foundryfoundry
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-07-21T05-28-08Z
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until mc alias set local http://minio:9000 foundry foundryfoundry; do sleep 1; done
+        mc mb -p local/foundry-uploads
+        mc anonymous set none local/foundry-uploads
+
+  clamav:
+    profiles: ['clamav']
+    image: clamav/clamav:1.4
+    ports:
+      - '3310:3310'
+
   web:
     profiles: ['app']
     build:
@@ -48,12 +79,46 @@ services:
       REDIS_URL: redis://valkey:6379
       BETTER_AUTH_URL: http://localhost:3000
       BETTER_AUTH_SECRET: replace-with-at-least-32-characters
+      AWS_REGION: ap-south-1
+      AWS_S3_UPLOADS_BUCKET: foundry-uploads
+      AWS_S3_ENDPOINT: http://minio:9000
+      AWS_S3_FORCE_PATH_STYLE: 'true'
+      AWS_ACCESS_KEY_ID: foundry
+      AWS_SECRET_ACCESS_KEY: foundryfoundry
     depends_on:
       postgres:
         condition: service_healthy
       valkey:
         condition: service_healthy
+      minio:
+        condition: service_started
+
+  worker:
+    profiles: ['app']
+    build:
+      context: .
+      dockerfile: docker/worker.Dockerfile
+    ports:
+      - '8080:8080'
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://foundry:foundry@postgres:5432/foundry
+      REDIS_URL: redis://valkey:6379
+      AWS_REGION: ap-south-1
+      AWS_S3_UPLOADS_BUCKET: foundry-uploads
+      AWS_S3_ENDPOINT: http://minio:9000
+      AWS_S3_FORCE_PATH_STYLE: 'true'
+      AWS_ACCESS_KEY_ID: foundry
+      AWS_SECRET_ACCESS_KEY: foundryfoundry
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+      minio:
+        condition: service_started
 
 volumes:
   postgres_data:
   valkey_data:
+  minio_data:

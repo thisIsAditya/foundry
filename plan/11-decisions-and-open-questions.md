@@ -195,11 +195,11 @@ It must not describe a business as guaranteed, validated by simulated users, leg
 
 **Reason:** CloudFront is in front of the ALB from day one (`10` §6). Waiting on a product domain/ACM would block the "hello world on Fargate" risk-reduction step.
 
-### I3 — Worker Fargate service waits for Milestone 4
+### I3 — Worker Fargate service ships with Milestone 4
 
-**Choice:** `EcrStack` creates `foundry-worker`. `EcsStack` in Milestone 3 runs only the `web` service. Worker task definition, Service Connect health port, and queue-depth alarms land with `apps/worker`.
+**Choice:** `EcsStack` runs both the `web` and `worker` Fargate services. The worker has no ALB, exposes `/healthz` on port 8080, and `stopTimeout` is 120 seconds so BullMQ can drain.
 
-**Reason:** There is no worker image or process yet. An empty Fargate service would fail health checks and burn the same baseline cost as web.
+**Reason:** Milestone 4 is the first time `apps/worker` and `docker/worker.Dockerfile` exist. An empty worker service in Milestone 3 would have failed health checks.
 
 ### I4 — Application deploys do not `cdk deploy`
 
@@ -207,8 +207,20 @@ It must not describe a business as guaranteed, validated by simulated users, leg
 
 **Reason:** `10` §7 and §9: schema must exist before the new tasks start, and CI must not be able to mutate VPC/RDS.
 
-### I5 — First EcsStack deploy needs an image
+### I5 — First EcsStack deploy needs images
 
-**Choice:** `EcsStack` references `foundry-web:${webImageTag}` (CDK context `webImageTag`, default `latest`). Push that tag to ECR before the first `cdk deploy` of `Foundry-Dev-Ecs`. Later releases only change the registered task definition in `deploy-dev.yml`.
+**Choice:** `EcsStack` references `foundry-web:${webImageTag}` and `foundry-worker:${webImageTag}` (CDK context `webImageTag`, default `latest`). Push both tags to ECR before the first `cdk deploy` of `Foundry-Dev-Ecs`. Later releases only change the registered task definitions in `deploy-dev.yml`.
 
 **Reason:** ECS cannot start a service against an empty repository. Splitting EcrStack from EcsStack is how we break that chicken-and-egg without a dummy public image.
+
+### I6 — Malware scanning is in-process, with optional clamd
+
+**Choice:** The ingestion pipeline always runs an in-process scanner (EICAR signature plus PE/ELF/OLE/Mach-O/unexpected-ZIP magic). Optional ClamAV INSTREAM is used only when `CLAMD_HOST` is set. Compose ships ClamAV under profile `clamav`, not `pnpm db:up`. ECS does not run a ClamAV sidecar in Milestone 4.
+
+**Reason:** The worker task is 0.25 vCPU / 512 MB (`10` §5). ClamAV cannot fit in that footprint. A failed scan still sets `sources.status = 'failed'` with `failure_reason = malware_detected` and never opens a parser (`09` §9). A Lambda/sidecar scanner is a follow-up when the worker is sized for it.
+
+### I7 — Local object storage is MinIO
+
+**Choice:** Day-to-day uploads use Compose MinIO (`foundry` / `foundryfoundry`, bucket `foundry-uploads`, path-style at `http://localhost:9000`). Tests use an in-memory object store. AWS `dev` uses the real S3 uploads bucket from `DataStack` with the task role.
+
+**Reason:** Presigned PUT against real S3 from a laptop fights credentials and CORS. MinIO matches the S3 API so `createUploadIntent` / worker `GetObject` stay the same code path.

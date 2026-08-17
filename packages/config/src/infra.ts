@@ -8,6 +8,14 @@ export const infra = {
     ecrWeb: 'foundry-web',
     ecrWorker: 'foundry-worker',
   },
+  queues: {
+    ingestion: 'ingestion',
+  },
+  ingestion: {
+    concurrency: 8,
+    attempts: 3,
+    backoffMs: 5_000,
+  },
 } as const;
 
 export function clusterName(environment: string): string {
@@ -24,6 +32,18 @@ export function webTaskFamily(environment: string): string {
 
 export function webContainerName(): string {
   return 'web';
+}
+
+export function workerServiceName(environment: string): string {
+  return `foundry-${environment}-worker`;
+}
+
+export function workerTaskFamily(environment: string): string {
+  return `foundry-${environment}-worker`;
+}
+
+export function workerContainerName(): string {
+  return 'worker';
 }
 
 export function webLogGroupName(environment: string): string {

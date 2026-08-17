@@ -53,4 +53,32 @@ export {
   toWorkspace,
   type InsertWorkspace,
 } from './repositories/workspaces.js';
+export {
+  getSourceById,
+  insertSource,
+  listSourcesByProjectId,
+  toSource,
+  updateSourceMimeType,
+  updateSourceStatus,
+  type InsertSource,
+} from './repositories/sources.js';
+export {
+  insertSourceSnapshot,
+  toSourceSnapshot,
+  type InsertSourceSnapshot,
+} from './repositories/source-snapshots.js';
+export {
+  getDocumentBySourceId,
+  insertDocument,
+  toDocument,
+  updateDocumentLatestSnapshot,
+  type InsertDocument,
+} from './repositories/documents.js';
+export {
+  insertContentBlock,
+  searchContentBlocks,
+  toContentBlock,
+  type ContentBlockSearchHit,
+  type InsertContentBlock,
+} from './repositories/content-blocks.js';
 export { appRlsRole, toPgTextArray, withWorkspaceScope } from './rls.js';

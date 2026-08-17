@@ -12,7 +12,7 @@ import { ObservabilityStack } from '../lib/observability-stack.js';
 const app = new cdk.App();
 const requested = String(app.node.tryGetContext('env') ?? 'dev');
 if (requested !== 'dev') {
-  throw new Error(`Milestone 3 only synthesizes env=dev (got ${requested}).`);
+  throw new Error(`Only env=dev is synthesized (got ${requested}).`);
 }
 
 const account = getCdkAccount() ?? '000000000000';
@@ -69,5 +69,6 @@ new EcsStack(app, 'Foundry-Dev-Ecs', {
   data,
   ecr,
   webLogGroup: observability.webLogGroup,
+  workerLogGroup: observability.workerLogGroup,
   imageTag,
 });

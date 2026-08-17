@@ -5,11 +5,17 @@ import { randomUUID } from 'node:crypto';
 
 import { createMemoryCoordinationStore } from '../coordination';
 import { createServices, type Context } from '../context';
+import { createMemoryJobQueue } from '../queue/job-queue';
+import { createMemoryObjectStore } from '../storage/object-store';
 
 export async function createTestContext(sql: PoolSql, user: User | null): Promise<Context> {
   const coordination = createMemoryCoordinationStore();
   const policyService = new PolicyService();
-  const services = createServices(sql, coordination, policyService);
+  const extras = {
+    objectStore: createMemoryObjectStore(),
+    jobQueue: createMemoryJobQueue(),
+  };
+  const services = createServices(sql, coordination, policyService, extras);
 
   if (user === null) {
     return {
@@ -20,6 +26,8 @@ export async function createTestContext(sql: PoolSql, user: User | null): Promis
       coordination,
       services,
       clientIp: '127.0.0.1',
+      objectStore: extras.objectStore,
+      jobQueue: extras.jobQueue,
     };
   }
 
@@ -39,5 +47,7 @@ export async function createTestContext(sql: PoolSql, user: User | null): Promis
     coordination,
     services,
     clientIp: '127.0.0.1',
+    objectStore: extras.objectStore,
+    jobQueue: extras.jobQueue,
   };
 }

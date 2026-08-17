@@ -3,7 +3,10 @@ export const limits = {
     document: 50 * 1024 * 1024,
     interviewRecording: 200 * 1024 * 1024,
   },
+  allowedDocumentMimeTypes: ['application/pdf', 'text/plain', 'text/markdown'] as const,
   maxPdfPagesParsed: 200,
+  uploadIntentTtlSeconds: 60 * 60,
+  uploadUrlExpiresSeconds: 60 * 60,
   codeMode: {
     maxExecutionMs: 5_000,
     maxMemoryBytes: 64 * 1024 * 1024,

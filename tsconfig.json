@@ -8,6 +8,8 @@
     { "path": "./packages/observability/tsconfig.build.json" },
     { "path": "./packages/policy/tsconfig.build.json" },
     { "path": "./packages/api-contracts/tsconfig.build.json" },
+    { "path": "./packages/document-intelligence/tsconfig.build.json" },
+    { "path": "./apps/worker/tsconfig.build.json" },
     { "path": "./infra/cdk/tsconfig.build.json" }
   ]
 }

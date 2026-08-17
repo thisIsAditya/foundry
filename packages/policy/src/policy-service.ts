@@ -12,6 +12,8 @@ export const PolicyActions = [
   'workspace.create',
   'project.list',
   'project.create',
+  'evidence.read',
+  'evidence.upload',
 ] as const;
 export type PolicyAction = (typeof PolicyActions)[number];
 
@@ -30,8 +32,10 @@ export class PolicyService {
     switch (action) {
       case 'workspace.read':
       case 'project.list':
+      case 'evidence.read':
         return roleAtLeast(membership.role, 'viewer');
       case 'project.create':
+      case 'evidence.upload':
         return roleAtLeast(membership.role, 'member');
     }
   }

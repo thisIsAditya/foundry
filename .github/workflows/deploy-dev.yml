@@ -12,6 +12,7 @@ permissions:
 env:
   AWS_REGION: ap-south-1
   ECR_REPOSITORY: foundry-web
+  ECR_WORKER_REPOSITORY: foundry-worker
 
 jobs:
   deploy:
@@ -38,8 +39,20 @@ jobs:
           tags: |
             ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
             ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/worker.Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_WORKER_REPOSITORY }}:${{ github.sha }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_WORKER_REPOSITORY }}:latest
+          cache-from: type=gha,scope=worker
+          cache-to: type=gha,mode=max,scope=worker
 
       - name: Register task definition, migrate, update service
         env:
@@ -90,6 +103,28 @@ jobs:
 
           aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" --task-definition "$NEW_ARN" >/dev/null
           aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
+
+          WORKER_IMAGE="${{ steps.ecr.outputs.registry }}/${{ env.ECR_WORKER_REPOSITORY }}:${{ github.sha }}"
+          WORKER_SERVICE=$(aws ssm get-parameter --name "$PREFIX/worker-service-name" --query Parameter.Value --output text)
+          WORKER_FAMILY=$(aws ssm get-parameter --name "$PREFIX/worker-task-family" --query Parameter.Value --output text)
+          WORKER_TASK_DEF=$(aws ecs describe-task-definition --task-definition "$WORKER_FAMILY" --query taskDefinition)
+          echo "$WORKER_TASK_DEF" | jq --arg IMAGE "$WORKER_IMAGE" '
+            .containerDefinitions |= map(if .name == "worker" then .image = $IMAGE else . end) |
+            del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy,
+              .deregisteredAt,
+              .tags
+            )
+          ' > /tmp/worker-taskdef.json
+          WORKER_ARN=$(aws ecs register-task-definition --cli-input-json file:///tmp/worker-taskdef.json --query taskDefinition.taskDefinitionArn --output text)
+          aws ecs update-service --cluster "$CLUSTER" --service "$WORKER_SERVICE" --task-definition "$WORKER_ARN" >/dev/null
+          aws ecs wait services-stable --cluster "$CLUSTER" --services "$WORKER_SERVICE"
 
           for _ in $(seq 1 30); do
             if curl -fsS "https://${DOMAIN}/api/ready"; then

@@ -19,6 +19,7 @@ export const SourceSchema = z.object({
   s3Key: z.string().nullable().default(null),
   sourceUrl: z.string().nullable().default(null),
   dataClassification: DataClassificationSchema.default('internal'),
+  failureReason: z.string().nullable().default(null),
   createdByUserId: UserIdSchema.nullable().default(null),
   createdAt: InstantSchema,
 });

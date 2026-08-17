@@ -1,4 +1,11 @@
-import { WorkspaceIdSchema, type WorkspaceId, type WorkspaceMembership } from '@foundry/domain';
+import { getProjectById, withWorkspaceScope } from '@foundry/db';
+import {
+  ProjectIdSchema,
+  WorkspaceIdSchema,
+  type Project,
+  type WorkspaceId,
+  type WorkspaceMembership,
+} from '@foundry/domain';
 import { type AppErrorCode, AppError, isAppError } from '@foundry/observability';
 import type { PolicyAction } from '@foundry/policy';
 import { initTRPC, TRPCError } from '@trpc/server';
@@ -18,6 +25,10 @@ export type WorkspaceContext = Context & {
   membership: WorkspaceMembership;
 };
 
+export type ProjectContext = WorkspaceContext & {
+  project: Project;
+};
+
 function trpcCodeForAppError(code: AppErrorCode): TRPCError['code'] {
   switch (code) {
     case 'unauthorized':
@@ -26,6 +37,8 @@ function trpcCodeForAppError(code: AppErrorCode): TRPCError['code'] {
       return 'NOT_FOUND';
     case 'stale_revision':
       return 'CONFLICT';
+    case 'document_rejected':
+      return 'BAD_REQUEST';
     case 'invalid_input':
       return 'BAD_REQUEST';
     case 'missing_evidence':
@@ -149,6 +162,74 @@ function requireWorkspaceAccess(action: PolicyAction) {
   });
 }
 
+function requireProjectAccess(action: PolicyAction) {
+  return t.middleware(async ({ ctx, input, getRawInput, next }) => {
+    if (ctx.actor.type !== 'user') {
+      throw new AppError({
+        code: 'unauthorized',
+        explanation: 'Sign in to continue.',
+        nextAction: 'Authenticate and retry.',
+        correlationId: ctx.correlationId,
+      });
+    }
+
+    const rawInput =
+      input !== null && typeof input === 'object' && 'projectId' in input
+        ? input
+        : await getRawInput();
+    const parsed = z.object({ projectId: ProjectIdSchema }).safeParse(rawInput);
+    if (!parsed.success) {
+      throw new AppError({
+        code: 'invalid_input',
+        explanation: 'A projectId is required.',
+        nextAction: 'Pass a valid projectId.',
+        correlationId: ctx.correlationId,
+      });
+    }
+
+    const workspaceIds = ctx.actor.memberships.map((item) => item.workspaceId);
+    const project = await withWorkspaceScope(ctx.sql, workspaceIds, async (tx) =>
+      getProjectById(tx, parsed.data.projectId),
+    );
+    if (project === null) {
+      throw new AppError({
+        code: 'not_found',
+        explanation: 'Project not found.',
+        nextAction: 'Pick a project you have access to.',
+        correlationId: ctx.correlationId,
+      });
+    }
+
+    const membership =
+      ctx.actor.memberships.find((item) => item.workspaceId === project.workspaceId) ?? null;
+    if (membership === null) {
+      throw new AppError({
+        code: 'unauthorized',
+        explanation: 'You do not have access to this workspace.',
+        nextAction: 'Switch workspace or ask an owner to invite you.',
+        correlationId: ctx.correlationId,
+      });
+    }
+    if (!ctx.services.policyService.can(membership, action)) {
+      throw new AppError({
+        code: 'policy_forbidden',
+        explanation: 'Your role cannot perform this action.',
+        nextAction: 'Ask a workspace admin to change your role.',
+        correlationId: ctx.correlationId,
+      });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        workspaceId: project.workspaceId,
+        membership,
+        project,
+      },
+    });
+  });
+}
+
 const rateLimit = t.middleware(async ({ ctx, type, next }) => {
   await enforceRateLimit(ctx, type);
   return next();
@@ -192,3 +273,5 @@ export const workspaceProcedure = protectedProcedure.use(requireWorkspaceAccess(
 export const workspaceReadProcedure = protectedProcedure.use(
   requireWorkspaceAccess('project.list'),
 );
+export const projectProcedure = protectedProcedure.use(requireProjectAccess('evidence.upload'));
+export const projectReadProcedure = protectedProcedure.use(requireProjectAccess('evidence.read'));

@@ -23,6 +23,11 @@ export type EnvironmentConfig = {
     minCount: number;
     maxCount: number;
   };
+  worker: {
+    cpu: number;
+    memoryMiB: number;
+    desiredCount: number;
+  };
   logRetentionDays: 7 | 30;
   monthlyBudgetUsd: number;
   budgetNotificationEmail?: string;

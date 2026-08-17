@@ -12,6 +12,13 @@ const EnvSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   SENTRY_DSN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  AWS_REGION: z.preprocess(emptyToUndefined, z.string().min(1).optional()).default('ap-south-1'),
+  AWS_S3_UPLOADS_BUCKET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  AWS_S3_ARTIFACTS_BUCKET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  AWS_S3_ENDPOINT: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  AWS_S3_FORCE_PATH_STYLE: z.preprocess(emptyToUndefined, z.enum(['true', 'false']).optional()),
+  AWS_ACCESS_KEY_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  AWS_SECRET_ACCESS_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -29,6 +36,13 @@ function readProcessEnv(): Record<string, string | undefined> {
       GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
       OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
       SENTRY_DSN: process.env.SENTRY_DSN,
+      AWS_REGION: process.env.AWS_REGION ?? 'ap-south-1',
+      AWS_S3_UPLOADS_BUCKET: process.env.AWS_S3_UPLOADS_BUCKET,
+      AWS_S3_ARTIFACTS_BUCKET: process.env.AWS_S3_ARTIFACTS_BUCKET,
+      AWS_S3_ENDPOINT: process.env.AWS_S3_ENDPOINT,
+      AWS_S3_FORCE_PATH_STYLE: process.env.AWS_S3_FORCE_PATH_STYLE,
+      AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+      AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
     };
   }
   return process.env;

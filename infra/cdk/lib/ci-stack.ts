@@ -4,6 +4,8 @@ import {
   ssmPrefix,
   webServiceName,
   webTaskFamily,
+  workerServiceName,
+  workerTaskFamily,
 } from '@foundry/config/infra';
 import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -54,7 +56,9 @@ export class CiStack extends cdk.Stack {
 
     const clusterArn = `arn:aws:ecs:${this.region}:${this.account}:cluster/${clusterName(envName)}`;
     const serviceArn = `arn:aws:ecs:${this.region}:${this.account}:service/${clusterName(envName)}/${webServiceName(envName)}`;
+    const workerServiceArn = `arn:aws:ecs:${this.region}:${this.account}:service/${clusterName(envName)}/${workerServiceName(envName)}`;
     const taskDefArn = `arn:aws:ecs:${this.region}:${this.account}:task-definition/${webTaskFamily(envName)}:*`;
+    const workerTaskDefArn = `arn:aws:ecs:${this.region}:${this.account}:task-definition/${workerTaskFamily(envName)}:*`;
     const taskArn = `arn:aws:ecs:${this.region}:${this.account}:task/${clusterName(envName)}/*`;
 
     deployRole.addToPolicy(
@@ -70,7 +74,14 @@ export class CiStack extends cdk.Stack {
           'ecs:StopTask',
           'ecs:TagResource',
         ],
-        resources: [clusterArn, serviceArn, taskDefArn, taskArn],
+        resources: [
+          clusterArn,
+          serviceArn,
+          workerServiceArn,
+          taskDefArn,
+          workerTaskDefArn,
+          taskArn,
+        ],
       }),
     );
 
@@ -89,6 +100,8 @@ export class CiStack extends cdk.Stack {
         resources: [
           `arn:aws:iam::${this.account}:role/foundry-${envName}-web-task`,
           `arn:aws:iam::${this.account}:role/foundry-${envName}-web-execution`,
+          `arn:aws:iam::${this.account}:role/foundry-${envName}-worker-task`,
+          `arn:aws:iam::${this.account}:role/foundry-${envName}-worker-execution`,
         ],
         conditions: {
           StringEquals: { 'iam:PassedToService': 'ecs-tasks.amazonaws.com' },

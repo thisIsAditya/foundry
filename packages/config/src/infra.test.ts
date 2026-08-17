@@ -9,7 +9,10 @@ import {
   webLogGroupName,
   webServiceName,
   webTaskFamily,
+  workerContainerName,
   workerLogGroupName,
+  workerServiceName,
+  workerTaskFamily,
 } from './infra.js';
 
 describe('infra constants', () => {
@@ -20,6 +23,8 @@ describe('infra constants', () => {
     expect(infra.vpcCidr).toBe('10.20.0.0/16');
     expect(infra.names.ecrWeb).toBe('foundry-web');
     expect(infra.names.ecrWorker).toBe('foundry-worker');
+    expect(infra.queues.ingestion).toBe('ingestion');
+    expect(infra.ingestion.concurrency).toBe(8);
   });
 
   it('names ECS and SSM resources from the environment', () => {
@@ -27,6 +32,9 @@ describe('infra constants', () => {
     expect(webServiceName('dev')).toBe('foundry-dev-web');
     expect(webTaskFamily('dev')).toBe('foundry-dev-web');
     expect(webContainerName()).toBe('web');
+    expect(workerServiceName('dev')).toBe('foundry-dev-worker');
+    expect(workerTaskFamily('dev')).toBe('foundry-dev-worker');
+    expect(workerContainerName()).toBe('worker');
     expect(webLogGroupName('dev')).toBe('/foundry/dev/web');
     expect(workerLogGroupName('dev')).toBe('/foundry/dev/worker');
     expect(githubDeployRoleName('dev')).toBe('foundry-dev-github-deploy');

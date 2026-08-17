@@ -35,4 +35,14 @@ describe('PolicyService', () => {
   it('allows members to create projects', () => {
     expect(policy.can(membership('member'), 'project.create')).toBe(true);
   });
+
+  it('allows viewers to read evidence but not upload', () => {
+    const viewer = membership('viewer');
+    expect(policy.can(viewer, 'evidence.read')).toBe(true);
+    expect(policy.can(viewer, 'evidence.upload')).toBe(false);
+  });
+
+  it('allows members to upload evidence', () => {
+    expect(policy.can(membership('member'), 'evidence.upload')).toBe(true);
+  });
 });

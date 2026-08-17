@@ -74,6 +74,29 @@ export default tseslint.config(
               ],
             },
             {
+              target: path.join(repoRoot, 'packages/document-intelligence'),
+              from: [
+                path.join(repoRoot, 'apps'),
+                path.join(repoRoot, 'packages/db'),
+                path.join(repoRoot, 'packages/agent-runtime'),
+                path.join(repoRoot, 'packages/tools'),
+                path.join(repoRoot, 'packages/artifacts'),
+              ],
+            },
+            {
+              target: path.join(repoRoot, 'apps/web'),
+              from: [
+                path.join(repoRoot, 'apps/worker'),
+                path.join(repoRoot, 'packages/document-intelligence'),
+                path.join(repoRoot, 'packages/agent-runtime'),
+                path.join(repoRoot, 'packages/tools'),
+              ],
+            },
+            {
+              target: path.join(repoRoot, 'apps/worker'),
+              from: [path.join(repoRoot, 'apps/web'), path.join(repoRoot, 'apps/mobile')],
+            },
+            {
               target: path.join(repoRoot, 'infra/cdk'),
               from: [
                 path.join(repoRoot, 'apps'),

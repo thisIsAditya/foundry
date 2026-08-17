@@ -5,6 +5,9 @@ import {
   webContainerName,
   webServiceName,
   webTaskFamily,
+  workerContainerName,
+  workerServiceName,
+  workerTaskFamily,
 } from '@foundry/config/infra';
 import * as cdk from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
@@ -29,12 +32,14 @@ export type EcsStackProps = cdk.StackProps & {
   data: DataStack;
   ecr: EcrStack;
   webLogGroup: logs.ILogGroup;
+  workerLogGroup: logs.ILogGroup;
   imageTag: string;
 };
 
 export class EcsStack extends cdk.Stack {
   readonly cluster: ecs.Cluster;
   readonly webService: ecs.FargateService;
+  readonly workerService: ecs.FargateService;
   readonly alb: elbv2.ApplicationLoadBalancer;
   readonly distribution: cloudfront.Distribution;
 
@@ -224,6 +229,80 @@ export class EcsStack extends cdk.Stack {
     });
     this.webService.attachToApplicationTargetGroup(targetGroup);
 
+    const workerTaskRole = new iam.Role(this, 'WorkerTaskRole', {
+      roleName: `foundry-${envName}-worker-task`,
+      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+    });
+    const workerExecutionRole = new iam.Role(this, 'WorkerExecutionRole', {
+      roleName: `foundry-${envName}-worker-execution`,
+      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+    });
+    workerExecutionRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonECSTaskExecutionRolePolicy'),
+    );
+
+    const workerTaskDefinition = new ecs.FargateTaskDefinition(this, 'WorkerTask', {
+      family: workerTaskFamily(envName),
+      cpu: environment.worker.cpu,
+      memoryLimitMiB: environment.worker.memoryMiB,
+      taskRole: workerTaskRole,
+      executionRole: workerExecutionRole,
+      runtimePlatform: {
+        cpuArchitecture: ecs.CpuArchitecture.ARM64,
+        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+      },
+    });
+
+    data.uploadsBucket.grantReadWrite(workerTaskDefinition.taskRole);
+    data.artifactsBucket.grantReadWrite(workerTaskDefinition.taskRole);
+
+    workerTaskDefinition.addContainer(workerContainerName(), {
+      image: ecs.ContainerImage.fromEcrRepository(ecr.workerRepository, props.imageTag),
+      logging: ecs.LogDrivers.awsLogs({
+        streamPrefix: 'worker',
+        logGroup: props.workerLogGroup,
+      }),
+      environment: {
+        NODE_ENV: 'production',
+        HOSTNAME: '0.0.0.0',
+        PORT: String(infra.workerHealthPort),
+        REDIS_HOST: data.cacheEndpointAddress,
+        REDIS_PORT: data.cacheEndpointPort,
+        AWS_REGION: this.region,
+        AWS_S3_UPLOADS_BUCKET: data.uploadsBucket.bucketName,
+        AWS_S3_ARTIFACTS_BUCKET: data.artifactsBucket.bucketName,
+      },
+      secrets: {
+        RDS_SECRET: ecs.Secret.fromSecretsManager(data.dbSecret),
+      },
+      portMappings: [{ containerPort: infra.workerHealthPort }],
+      stopTimeout: cdk.Duration.seconds(120),
+      healthCheck: {
+        command: [
+          'CMD-SHELL',
+          `node -e "fetch('http://127.0.0.1:${infra.workerHealthPort}/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"`,
+        ],
+        interval: cdk.Duration.seconds(30),
+        timeout: cdk.Duration.seconds(5),
+        retries: 3,
+        startPeriod: cdk.Duration.seconds(40),
+      },
+    });
+
+    this.workerService = new ecs.FargateService(this, 'WorkerService', {
+      serviceName: workerServiceName(envName),
+      cluster: this.cluster,
+      taskDefinition: workerTaskDefinition,
+      desiredCount: environment.worker.desiredCount,
+      assignPublicIp: false,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [network.workerTaskSg],
+      minHealthyPercent: 100,
+      maxHealthyPercent: 200,
+      circuitBreaker: { rollback: true },
+      enableExecuteCommand: false,
+    });
+
     this.webService
       .metricCpuUtilization({ period: cdk.Duration.minutes(5) })
       .createAlarm(this, 'WebCpuHigh', {
@@ -256,6 +335,23 @@ export class EcsStack extends cdk.Stack {
       alarmDescription: 'web target 5xx rate above 2% over 5 minutes (12 §5)',
     });
 
+    this.workerService
+      .metricCpuUtilization({ period: cdk.Duration.minutes(5) })
+      .createAlarm(this, 'WorkerCpuHigh', {
+        threshold: 80,
+        evaluationPeriods: 2,
+        datapointsToAlarm: 2,
+        alarmDescription: 'worker CPU above 80% for 10 minutes (12 §5)',
+      });
+    this.workerService
+      .metricMemoryUtilization({ period: cdk.Duration.minutes(5) })
+      .createAlarm(this, 'WorkerMemoryHigh', {
+        threshold: 80,
+        evaluationPeriods: 2,
+        datapointsToAlarm: 2,
+        alarmDescription: 'worker memory above 80% for 10 minutes',
+      });
+
     const prefix = ssmPrefix(envName);
     new ssm.StringParameter(this, 'ClusterNameParam', {
       parameterName: `${prefix}/ecs-cluster-name`,
@@ -272,6 +368,18 @@ export class EcsStack extends cdk.Stack {
     new ssm.StringParameter(this, 'WebContainerNameParam', {
       parameterName: `${prefix}/web-container-name`,
       stringValue: webContainerName(),
+    });
+    new ssm.StringParameter(this, 'WorkerServiceNameParam', {
+      parameterName: `${prefix}/worker-service-name`,
+      stringValue: this.workerService.serviceName,
+    });
+    new ssm.StringParameter(this, 'WorkerTaskFamilyParam', {
+      parameterName: `${prefix}/worker-task-family`,
+      stringValue: workerTaskDefinition.family,
+    });
+    new ssm.StringParameter(this, 'WorkerContainerNameParam', {
+      parameterName: `${prefix}/worker-container-name`,
+      stringValue: workerContainerName(),
     });
     new ssm.StringParameter(this, 'CloudFrontDomainParam', {
       parameterName: `${prefix}/cloudfront-domain`,

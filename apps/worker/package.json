@@ -1,0 +1,37 @@
+{
+  "name": "@foundry/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "node --env-file-if-exists=../../.env --import tsx --watch src/main.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1111.0",
+    "@foundry/config": "workspace:*",
+    "@foundry/db": "workspace:*",
+    "@foundry/document-intelligence": "workspace:*",
+    "@foundry/domain": "workspace:*",
+    "@foundry/observability": "workspace:*",
+    "bullmq": "5.81.3",
+    "ioredis": "5.11.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "eslint": "9.39.5",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

@@ -36,6 +36,10 @@ beforeAll(async () => {
 afterEach(async () => {
   await sql`
     truncate table
+      content_blocks,
+      documents,
+      source_snapshots,
+      sources,
       domain_events,
       notification_endpoints,
       project_memberships,

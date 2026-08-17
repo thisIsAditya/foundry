@@ -16,9 +16,10 @@
     "test:e2e": "turbo run test:e2e",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:up": "docker compose up -d postgres valkey",
+    "db:up": "docker compose up -d postgres valkey minio minio-init",
     "db:migrate": "pnpm --filter @foundry/db migrate up",
     "dev:web": "pnpm --filter @foundry/web dev",
+    "dev:worker": "pnpm --filter @foundry/worker dev",
     "create-admin-key": "pnpm --filter @foundry/web create-admin-key",
     "cdk:synth": "pnpm --filter @foundry/cdk synth",
     "prepare": "node ./scripts/install-git-hooks.mjs"

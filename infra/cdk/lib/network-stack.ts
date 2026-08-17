@@ -124,5 +124,9 @@ export class NetworkStack extends cdk.Stack {
       parameterName: `${ssmPrefix(props.environmentName)}/web-task-sg-id`,
       stringValue: this.webTaskSg.securityGroupId,
     });
+    new ssm.StringParameter(this, 'WorkerTaskSgId', {
+      parameterName: `${ssmPrefix(props.environmentName)}/worker-task-sg-id`,
+      stringValue: this.workerTaskSg.securityGroupId,
+    });
   }
 }
