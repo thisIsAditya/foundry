@@ -209,7 +209,7 @@ Every thrown domain error extends `AppError` (from `@foundry/observability`) wit
 | `not_found` | `NOT_FOUND` | 404 |
 | `stale_revision` | `CONFLICT` | 409 |
 | `invalid_input` | `BAD_REQUEST` | 400 |
-| `missing_evidence`, `gate_blocked`, `policy_forbidden` | `FORBIDDEN` | 403 |
+| `missing_evidence`, `policy_forbidden` | `FORBIDDEN` | 403 |
 | `approval_required` | `PRECONDITION_FAILED` | 412 |
 | `budget_exceeded` | `PAYMENT_REQUIRED` | 402 |
 | `rate_limited` | `TOO_MANY_REQUESTS` | 429 |

@@ -79,7 +79,7 @@ export async function runCofounderTurn(input: {
   return dispatchCofounderDecision(decision, input.actions, context.contextItemsUsed);
 }
 
-async function dispatchCofounderDecision(
+export async function dispatchCofounderDecision(
   decision: CofounderDecision,
   actions: CofounderActions,
   contextItemsUsed: ConversationReference[],

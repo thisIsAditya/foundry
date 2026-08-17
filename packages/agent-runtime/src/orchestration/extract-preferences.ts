@@ -1,7 +1,30 @@
+import type { LanguageModel } from 'ai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
+
 export type ExtractedPreference = {
   key: string;
   value: string;
 };
+
+const PreferenceKeySchema = z.enum([
+  'geography',
+  'budget',
+  'risk_tolerance',
+  'communication_style',
+  'working_style',
+  'availability',
+  'customer_type',
+]);
+
+const PreferenceExtractionSchema = z.object({
+  preferences: z.array(
+    z.object({
+      key: PreferenceKeySchema,
+      value: z.string().min(1),
+    }),
+  ),
+});
 
 const PREFERENCE_MATCHERS: { key: string; pattern: RegExp; value: (match: string) => string }[] = [
   {
@@ -34,6 +57,11 @@ const PREFERENCE_MATCHERS: { key: string; pattern: RegExp; value: (match: string
     pattern: /\b(smb|sme|enterprise|consumer|b2b|b2c)\b/i,
     value: (match) => match.toLowerCase(),
   },
+  {
+    key: 'availability',
+    pattern: /\b(mornings|afternoons|business.?hours|office.?hours)\b/i,
+    value: (match) => match.toLowerCase(),
+  },
 ];
 
 export function extractPreferencesFromText(text: string): ExtractedPreference[] {
@@ -45,4 +73,25 @@ export function extractPreferencesFromText(text: string): ExtractedPreference[] 
     }
   }
   return found;
+}
+
+export async function extractPreferences(
+  text: string,
+  options?: { model?: LanguageModel; timeoutMs?: number },
+): Promise<ExtractedPreference[]> {
+  const fromRules = extractPreferencesFromText(text);
+  if (fromRules.length > 0 || options?.model === undefined) {
+    return fromRules;
+  }
+  try {
+    const generated = await generateObject({
+      model: options.model,
+      schema: PreferenceExtractionSchema,
+      prompt: `Extract founder preferences from this message. Return only supported keys. Message: ${text}`,
+      abortSignal: AbortSignal.timeout(options.timeoutMs ?? 8_000),
+    });
+    return generated.object.preferences;
+  } catch {
+    return [];
+  }
 }

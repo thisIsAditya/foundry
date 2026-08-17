@@ -309,7 +309,13 @@ export function calculateScore(
   const reasons = ScoreDimensions.flatMap((key) => results[key].reasons);
   const topActions = [...ScoreDimensions]
     .map((key) => results[key].action)
-    .sort((a, b) => (b.expectedImpact ?? 0) - (a.expectedImpact ?? 0))
+    .sort((a, b) => {
+      const impactDiff = (b.expectedImpact ?? 0) - (a.expectedImpact ?? 0);
+      if (impactDiff !== 0) {
+        return impactDiff;
+      }
+      return ScoreDimensions.indexOf(a.dimension) - ScoreDimensions.indexOf(b.dimension);
+    })
     .slice(0, 3);
   const overall = Number(
     ScoreDimensions.reduce((sum, key) => sum + results[key].score.contribution, 0).toFixed(2),

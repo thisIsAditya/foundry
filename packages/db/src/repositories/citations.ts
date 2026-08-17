@@ -64,3 +64,16 @@ export async function listCitationsBySourceSnapshotId(
   `;
   return rows.map(parseCitation);
 }
+
+export async function listCitationsByIds(
+  sql: Sql,
+  citationIds: readonly z.infer<typeof CitationIdSchema>[],
+): Promise<Citation[]> {
+  if (citationIds.length === 0) {
+    return [];
+  }
+  const rows = await sql<CitationRow[]>`
+    select * from citations where id in ${sql(citationIds)} order by created_at asc
+  `;
+  return rows.map(parseCitation);
+}

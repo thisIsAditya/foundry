@@ -4,7 +4,6 @@ export const AppErrorCodes = [
   'stale_revision',
   'invalid_input',
   'missing_evidence',
-  'gate_blocked',
   'approval_required',
   'provider_unavailable',
   'capability_unsupported',

@@ -1,6 +1,5 @@
 import {
   DefineMetricInputSchema,
-  EvaluateGateInputSchema,
   ListMetricsInputSchema,
   RecordMetricObservationInputSchema,
 } from '@foundry/api-contracts';
@@ -44,17 +43,5 @@ export const metricRouter = router({
         { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
         input,
       );
-    }),
-});
-
-export const gateRouter = router({
-  evaluate: metricWriteProcedure
-    .meta({ invalidates: mutationInvalidations['gate.evaluate'] })
-    .input(EvaluateGateInputSchema)
-    .mutation(async ({ ctx }) => {
-      return ctx.services.metricService.evaluateGateC({
-        membership: ctx.membership,
-        project: ctx.project,
-      });
     }),
 });

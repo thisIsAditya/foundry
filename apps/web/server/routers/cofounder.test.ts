@@ -66,5 +66,40 @@ describe('co-founder conversation, score, jobs, and business model cards', () =>
         idempotencyKey: randomUUID(),
       }),
     ).rejects.toMatchObject({ cause: { code: 'missing_evidence' } });
+
+    const replayKey = randomUUID();
+    const firstSend = await caller.conversation.send({
+      projectId: project.id,
+      text: 'We are bootstrapped in Pune and prefer concise updates.',
+      idempotencyKey: replayKey,
+    });
+    const replayedSend = await caller.conversation.send({
+      projectId: project.id,
+      text: 'We are bootstrapped in Pune and prefer concise updates.',
+      idempotencyKey: replayKey,
+    });
+    expect(replayedSend.founderMessage.id).toBe(firstSend.founderMessage.id);
+
+    const preferences = await caller.conversation.listPreferences({ projectId: project.id });
+    const geography = preferences.find((item) => item.key === 'geography');
+    expect(geography?.value).toBeTruthy();
+    if (geography === undefined) {
+      throw new Error('expected an inferred geography preference');
+    }
+    const confirmed = await caller.conversation.confirmPreference({
+      projectId: project.id,
+      preferenceId: geography.id,
+      idempotencyKey: randomUUID(),
+    });
+    expect(confirmed.founderConfirmed).toBe(true);
+    const corrected = await caller.conversation.correctPreference({
+      projectId: project.id,
+      preferenceId: geography.id,
+      value: 'Mumbai',
+      idempotencyKey: randomUUID(),
+    });
+    expect(corrected.value).toBe('Mumbai');
+    const summary = await caller.conversation.getSummary({ projectId: project.id });
+    expect(summary === null || typeof summary.summaryText === 'string').toBe(true);
   });
 });

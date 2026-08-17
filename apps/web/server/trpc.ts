@@ -48,7 +48,6 @@ function trpcCodeForAppError(code: AppErrorCode): TRPCError['code'] {
     case 'invalid_input':
       return 'BAD_REQUEST';
     case 'missing_evidence':
-    case 'gate_blocked':
     case 'policy_forbidden':
     case 'budget_exceeded':
       return 'FORBIDDEN';

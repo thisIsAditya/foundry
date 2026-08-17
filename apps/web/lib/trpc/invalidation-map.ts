@@ -9,12 +9,6 @@
 export const mutationInvalidations = {
   'workspace.create': ['workspace.list'],
   'project.create': ['project.list', 'project.getDeskSummary'],
-  'project.answerClarification': [
-    'project.getDeskSummary',
-    'sprint.getActivity',
-    'conversation.list',
-    'score.getCurrent',
-  ],
   'conversation.send': [
     'conversation.list',
     'project.getDeskSummary',

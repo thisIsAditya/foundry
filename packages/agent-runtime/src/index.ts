@@ -58,11 +58,13 @@ export {
 } from './contracts/cofounder-context.js';
 export { diagnoseClarification, type DiagnoseInput } from './orchestration/diagnose.js';
 export {
+  dispatchCofounderDecision,
   runCofounderTurn,
   type CofounderActions,
   type CofounderTurnResult,
 } from './orchestration/cofounder-turn.js';
 export {
+  extractPreferences,
   extractPreferencesFromText,
   type ExtractedPreference,
 } from './orchestration/extract-preferences.js';

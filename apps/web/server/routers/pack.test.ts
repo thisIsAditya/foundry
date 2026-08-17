@@ -63,4 +63,105 @@ describe('pack revision review path', () => {
     expect(after.pendingPackRevisionId).toBeNull();
     expect(after.packRevisionId).toBe(draft.id);
   });
+
+  it('returns all 17 business model cards without throwing when backing rows are empty', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `pack-agg-${randomUUID()}@example.com`,
+    });
+    const workspace = await appRouter
+      .createCaller(await createTestContext(sql, user))
+      .workspace.create({ name: 'Acme', idempotencyKey: randomUUID() });
+    const caller = appRouter.createCaller(await createTestContext(sql, user));
+    const project = await caller.project.create({
+      workspaceId: workspace.id,
+      name: 'Venture',
+      idempotencyKey: randomUUID(),
+    });
+    const sections = await caller.pack.listBusinessModelSections({ projectId: project.id });
+    expect(sections).toHaveLength(17);
+    expect(new Set(sections.map((item) => item.key)).size).toBe(17);
+    for (const section of sections) {
+      expect(section.title.length).toBeGreaterThan(0);
+      expect(section.summary.length).toBeGreaterThan(0);
+      expect(section.knownFacts).toBeDefined();
+      expect(section.assumptions).toBeDefined();
+      expect(section.citations).toBeDefined();
+      expect([
+        'draft',
+        'assumption_heavy',
+        'researching',
+        'needs_founder',
+        'supported',
+        'stale',
+        'blocked',
+        'accepted',
+      ]).toContain(section.status);
+    }
+    const problem = await caller.pack.getBusinessModelSection({
+      projectId: project.id,
+      key: 'problem',
+    });
+    expect(problem.card.key).toBe('problem');
+    expect(problem.revisionHistory.length).toBeGreaterThan(0);
+  });
+
+  it('exposes revisions and accepts a single safe section', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `pack-sec-${randomUUID()}@example.com`,
+    });
+    const workspace = await appRouter
+      .createCaller(await createTestContext(sql, user))
+      .workspace.create({ name: 'Acme', idempotencyKey: randomUUID() });
+    const caller = appRouter.createCaller(await createTestContext(sql, user));
+    const project = await caller.project.create({
+      workspaceId: workspace.id,
+      name: 'Venture',
+      idempotencyKey: randomUUID(),
+    });
+    const revisionId = project.currentPackRevisionId;
+    if (revisionId === null) {
+      throw new Error('expected a current pack revision');
+    }
+    const revisions = await caller.pack.listRevisions({ projectId: project.id });
+    expect(revisions.some((item) => item.id === revisionId)).toBe(true);
+
+    const accepted = await caller.pack.acceptSection({
+      projectId: project.id,
+      revisionId,
+      expectedRevision: revisionId,
+      sectionKey: 'problem',
+      idempotencyKey: randomUUID(),
+    });
+    expect(accepted.id).toBe(revisionId);
+    const problem = await caller.pack.getBusinessModelSection({
+      projectId: project.id,
+      key: 'problem',
+    });
+    expect(problem.card.status).toBe('accepted');
+
+    const replayKey = randomUUID();
+    const first = await caller.pack.acceptAllSafeSections({
+      projectId: project.id,
+      revisionId,
+      expectedRevision: revisionId,
+      idempotencyKey: replayKey,
+    });
+    const replayed = await caller.pack.acceptAllSafeSections({
+      projectId: project.id,
+      revisionId,
+      expectedRevision: revisionId,
+      idempotencyKey: replayKey,
+    });
+    expect(replayed.revision.id).toBe(first.revision.id);
+    expect(first.skippedUnsafeKeys).toContain('business_model_money_rules');
+
+    const explained = await caller.pack.explainChange({
+      projectId: project.id,
+      revisionId,
+      sectionKey: 'problem',
+    });
+    expect(explained.explanation.length).toBeGreaterThan(0);
+  });
 });

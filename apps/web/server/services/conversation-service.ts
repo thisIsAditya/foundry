@@ -1,5 +1,5 @@
 import {
-  extractPreferencesFromText,
+  extractPreferences,
   resolveWorkspaceModel,
   runCofounderTurn,
   shouldSummarizeConversation,
@@ -286,7 +286,7 @@ export class ConversationService {
       actor: 'co_founder',
     });
 
-    await this.persistExtractedPreferences(actor, founderMessage);
+    await this.persistExtractedPreferences(actor, founderMessage, resolved.model);
     await this.maybeSummarize(actor, resolved.model, timeoutMs);
     await this.scoringService.recalculate(actor.project).catch(() => undefined);
     void correlationId;
@@ -327,8 +327,9 @@ export class ConversationService {
   private async persistExtractedPreferences(
     actor: { project: Project },
     founderMessage: ConversationMessage,
+    model: LanguageModel,
   ): Promise<void> {
-    const extracted = extractPreferencesFromText(founderMessage.text);
+    const extracted = await extractPreferences(founderMessage.text, { model });
     if (extracted.length === 0) {
       return;
     }

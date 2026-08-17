@@ -1,16 +1,5 @@
-import type {
-  AnswerClarificationInput,
-  CreateProjectInput,
-  OverviewSummary,
-} from '@foundry/api-contracts';
+import type { CreateProjectInput, OverviewSummary } from '@foundry/api-contracts';
 import { toAiJobSummary } from '@foundry/api-contracts';
-import {
-  diagnoseClarification,
-  resolveWorkspaceModel,
-  type ProviderSecrets,
-  type SecretBox,
-  type StreamBus,
-} from '@foundry/agent-runtime';
 import { limits } from '@foundry/config/limits';
 import {
   countStaleArtifactVersions,
@@ -25,9 +14,7 @@ import {
   listInterviewsByProjectId,
   listPackRevisionsByProjectId,
   listProjectsByWorkspaceId,
-  listProviderConnectionsByWorkspaceId,
   listSprintsByProjectId,
-  updatePackRevisionProposedChanges,
   withWorkspaceScope,
   type PoolSql,
 } from '@foundry/db';
@@ -42,33 +29,15 @@ import {
 } from '@foundry/domain';
 import { AppError } from '@foundry/observability';
 import { evaluateGateA, PolicyService } from '@foundry/policy';
-import type { LanguageModel } from 'ai';
-import { randomUUID } from 'node:crypto';
 import superjson from 'superjson';
-import { z } from 'zod';
 
 import { withIdempotency, type CoordinationStore } from '../coordination';
-import type { ConversationService } from './conversation-service';
-import type { FounderTaskService } from './founder-task-service';
 import type { InitialDraftService } from './initial-draft-service';
-import { ensurePackRevision, loadPackSnapshot, readClarifications } from './pack-snapshot';
-import type { ScoringService } from './scoring-service';
+import { ensurePackRevision, loadPackSnapshot } from './pack-snapshot';
 import { hashContract } from './sprint-service';
 
-const AnswerResultSchema = z.object({
-  runId: z.string().min(1),
-  text: z.string(),
-});
-
 export type ProjectRuntimeDeps = {
-  streamBus: StreamBus;
-  secretBox: SecretBox;
-  secrets: ProviderSecrets;
-  languageModel?: LanguageModel;
-  conversationService?: ConversationService;
   initialDraftService?: InitialDraftService;
-  scoringService?: ScoringService;
-  founderTaskService?: FounderTaskService;
 };
 
 export class ProjectService {
@@ -302,107 +271,5 @@ export class ProjectService {
         overview,
       };
     });
-  }
-
-  async answerClarification(
-    actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
-    input: AnswerClarificationInput,
-    correlationId: string,
-  ): Promise<{ runId: string; text: string }> {
-    if (this.runtime.conversationService !== undefined) {
-      const sent = await this.runtime.conversationService.send(
-        actor,
-        {
-          projectId: input.projectId,
-          text: input.answer,
-          idempotencyKey: input.idempotencyKey,
-        },
-        correlationId,
-      );
-      return { runId: sent.runId, text: sent.text };
-    }
-    if (!this.policyService.can(actor.membership, 'project.answer')) {
-      throw new AppError({
-        code: 'policy_forbidden',
-        explanation: 'Your role cannot answer clarifications on this project.',
-        nextAction: 'Ask a workspace admin to change your role.',
-      });
-    }
-
-    const key = `idem:${actor.userId}:project.answerClarification:${input.idempotencyKey}`;
-    return withIdempotency(
-      this.coordination,
-      key,
-      limits.idempotencyKeyTtlSeconds,
-      (raw) => AnswerResultSchema.parse(superjson.parse(raw)),
-      (value) => superjson.stringify(value),
-      async () => {
-        const runId = randomUUID();
-        const snapshot = await withWorkspaceScope(
-          this.sql,
-          [actor.project.workspaceId],
-          async (tx) => {
-            const pack = await ensurePackRevision(tx, actor.project, actor.userId);
-            const clarifications = [
-              ...readClarifications(pack.proposedChanges),
-              {
-                questionId: input.questionId,
-                answer: input.answer,
-                answeredAt: new Date().toISOString(),
-              },
-            ];
-            await updatePackRevisionProposedChanges(tx, pack.id, { clarifications });
-            const project = await getProjectById(tx, actor.project.id);
-            if (project === null) {
-              throw new AppError({
-                code: 'not_found',
-                explanation: 'Project not found.',
-                nextAction: 'Reload the desk and retry.',
-                correlationId,
-              });
-            }
-            return loadPackSnapshot(tx, project);
-          },
-          actor.userId,
-        );
-
-        const resolved = await this.resolveModel(actor.project.workspaceId);
-        // Local models (e.g. Ollama) load and generate far slower than a hosted API,
-        // so give them a much longer budget before the abort signal fires.
-        const timeoutMs =
-          resolved.providerFamily === 'ollama'
-            ? limits.interactive.diagnoseTimeoutMsLocal
-            : limits.interactive.diagnoseTimeoutMs;
-        const diagnosed = await diagnoseClarification({
-          runId,
-          questionId: input.questionId,
-          answer: input.answer,
-          snapshot,
-          model: resolved.model,
-          timeoutMs,
-          publish: async (event) => {
-            await this.runtime.streamBus.publish(actor.project.id, event);
-          },
-        });
-        return { runId, text: diagnosed.text };
-      },
-    );
-  }
-
-  private async resolveModel(
-    workspaceId: WorkspaceId,
-  ): Promise<{ model: LanguageModel; providerFamily: string | null }> {
-    if (this.runtime.languageModel !== undefined) {
-      return { model: this.runtime.languageModel, providerFamily: null };
-    }
-    const connections = await withWorkspaceScope(this.sql, [workspaceId], async (tx) =>
-      listProviderConnectionsByWorkspaceId(tx, workspaceId),
-    );
-    const resolved = await resolveWorkspaceModel({
-      connections,
-      secrets: this.runtime.secrets,
-      secretBox: this.runtime.secretBox,
-    });
-    return { model: resolved.model, providerFamily: resolved.connection.providerFamily };
   }
 }

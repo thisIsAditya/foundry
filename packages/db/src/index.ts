@@ -315,6 +315,7 @@ export {
 } from './repositories/research-findings.js';
 export {
   insertCitation,
+  listCitationsByIds,
   listCitationsBySourceSnapshotId,
   toCitation,
   type InsertCitation,

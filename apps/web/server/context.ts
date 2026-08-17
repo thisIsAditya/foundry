@@ -156,14 +156,7 @@ export function createServices(
     policyService,
     workspaceService: new WorkspaceService(sql, coordination),
     projectService: new ProjectService(sql, coordination, policyService, {
-      streamBus: extras.streamBus,
-      secretBox: extras.secretBox,
-      secrets: extras.secrets,
-      ...(extras.languageModel === undefined ? {} : { languageModel: extras.languageModel }),
-      conversationService,
       initialDraftService,
-      scoringService,
-      founderTaskService,
     }),
     documentService: new DocumentService(
       sql,

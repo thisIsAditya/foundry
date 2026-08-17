@@ -28,7 +28,7 @@ export const ConversationBlockSchema = z.discriminatedUnion('kind', [
     kind: z.literal('cited_finding'),
     text: z.string().min(1),
     evidenceItemId: z.string().optional(),
-    citationIds: z.array(z.string()).default([]),
+    citationIds: z.array(z.string().min(1)).min(1),
   }),
   z.object({
     kind: z.literal('assumption_card'),

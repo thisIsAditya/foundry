@@ -1,18 +1,11 @@
 import {
-  AnswerClarificationInputSchema,
   CreateProjectInputSchema,
   GetMoneyRulesInputSchema,
   ListProjectsInputSchema,
 } from '@foundry/api-contracts';
 
 import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
-import {
-  projectAnswerProcedure,
-  projectReadProcedure,
-  router,
-  workspaceProcedure,
-  workspaceReadProcedure,
-} from '../trpc';
+import { projectReadProcedure, router, workspaceProcedure, workspaceReadProcedure } from '../trpc';
 
 export const projectRouter = router({
   create: workspaceProcedure
@@ -36,17 +29,4 @@ export const projectRouter = router({
       project: ctx.project,
     });
   }),
-  answerClarification: projectAnswerProcedure
-    .meta({ invalidates: mutationInvalidations['project.answerClarification'] })
-    .input(AnswerClarificationInputSchema)
-    .mutation(async ({ ctx, input }) => {
-      if (ctx.actor.type !== 'user') {
-        throw new Error('projectAnswerProcedure requires a user actor');
-      }
-      return ctx.services.projectService.answerClarification(
-        { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
-        input,
-        ctx.correlationId,
-      );
-    }),
 });

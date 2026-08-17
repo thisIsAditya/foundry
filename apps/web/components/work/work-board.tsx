@@ -16,7 +16,7 @@ import { useMemo, useState } from 'react';
 
 import { errorMessageOf } from '../../lib/error-message';
 import { useTRPC } from '../../lib/trpc/client';
-import { ApprovalsQueue } from '../../app/(app)/p/[projectId]/approvals/approvals-queue';
+import { ApprovalsQueue } from './approvals-queue';
 import { EmptyState } from '../ui/empty-state';
 
 import { FounderTaskCard, FounderTaskDetail } from './founder-task-card';

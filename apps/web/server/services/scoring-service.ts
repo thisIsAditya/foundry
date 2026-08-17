@@ -7,6 +7,7 @@ import {
   listAlternativesByProjectId,
   listAssumptionsByProjectId,
   listBeachheadsByPackRevisionId,
+  listCitationsByIds,
   listCompetitorsByProjectId,
   listDmusByPackRevisionId,
   listEvidenceItemsByProjectId,
@@ -74,6 +75,9 @@ export class ScoringService {
       const marketModels = await listMarketModelsByPackRevisionId(tx, revisionId);
       const wedges = await listWedgesByPackRevisionId(tx, revisionId);
       const evidenceItems = await listEvidenceItemsByProjectId(tx, project.id);
+      const citations = await listCitationsByIds(tx, [
+        ...new Set(evidenceItems.flatMap((item) => item.citationIds)),
+      ]);
       const assumptions = await listAssumptionsByProjectId(tx, project.id);
       const moneyRules = await getCurrentMoneyRules(tx, project.id);
       const unitEconomicsModels = await listUnitEconomicsByPackRevisionId(tx, revisionId);
@@ -131,7 +135,7 @@ export class ScoringService {
           interviews,
           quotes,
           evidenceItems,
-          citations: [],
+          citations,
           assumptions,
           moneyRules: moneyList,
           unitEconomicsModels,
