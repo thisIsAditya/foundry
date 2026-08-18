@@ -197,7 +197,7 @@ It must not describe a business as guaranteed, validated by simulated users, leg
 
 ### I3 — Worker Fargate service ships with Milestone 4
 
-**Choice:** `EcsStack` runs both the `web` and `worker` Fargate services. The worker has no ALB, exposes `/healthz` on port 8080, and `stopTimeout` is 120 seconds so BullMQ can drain.
+**Choice:** `EcsStack` runs both the `web` and `worker` Fargate services. The worker has no ALB, exposes `/healthz` on port 8689, and `stopTimeout` is 120 seconds so BullMQ can drain.
 
 **Reason:** Milestone 4 is the first time `apps/worker` and `docker/worker.Dockerfile` exist. An empty worker service in Milestone 3 would have failed health checks.
 

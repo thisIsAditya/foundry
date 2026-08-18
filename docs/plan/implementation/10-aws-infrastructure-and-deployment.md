@@ -33,8 +33,8 @@ Security groups:
 
 | SG | Inbound | Outbound |
 |---|---|---|
-| `alb-sg` | 443 from `0.0.0.0/0` (or from CloudFront's managed prefix list only, once CloudFront is mandatory) | 3000 to `web-task-sg` |
-| `web-task-sg` | 3000 from `alb-sg` | 5432 to `db-sg`, 6379 to `cache-sg`, 443 to internet (via NAT, for provider API calls) |
+| `alb-sg` | 443 from `0.0.0.0/0` (or from CloudFront's managed prefix list only, once CloudFront is mandatory) | 3210 to `web-task-sg` |
+| `web-task-sg` | 3210 from `alb-sg` | 5432 to `db-sg`, 6379 to `cache-sg`, 443 to internet (via NAT, for provider API calls) |
 | `worker-task-sg` | none (no inbound HTTP except the internal health-check port) | 5432 to `db-sg`, 6379 to `cache-sg`, 443 to internet |
 | `db-sg` | 5432 from `web-task-sg`, `worker-task-sg` | — |
 | `cache-sg` | 6379 from `web-task-sg`, `worker-task-sg` | — |
@@ -66,7 +66,7 @@ ENV NODE_ENV=production
 COPY --from=build /repo/apps/web/.next/standalone ./
 COPY --from=build /repo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build /repo/apps/web/public ./apps/web/public
-EXPOSE 3000
+EXPOSE 3210
 USER node
 CMD ["node", "apps/web/server.js"]
 ```
@@ -97,7 +97,7 @@ CloudFront (TLS, caches /_next/static/*, /public/*; passes everything else throu
    │
 ALB (TLS terminates here too, for direct-to-ALB health checks and defense in depth)
    │
-web Fargate service (target group, port 3000)
+web Fargate service (target group, port 3210)
 ```
 
 CloudFront cache behavior:

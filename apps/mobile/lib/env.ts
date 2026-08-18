@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const EnvSchema = z.object({
-  EXPO_PUBLIC_API_BASE_URL: z.url().default('http://localhost:3000'),
+  EXPO_PUBLIC_API_BASE_URL: z.url().default('http://localhost:3210'),
 });
 
 export type MobileEnv = z.infer<typeof EnvSchema>;

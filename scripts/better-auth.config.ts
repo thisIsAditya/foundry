@@ -3,7 +3,7 @@ import { apiKey } from '@better-auth/api-key';
 import pg from 'pg';
 
 export const auth = betterAuth({
-  baseURL: 'http://localhost:3000',
+  baseURL: 'http://localhost:3210',
   database: new pg.Pool({
     connectionString: 'postgres://foundry:foundry@localhost:5432/foundry',
   }),

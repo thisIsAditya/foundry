@@ -1,8 +1,8 @@
 export const infra = {
-  webPort: 3000,
+  webPort: 3210,
   dbPort: 5432,
   cachePort: 6379,
-  workerHealthPort: 8080,
+  workerHealthPort: 8689,
   vpcCidr: '10.20.0.0/16',
   names: {
     ecrWeb: 'foundry-web',

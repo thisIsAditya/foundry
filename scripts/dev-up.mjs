@@ -18,7 +18,7 @@ const reset = process.argv.includes('--reset');
 const pinPath = join(root, '.local-admin-pin');
 const envPath = join(root, '.env');
 const envExamplePath = join(root, '.env.example');
-const appPorts = [3000, 3001, 8080];
+const appPorts = [3210, 3211, 8689];
 
 function log(message) {
   process.stdout.write(`\n==> ${message}\n`);
@@ -190,8 +190,8 @@ if (!/^\d{6}$/.test(pin)) {
 process.stdout.write(`
 Local stack is ready.
 
-  Web:     http://localhost:3000
-  Worker:  http://localhost:8080
+  Web:     http://localhost:3210
+  Worker:  http://localhost:8689
   Mailpit: http://localhost:8025
   MinIO:   http://localhost:9001
 

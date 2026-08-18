@@ -1,3 +1,4 @@
+import { infra } from '@foundry/config/infra';
 import { z } from 'zod';
 
 const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value);
@@ -10,7 +11,9 @@ const EnvSchema = z.object({
   PORT: z
     .string()
     .optional()
-    .transform((value) => (value === undefined || value === '' ? 8080 : Number(value)))
+    .transform((value) =>
+      value === undefined || value === '' ? infra.workerHealthPort : Number(value),
+    )
     .pipe(z.number().int().positive()),
   AWS_REGION: z.preprocess(emptyToUndefined, z.string().min(1).optional()).default('ap-south-1'),
   AWS_S3_UPLOADS_BUCKET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),

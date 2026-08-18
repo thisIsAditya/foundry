@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev --webpack -p 3210",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3210",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

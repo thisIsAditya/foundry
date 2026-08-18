@@ -50,7 +50,7 @@ function readProcessEnv(): Record<string, string | undefined> {
       NODE_ENV: process.env.NODE_ENV ?? 'production',
       DATABASE_URL: process.env.DATABASE_URL ?? 'postgres://build:build@localhost:5432/build',
       REDIS_URL: process.env.REDIS_URL,
-      BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
+      BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3210',
       BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? 'build-placeholder-secret-32bytes!!',
       GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
       GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,

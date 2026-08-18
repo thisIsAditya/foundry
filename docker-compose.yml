@@ -72,12 +72,12 @@ services:
       context: .
       dockerfile: docker/web.Dockerfile
     ports:
-      - '3000:3000'
+      - '3210:3210'
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://foundry:foundry@postgres:5432/foundry
       REDIS_URL: redis://valkey:6379
-      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_URL: http://localhost:3210
       BETTER_AUTH_SECRET: replace-with-at-least-32-characters
       AWS_REGION: ap-south-1
       AWS_S3_UPLOADS_BUCKET: foundry-uploads
@@ -99,7 +99,7 @@ services:
       context: .
       dockerfile: docker/worker.Dockerfile
     ports:
-      - '8080:8080'
+      - '8689:8689'
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://foundry:foundry@postgres:5432/foundry

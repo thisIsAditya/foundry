@@ -17,9 +17,10 @@ import {
 
 describe('infra constants', () => {
   it('matches the planned ports and ECR names (10 §3–4)', () => {
-    expect(infra.webPort).toBe(3000);
+    expect(infra.webPort).toBe(3210);
     expect(infra.dbPort).toBe(5432);
     expect(infra.cachePort).toBe(6379);
+    expect(infra.workerHealthPort).toBe(8689);
     expect(infra.vpcCidr).toBe('10.20.0.0/16');
     expect(infra.names.ecrWeb).toBe('foundry-web');
     expect(infra.names.ecrWorker).toBe('foundry-worker');
