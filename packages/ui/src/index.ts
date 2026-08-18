@@ -3,6 +3,7 @@ export { spacing } from './tokens/spacing.js';
 export { fontFamily, fontSize, fontWeight } from './tokens/typography.js';
 export { radius } from './tokens/radius.js';
 export { motion } from './tokens/motion.js';
+export { layout } from './tokens/layout.js';
 export {
   artifactStatusPresentation,
   businessModelSectionStatusPresentation,

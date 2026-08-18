@@ -4,6 +4,7 @@ import type { ConversationBlock, ConversationMessage } from '@foundry/domain';
 import Link from 'next/link';
 
 import { businessModelSectionLabel } from '../../lib/format';
+import { projectPanelHref } from '../../lib/project-href';
 
 function BlockCard({ projectId, block }: { projectId: string; block: ConversationBlock }) {
   switch (block.kind) {
@@ -17,7 +18,7 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
           {block.citationIds.length === 0 ? null : (
             <p className="muted">{block.citationIds.length} citation(s)</p>
           )}
-          <Link href={`/p/${projectId}/research`} className="text-sm">
+          <Link href={projectPanelHref(projectId, 'research')} className="text-sm">
             Open research
           </Link>
         </div>
@@ -41,8 +42,8 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
           <Link
             href={
               block.sectionKey === undefined
-                ? `/p/${projectId}/plan`
-                : `/p/${projectId}/plan/${block.sectionKey}`
+                ? projectPanelHref(projectId, 'plan')
+                : projectPanelHref(projectId, 'plan', { section: block.sectionKey })
             }
             className="text-sm"
           >
@@ -54,7 +55,10 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
       return (
         <div className="panel stack" style={{ gap: '0.5rem' }}>
           <p className="hint">Research plan</p>
-          <Link href={`/p/${projectId}/work?job=${block.jobId}`} className="text-sm">
+          <Link
+            href={projectPanelHref(projectId, 'work', { job: block.jobId })}
+            className="text-sm"
+          >
             Review before it starts
           </Link>
         </div>
@@ -63,7 +67,10 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
       return (
         <div className="panel stack" style={{ gap: '0.5rem' }}>
           <p className="hint">Founder task</p>
-          <Link href={`/p/${projectId}/work?task=${block.founderTaskId}`} className="text-sm">
+          <Link
+            href={projectPanelHref(projectId, 'work', { task: block.founderTaskId })}
+            className="text-sm"
+          >
             Open the task
           </Link>
         </div>
@@ -72,7 +79,10 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
       return (
         <div className="panel stack" style={{ gap: '0.5rem' }}>
           <p className="hint">Job request</p>
-          <Link href={`/p/${projectId}/work?job=${block.jobId}`} className="text-sm">
+          <Link
+            href={projectPanelHref(projectId, 'work', { job: block.jobId })}
+            className="text-sm"
+          >
             Open the job
           </Link>
         </div>
@@ -89,7 +99,7 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
         <div className="panel stack" style={{ gap: '0.5rem' }}>
           <p className="hint">Decision</p>
           <p className="text-sm whitespace-pre-wrap">{block.text}</p>
-          <Link href={`/p/${projectId}/decisions`} className="text-sm">
+          <Link href={projectPanelHref(projectId, 'decisions')} className="text-sm">
             Open decisions
           </Link>
         </div>

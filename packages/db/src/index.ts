@@ -321,9 +321,12 @@ export {
   type InsertCitation,
 } from './repositories/citations.js';
 export {
+  getEvidenceItemById,
   insertEvidenceItem,
+  listEvidenceItemsByIds,
   listEvidenceItemsByProjectId,
   toEvidenceItem,
+  updateEvidenceItemProjectId,
   type InsertEvidenceItem,
 } from './repositories/evidence-items.js';
 export {

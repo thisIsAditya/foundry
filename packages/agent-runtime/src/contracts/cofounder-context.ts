@@ -17,6 +17,7 @@ export type CofounderContextSnapshot = PackSnapshot & {
   planScore: PlanScore | null;
   openFounderTasks: FounderTask[];
   recentJobs: AiJobSummary[];
+  attachedEvidence: { id: string; summary: string }[];
 };
 
 export type CofounderContext = CofounderContextSnapshot & {
@@ -42,6 +43,9 @@ export function assembleCofounderContext(
   }
   for (const job of snapshot.recentJobs) {
     contextItemsUsed.push({ kind: 'job', id: job.id });
+  }
+  for (const evidence of snapshot.attachedEvidence) {
+    contextItemsUsed.push({ kind: 'evidence', id: evidence.id });
   }
   return {
     ...snapshot,
@@ -70,5 +74,6 @@ export function formatCofounderContext(context: CofounderContext): string {
       status: item.status,
     })),
     clarifications: context.clarifications,
+    attachedEvidence: context.attachedEvidence,
   });
 }

@@ -19,6 +19,7 @@ import {
   formatUnknown,
   packFieldLabel,
 } from '../../../../../../lib/format';
+import { projectPanelHref } from '../../../../../../lib/project-href';
 import { useTRPC } from '../../../../../../lib/trpc/client';
 
 export function BusinessModelSectionView({
@@ -94,7 +95,7 @@ export function BusinessModelSectionView({
     <div className="stack">
       <header>
         <p className="hint">
-          <Link href={`/p/${projectId}/plan`}>Business model</Link>
+          <Link href={projectPanelHref(projectId, 'plan')}>Business model</Link>
         </p>
         <h1 className="page-title">{businessModelSectionLabel(key)}</h1>
         {card === undefined ? null : <SectionStatusBadge status={card.status} />}
@@ -145,7 +146,7 @@ export function BusinessModelSectionView({
             <section className="card stack">
               <h2 className="card-title">Evidence</h2>
               <p className="muted">{card.citations.length} citations</p>
-              <Link href={`/p/${projectId}/research`}>Open research</Link>
+              <Link href={projectPanelHref(projectId, 'research')}>Open research</Link>
             </section>
             <section className="card stack">
               <h2 className="card-title">Score</h2>

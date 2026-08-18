@@ -58,6 +58,7 @@ export {
 } from './contracts/cofounder-context.js';
 export { diagnoseClarification, type DiagnoseInput } from './orchestration/diagnose.js';
 export {
+  boundDecisionByEffort,
   dispatchCofounderDecision,
   runCofounderTurn,
   type CofounderActions,

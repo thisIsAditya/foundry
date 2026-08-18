@@ -2,10 +2,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import { Scorecard } from '../../../../../components/score/scorecard';
-import { EmptyState } from '../../../../../components/ui/empty-state';
-import { formatUnknown } from '../../../../../lib/format';
-import { useTRPC } from '../../../../../lib/trpc/client';
+import { formatUnknown } from '../../lib/format';
+import { useTRPC } from '../../lib/trpc/client';
+import { Scorecard } from '../score/scorecard';
+import { EmptyState } from '../ui/empty-state';
 
 export function DecisionsList({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
@@ -24,6 +24,7 @@ export function DecisionsList({ projectId }: { projectId: string }) {
         <Scorecard projectId={projectId} />
       </section>
       {list.isLoading ? <p className="muted">Loading…</p> : null}
+      {list.isError ? <p className="alert">{list.error.message}</p> : null}
       {!list.isLoading && items.length === 0 ? (
         <EmptyState
           title="No decisions recorded yet"

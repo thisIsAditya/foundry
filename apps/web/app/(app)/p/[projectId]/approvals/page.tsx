@@ -6,5 +6,5 @@ export default async function ApprovalsRedirect({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  redirect(`/p/${projectId}/work?view=blocked`);
+  redirect(`/p/${projectId}?panel=work&view=blocked`);
 }

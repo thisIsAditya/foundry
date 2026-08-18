@@ -1,10 +1,10 @@
-import { BusinessModelSectionView } from './section-detail';
+import { redirect } from 'next/navigation';
 
-export default async function PlanSectionPage({
+export default async function PlanSectionRedirect({
   params,
 }: {
   params: Promise<{ projectId: string; section: string }>;
 }) {
   const { projectId, section } = await params;
-  return <BusinessModelSectionView projectId={projectId} section={section} />;
+  redirect(`/p/${projectId}?panel=plan&section=${encodeURIComponent(section)}`);
 }

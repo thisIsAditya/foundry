@@ -12,9 +12,11 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import { errorMessageOf } from '../../lib/error-message';
+import { projectPanelHref } from '../../lib/project-href';
 import { useTRPC } from '../../lib/trpc/client';
 import { ApprovalsQueue } from './approvals-queue';
 import { EmptyState } from '../ui/empty-state';
@@ -239,14 +241,14 @@ export function WorkViewTabs({ projectId, current }: { projectId: string; curren
   return (
     <nav className="flex flex-wrap gap-2" aria-label="Board views">
       {views.map((view) => (
-        <a
+        <Link
           key={view}
-          href={`/p/${projectId}/work?view=${view}`}
+          href={projectPanelHref(projectId, 'work', { view })}
           className={view === current ? 'badge badge-info no-underline' : 'badge no-underline'}
           aria-current={view === current ? 'page' : undefined}
         >
           {VIEW_LABELS[view]}
-        </a>
+        </Link>
       ))}
     </nav>
   );

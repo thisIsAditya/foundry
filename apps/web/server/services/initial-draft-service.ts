@@ -31,8 +31,9 @@ export class InitialDraftService {
     userId: UserId;
     membership: WorkspaceMembership;
     project: Project;
+    founderPitch?: string;
   }): Promise<void> {
-    const founderText = [actor.project.founderObjective, actor.project.name]
+    const founderText = [actor.founderPitch, actor.project.founderObjective, actor.project.name]
       .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
       .join('. ');
     const draft = buildInitialDraft({

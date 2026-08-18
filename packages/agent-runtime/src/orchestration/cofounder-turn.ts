@@ -1,4 +1,4 @@
-import type { StreamEvent } from '@foundry/api-contracts';
+import type { ConversationEffort, StreamEvent } from '@foundry/api-contracts';
 import {
   FounderTaskIdSchema,
   type AiJobKind,
@@ -47,7 +47,9 @@ export async function runCofounderTurn(input: {
   actions: CofounderActions;
   publish: (event: StreamEvent) => Promise<void>;
   timeoutMs: number;
+  effort?: ConversationEffort;
 }): Promise<CofounderTurnResult> {
+  const effort = input.effort ?? 'standard';
   const context = assembleCofounderContext(input.snapshot);
   let decision: CofounderDecision;
   try {
@@ -58,7 +60,11 @@ export async function runCofounderTurn(input: {
       prompt: [
         formatCofounderContext(context),
         `Founder message: ${input.founderText}`,
-        'Choose one action. Do not invent evidence.',
+        effort === 'quick'
+          ? 'Answer from existing context only. Do not start research or create jobs.'
+          : effort === 'thorough'
+            ? 'Be thorough. Use the full action set when it helps the founder.'
+            : 'Choose one action. Do not invent evidence.',
       ].join('\n'),
       abortSignal: AbortSignal.timeout(input.timeoutMs),
     });
@@ -76,7 +82,23 @@ export async function runCofounderTurn(input: {
     decision = { action: 'answer', text: diagnosed.text };
   }
 
+  decision = boundDecisionByEffort(decision, effort);
   return dispatchCofounderDecision(decision, input.actions, context.contextItemsUsed);
+}
+
+export function boundDecisionByEffort(
+  decision: CofounderDecision,
+  effort: ConversationEffort,
+): CofounderDecision {
+  if (
+    effort === 'quick' &&
+    (decision.action === 'start_research' ||
+      decision.action === 'create_job' ||
+      decision.action === 'propose_draft_revision')
+  ) {
+    return { action: 'answer', text: decision.text };
+  }
+  return decision;
 }
 
 export async function dispatchCofounderDecision(

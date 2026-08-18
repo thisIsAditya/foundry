@@ -79,6 +79,50 @@ export async function insertEvidenceItem(
   return parseEvidenceItem(row, citationIds);
 }
 
+export async function getEvidenceItemById(
+  sql: Sql,
+  id: z.infer<typeof EvidenceItemIdSchema>,
+): Promise<EvidenceItem | null> {
+  const rows = await sql<EvidenceItemRow[]>`
+    select * from evidence_items where id = ${id}
+  `;
+  const row = rows[0];
+  if (row === undefined) {
+    return null;
+  }
+  return parseEvidenceItem(row, await loadCitationIds(sql, row.id));
+}
+
+export async function listEvidenceItemsByIds(
+  sql: Sql,
+  ids: readonly z.infer<typeof EvidenceItemIdSchema>[],
+): Promise<EvidenceItem[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const rows = await sql<EvidenceItemRow[]>`
+    select * from evidence_items where id in ${sql(ids)}
+  `;
+  return Promise.all(
+    rows.map(async (row) => parseEvidenceItem(row, await loadCitationIds(sql, row.id))),
+  );
+}
+
+export async function updateEvidenceItemProjectId(
+  sql: Sql,
+  id: z.infer<typeof EvidenceItemIdSchema>,
+  projectId: ProjectId,
+): Promise<EvidenceItem | null> {
+  const rows = await sql<EvidenceItemRow[]>`
+    update evidence_items set project_id = ${projectId} where id = ${id} returning *
+  `;
+  const row = rows[0];
+  if (row === undefined) {
+    return null;
+  }
+  return parseEvidenceItem(row, await loadCitationIds(sql, row.id));
+}
+
 export async function listEvidenceItemsByProjectId(
   sql: Sql,
   projectId: ProjectId,

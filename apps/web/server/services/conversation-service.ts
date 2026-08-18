@@ -22,6 +22,7 @@ import {
   listConversationMessagesByProjectId,
   listConversationMessagesPage,
   listFounderPreferencesByProjectId,
+  listEvidenceItemsByIds,
   listFounderTasksByProjectId,
   listProviderConnectionsByWorkspaceId,
   listSprintsByProjectId,
@@ -32,6 +33,7 @@ import {
 import type {
   ConversationMessage,
   ConversationSummary,
+  EvidenceItemId,
   FounderPreference,
   FounderPreferenceId,
   Project,
@@ -187,7 +189,12 @@ export class ConversationService {
           actorUserId: actor.userId,
           text: input.text,
           blocks: [{ kind: 'concise_answer', text: input.text }],
-          references: input.sourceId === undefined ? [] : [{ kind: 'source', id: input.sourceId }],
+          references: [
+            ...(input.sourceId === undefined
+              ? []
+              : [{ kind: 'source' as const, id: input.sourceId }]),
+            ...(input.attachmentIds ?? []).map((id) => ({ kind: 'evidence' as const, id })),
+          ],
         }),
     );
     await this.runtime.streamBus.publish(actor.project.id, {
@@ -200,7 +207,7 @@ export class ConversationService {
       runId,
     });
 
-    const snapshot = await this.assembleSnapshot(actor);
+    const snapshot = await this.assembleSnapshot(actor, input.attachmentIds ?? []);
     const resolved = await this.resolveModel(actor.project.workspaceId);
     const timeoutMs =
       resolved.providerFamily === 'ollama'
@@ -212,6 +219,7 @@ export class ConversationService {
       snapshot,
       model: resolved.model,
       timeoutMs,
+      effort: input.effort,
       publish: async (event) => {
         if (
           event.type === 'text_delta' ||
@@ -293,22 +301,26 @@ export class ConversationService {
     return { runId, text: turn.text, founderMessage, cofounderMessage };
   }
 
-  private async assembleSnapshot(actor: {
-    userId: UserId;
-    membership: WorkspaceMembership;
-    project: Project;
-  }) {
+  private async assembleSnapshot(
+    actor: {
+      userId: UserId;
+      membership: WorkspaceMembership;
+      project: Project;
+    },
+    attachmentIds: readonly EvidenceItemId[],
+  ) {
     return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
       const pack = await ensurePackRevision(tx, actor.project, actor.userId);
       const project = { ...actor.project, currentPackRevisionId: pack.id };
       const packSnapshot = await loadPackSnapshot(tx, project);
-      const [messages, summary, preferences, tasks, sprints, score] = await Promise.all([
+      const [messages, summary, preferences, tasks, sprints, score, attached] = await Promise.all([
         listConversationMessagesByProjectId(tx, actor.project.id),
         getLatestConversationSummaryByProjectId(tx, actor.project.id),
         listFounderPreferencesByProjectId(tx, actor.project.id),
         listFounderTasksByProjectId(tx, actor.project.id),
         listSprintsByProjectId(tx, actor.project.id),
         getLatestPlanScoreByPackRevisionId(tx, pack.id),
+        listEvidenceItemsByIds(tx, attachmentIds),
       ]);
       return {
         ...packSnapshot,
@@ -320,6 +332,9 @@ export class ConversationService {
           (item) => item.status === 'proposed' || item.status === 'active',
         ),
         recentJobs: sprints.slice(0, 10).map((sprint) => toAiJobSummary({ sprint })),
+        attachedEvidence: attached
+          .filter((item) => item.projectId === actor.project.id)
+          .map((item) => ({ id: item.id, summary: item.summary })),
       };
     });
   }

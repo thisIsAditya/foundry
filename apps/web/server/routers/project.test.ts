@@ -42,6 +42,30 @@ describe('project procedures', () => {
     ).toBe(true);
   });
 
+  it('inserts a problem statement when founderPitch is long enough', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `pitch-${randomUUID()}@example.com`,
+    });
+    const workspace = await appRouter
+      .createCaller(await createTestContext(sql, user))
+      .workspace.create({ name: 'Acme', idempotencyKey: randomUUID() });
+    const caller = appRouter.createCaller(await createTestContext(sql, user));
+    const pitch = 'Cafe owners lose two hours every night closing the books by hand.';
+    const created = await caller.project.create({
+      workspaceId: workspace.id,
+      name: 'Cafe books',
+      geography: 'IN',
+      founderPitch: pitch,
+      idempotencyKey: randomUUID(),
+    });
+    const section = await caller.pack.getBusinessModelSection({
+      projectId: created.id,
+      key: 'problem',
+    });
+    expect(section.card.knownFacts.some((fact) => fact.includes(pitch))).toBe(true);
+  });
+
   it('rejects project create without a session', async () => {
     const caller = appRouter.createCaller(await createTestContext(sql, null));
     await expect(

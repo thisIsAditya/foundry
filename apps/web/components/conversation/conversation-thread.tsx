@@ -18,13 +18,7 @@ const TOPIC_CHIPS: { id: string; label: string }[] = [
   { id: 'mvp', label: 'What to build first' },
 ];
 
-export function ConversationThread({
-  projectId,
-  compact = false,
-}: {
-  projectId: string;
-  compact?: boolean;
-}) {
+export function ConversationThread({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const stream = useProjectStream(projectId);
@@ -72,20 +66,7 @@ export function ConversationThread({
 
   return (
     <div className="stack">
-      {compact ? null : (
-        <div>
-          <h2 className="card-title">Co-founder</h2>
-          <p className="hint">
-            The same conversation as on your phone. Material work shows up as cards, not only chat
-            text.
-          </p>
-        </div>
-      )}
-      <div
-        ref={scroller}
-        className={compact ? 'cofounder-scroll stack' : 'stack'}
-        aria-label="Conversation"
-      >
+      <div ref={scroller} className="stack" aria-label="Conversation">
         {history.isLoading ? <p className="muted">Loading the conversation…</p> : null}
         {history.isError ? <p className="alert">{history.error.message}</p> : null}
         {history.isSuccess && chronological.length === 0 ? (

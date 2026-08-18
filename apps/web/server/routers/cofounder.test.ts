@@ -44,6 +44,7 @@ describe('co-founder conversation, score, jobs, and business model cards', () =>
     const sent = await caller.conversation.send({
       projectId: project.id,
       text: 'Owners lose two hours closing the books.',
+      effort: 'quick',
       idempotencyKey: randomUUID(),
     });
     expect(sent.text).toContain('painful job');

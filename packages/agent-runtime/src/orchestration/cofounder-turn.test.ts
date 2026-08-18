@@ -3,7 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { FounderTaskIdSchema, SprintIdSchema } from '@foundry/domain';
 
 import { CofounderDecisionSchema } from '../contracts/output-schema.js';
-import { dispatchCofounderDecision, type CofounderActions } from './cofounder-turn.js';
+import {
+  boundDecisionByEffort,
+  dispatchCofounderDecision,
+  type CofounderActions,
+} from './cofounder-turn.js';
 
 const jobId = SprintIdSchema.parse('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
 const founderTaskId = FounderTaskIdSchema.parse('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
@@ -30,6 +34,34 @@ describe('CofounderDecisionSchema', () => {
       text: 'Need the buyer.',
     });
     expect(parsed.success).toBe(false);
+  });
+});
+
+describe('boundDecisionByEffort', () => {
+  it('turns research and job actions into answers on quick effort', () => {
+    expect(
+      boundDecisionByEffort(
+        {
+          action: 'start_research',
+          objective: 'Scan cafes',
+          whyNow: 'Thin evidence',
+          text: 'Researching.',
+        },
+        'quick',
+      ),
+    ).toEqual({ action: 'answer', text: 'Researching.' });
+    expect(
+      boundDecisionByEffort(
+        {
+          action: 'create_job',
+          objective: 'Draft',
+          jobKind: 'analysis',
+          whyNow: 'Need a cut',
+          text: 'Starting.',
+        },
+        'standard',
+      ).action,
+    ).toBe('create_job');
   });
 });
 

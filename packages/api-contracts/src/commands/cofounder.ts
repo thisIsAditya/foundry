@@ -2,6 +2,7 @@ import {
   BusinessModelSectionKeySchema,
   ConversationMessageIdSchema,
   ConversationReferenceSchema,
+  EvidenceItemIdSchema,
   FounderPreferenceIdSchema,
   FounderTaskIdSchema,
   FounderTaskStatusSchema,
@@ -61,10 +62,15 @@ export const ListConversationInputSchema = z.object({
 });
 export type ListConversationInput = z.infer<typeof ListConversationInputSchema>;
 
+export const ConversationEffortSchema = z.enum(['quick', 'standard', 'thorough']);
+export type ConversationEffort = z.infer<typeof ConversationEffortSchema>;
+
 export const SendConversationInputSchema = z.object({
   projectId: ProjectIdSchema,
   text: z.string().min(1),
   sourceId: z.string().uuid().optional(),
+  effort: ConversationEffortSchema.default('standard'),
+  attachmentIds: z.array(EvidenceItemIdSchema).max(5).optional(),
   idempotencyKey: IdempotencyKeySchema,
 });
 export type SendConversationInput = z.infer<typeof SendConversationInputSchema>;

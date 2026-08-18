@@ -160,6 +160,7 @@ export {
   ListRevisionsInputSchema,
   RequestFounderTaskHelpInputSchema,
   RetryJobInputSchema,
+  ConversationEffortSchema,
   SendConversationInputSchema,
   UpdateJobSettingsInputSchema,
   type AcceptAllSafeSectionsInput,
@@ -186,6 +187,7 @@ export {
   type ListRevisionsInput,
   type RequestFounderTaskHelpInput,
   type RetryJobInput,
+  type ConversationEffort,
   type SendConversationInput,
   type UpdateJobSettingsInput,
 } from './cofounder.js';

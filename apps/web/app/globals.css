@@ -24,20 +24,111 @@
     @apply mx-auto w-full max-w-3xl px-6 py-10;
   }
 
-  .project-frame {
-    @apply mx-auto flex w-full max-w-7xl gap-6 px-6 py-8;
+  .app-header {
+    @apply border-b border-border bg-surface-raised;
+    height: var(--height-app-header);
   }
 
-  .project-main {
-    @apply min-w-0 flex-1;
+  .app-header-inner {
+    @apply flex h-full items-center justify-between px-6;
   }
 
-  .cofounder-dock {
-    @apply hidden w-80 shrink-0 lg:block;
+  .project-shell {
+    @apply flex min-h-0 flex-col;
+    height: calc(100dvh - var(--height-app-header));
   }
 
-  .cofounder-scroll {
-    @apply max-h-[28rem] overflow-y-auto;
+  .project-header {
+    @apply flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-6;
+    height: var(--height-project-header);
+  }
+
+  .project-header-cluster {
+    @apply flex items-center gap-1;
+  }
+
+  .project-header-btn {
+    @apply inline-flex h-8 items-center gap-1 rounded-sm px-2 text-sm text-text-muted no-underline hover:bg-surface-raised hover:text-text hover:no-underline;
+  }
+
+  .project-header-btn[aria-pressed='true'] {
+    @apply bg-surface-raised text-text;
+  }
+
+  .project-header-btn-quiet {
+    @apply text-text-muted;
+  }
+
+  .project-body {
+    @apply flex min-h-0 flex-1;
+  }
+
+  .project-rail {
+    @apply hidden min-h-0 flex-col border-r border-border bg-surface-raised lg:flex;
+    width: var(--width-rail);
+  }
+
+  .project-rail-sheet {
+    @apply flex;
+    position: fixed;
+    inset: var(--height-app-header) 0 0 0;
+    width: 100%;
+    z-index: 30;
+  }
+
+  @media (min-width: 1024px) {
+    .project-rail-sheet {
+      position: relative;
+      inset: auto;
+      width: var(--width-rail);
+      z-index: auto;
+    }
+  }
+
+  .project-rail-header {
+    @apply flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3;
+  }
+
+  .project-rail-body {
+    @apply min-h-0 flex-1 overflow-y-auto px-4 py-4;
+  }
+
+  .project-focus {
+    @apply min-w-0 flex-1 overflow-y-auto px-6 py-8;
+  }
+
+  .drawer-scrim {
+    @apply fixed inset-0 z-20 bg-ink/20;
+    top: var(--height-app-header);
+  }
+
+  .drawer-shell {
+    @apply fixed right-0 z-30 flex flex-col border-l border-border bg-surface-raised;
+    top: var(--height-app-header);
+    bottom: 0;
+    width: min(var(--width-drawer), 100vw);
+    transform: translateX(0);
+    transition: transform var(--duration-default) var(--ease-default);
+  }
+
+  @media (min-width: 1024px) {
+    .drawer-shell {
+      width: min(var(--width-drawer), calc(100vw - var(--width-rail)));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer-shell {
+      transition: none;
+    }
+  }
+
+  .drawer-shell-header {
+    @apply flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3;
+  }
+
+  .drawer-shell-body {
+    @apply min-h-0 flex-1 overflow-y-auto px-5 py-5;
   }
 
   .cofounder-fab {

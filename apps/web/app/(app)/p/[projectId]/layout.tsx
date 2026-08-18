@@ -1,10 +1,7 @@
 import type { ReactNode } from 'react';
+import { Suspense } from 'react';
 
-import {
-  CofounderCollapsedLink,
-  CofounderPanel,
-} from '../../../../components/chrome/cofounder-panel';
-import { ProjectNav } from '../../../../components/chrome/project-nav';
+import { ProjectShell } from '../../../../components/chrome/project-shell';
 
 export default async function ProjectLayout({
   children,
@@ -15,13 +12,11 @@ export default async function ProjectLayout({
 }) {
   const { projectId } = await params;
   return (
-    <div className="project-frame">
-      <div className="project-main">
-        <ProjectNav />
-        {children}
-        <CofounderCollapsedLink projectId={projectId} />
-      </div>
-      <CofounderPanel />
-    </div>
+    <>
+      <Suspense fallback={<p className="muted px-6 py-8">Loading the venture…</p>}>
+        <ProjectShell projectId={projectId} />
+      </Suspense>
+      {children}
+    </>
   );
 }

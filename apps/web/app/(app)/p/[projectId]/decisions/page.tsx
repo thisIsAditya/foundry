@@ -1,10 +1,10 @@
-import { DecisionsList } from './decisions-list';
+import { redirect } from 'next/navigation';
 
-export default async function DecisionsPage({
+export default async function DecisionsRedirect({
   params,
 }: {
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  return <DecisionsList projectId={projectId} />;
+  redirect(`/p/${projectId}?panel=decisions`);
 }

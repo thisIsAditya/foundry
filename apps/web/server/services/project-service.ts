@@ -4,6 +4,7 @@ import { limits } from '@foundry/config/limits';
 import {
   countStaleArtifactVersions,
   getCurrentMoneyRules,
+  getEvidenceItemById,
   getLatestPlanScoreByPackRevisionId,
   getProjectById,
   insertProject,
@@ -15,6 +16,7 @@ import {
   listPackRevisionsByProjectId,
   listProjectsByWorkspaceId,
   listSprintsByProjectId,
+  updateEvidenceItemProjectId,
   withWorkspaceScope,
   type PoolSql,
 } from '@foundry/db';
@@ -83,6 +85,17 @@ export class ProjectService {
               ...(input.objective === undefined ? {} : { founderObjective: input.objective }),
             });
             await ensurePackRevision(tx, created, actor.userId);
+            for (const evidenceId of input.attachmentIds ?? []) {
+              const existing = await getEvidenceItemById(tx, evidenceId);
+              if (existing === null) {
+                continue;
+              }
+              const owner = await getProjectById(tx, existing.projectId);
+              if (owner === null || owner.workspaceId !== created.workspaceId) {
+                continue;
+              }
+              await updateEvidenceItemProjectId(tx, evidenceId, created.id);
+            }
             const reloaded = await getProjectById(tx, created.id);
             if (reloaded === null) {
               throw new Error('project disappeared after create');
@@ -95,6 +108,7 @@ export class ProjectService {
             userId: actor.userId,
             membership: actor.membership,
             project: createdProject,
+            ...(input.founderPitch === undefined ? {} : { founderPitch: input.founderPitch }),
           });
         } catch {
           return createdProject;

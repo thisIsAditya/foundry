@@ -10,5 +10,5 @@ export default async function PackSectionRedirect({
   const mapped = PackSectionKeys.includes(section as (typeof PackSectionKeys)[number])
     ? PackSectionKeyToBusinessModelSectionKey[section as (typeof PackSectionKeys)[number]]
     : section;
-  redirect(`/p/${projectId}/plan/${mapped}`);
+  redirect(`/p/${projectId}?panel=plan&section=${encodeURIComponent(mapped)}`);
 }
