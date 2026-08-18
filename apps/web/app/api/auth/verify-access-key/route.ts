@@ -41,22 +41,27 @@ function unauthorized(): NextResponse {
 }
 
 export async function POST(req: Request) {
-  const ip = clientIp(req);
-  const windowStart = Math.floor(Date.now() / 60_000);
-  const count = await getCoordinationStore().incrWithExpire(
-    `rl:ip:${ip}:verify-access-key:${windowStart}`,
-    60,
-  );
-  if (count > limits.rateLimit.verifyAccessKeyPerMinute) {
-    return NextResponse.json(
-      {
-        code: 'rate_limited',
-        explanation: 'Too many attempts. Try again in a minute.',
-        retryable: true,
-        nextAction: 'Wait and retry.',
-      },
-      { status: 429 },
+  // Guards against brute-forcing the admin key/PIN in production; skipped in
+  // development so restarting the dev server / reloading tabs repeatedly
+  // doesn't lock the founder out of their own local instance.
+  if (getEnv().NODE_ENV !== 'development') {
+    const ip = clientIp(req);
+    const windowStart = Math.floor(Date.now() / 60_000);
+    const count = await getCoordinationStore().incrWithExpire(
+      `rl:ip:${ip}:verify-access-key:${windowStart}`,
+      60,
     );
+    if (count > limits.rateLimit.verifyAccessKeyPerMinute) {
+      return NextResponse.json(
+        {
+          code: 'rate_limited',
+          explanation: 'Too many attempts. Try again in a minute.',
+          retryable: true,
+          nextAction: 'Wait and retry.',
+        },
+        { status: 429 },
+      );
+    }
   }
 
   let json: unknown;

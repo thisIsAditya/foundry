@@ -78,7 +78,10 @@ export const limits = {
   rateLimit: {
     trpcReadPerMinute: 60,
     trpcMutationPerMinute: 20,
-    adminApiKeyPerMinute: 30,
+    // Every request carrying the admin access key (every batched tRPC call, every SSE
+    // reconnect) counts against this, not just sign-in — 30/min was tripping during
+    // normal single-founder use, not abuse.
+    adminApiKeyPerMinute: 300,
     verifyAccessKeyPerMinute: 5,
   },
   idempotencyKeyTtlSeconds: 24 * 60 * 60,

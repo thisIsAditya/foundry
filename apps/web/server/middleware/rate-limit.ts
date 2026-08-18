@@ -2,6 +2,7 @@ import { limits } from '@foundry/config/limits';
 import { AppError } from '@foundry/observability';
 
 import type { Context } from '../context';
+import { getEnv } from '../../lib/env';
 
 function actorKey(ctx: Context): string {
   if (ctx.actor.type === 'user') {
@@ -14,6 +15,12 @@ export async function enforceRateLimit(
   ctx: Context,
   type: 'query' | 'mutation' | 'subscription',
 ): Promise<void> {
+  // Rate limits guard against production abuse, not a single founder's dev
+  // session — every batched tRPC call and SSE reconnect during local
+  // development would otherwise trip them constantly.
+  if (getEnv().NODE_ENV === 'development') {
+    return;
+  }
   const group = type === 'mutation' ? 'mutation' : 'read';
   const limit =
     group === 'mutation'

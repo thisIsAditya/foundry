@@ -6,38 +6,46 @@ import { betterAuth } from 'better-auth';
 import { nextCookies } from 'better-auth/next-js';
 import pg from 'pg';
 
+import type { Env } from './env';
 import { getEnv } from './env';
 
-const apiKeyPluginOptions = {
-  enableSessionForAPIKeys: true,
-  apiKeyHeaders: 'x-api-key',
-  rateLimit: {
-    enabled: true,
-    timeWindow: 60_000,
-    maxRequests: limits.rateLimit.adminApiKeyPerMinute,
-  },
-  schema: {
-    apikey: {
-      modelName: 'api_keys',
-      fields: {
-        configId: 'config_id',
-        referenceId: 'user_id',
-        key: 'key_hash',
-        refillInterval: 'refill_interval',
-        refillAmount: 'refill_amount',
-        lastRefillAt: 'last_refill_at',
-        rateLimitEnabled: 'rate_limit_enabled',
-        rateLimitTimeWindow: 'rate_limit_time_window',
-        rateLimitMax: 'rate_limit_max',
-        requestCount: 'request_count',
-        lastRequest: 'last_request_at',
-        expiresAt: 'expires_at',
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
+function apiKeyPluginOptions(env: Env) {
+  return {
+    enableSessionForAPIKeys: true,
+    apiKeyHeaders: 'x-api-key',
+    rateLimit: {
+      // Every request carrying the admin/access key (every batched tRPC
+      // call, every SSE reconnect, every Fast Refresh remount) counts
+      // against this. It exists to stop a leaked key from being hammered in
+      // production; it's not useful signal during local development, where
+      // it just locks a single founder out of their own instance.
+      enabled: env.NODE_ENV === 'production',
+      timeWindow: 60_000,
+      maxRequests: limits.rateLimit.adminApiKeyPerMinute,
+    },
+    schema: {
+      apikey: {
+        modelName: 'api_keys',
+        fields: {
+          configId: 'config_id',
+          referenceId: 'user_id',
+          key: 'key_hash',
+          refillInterval: 'refill_interval',
+          refillAmount: 'refill_amount',
+          lastRefillAt: 'last_refill_at',
+          rateLimitEnabled: 'rate_limit_enabled',
+          rateLimitTimeWindow: 'rate_limit_time_window',
+          rateLimitMax: 'rate_limit_max',
+          requestCount: 'request_count',
+          lastRequest: 'last_request_at',
+          expiresAt: 'expires_at',
+          createdAt: 'created_at',
+          updatedAt: 'updated_at',
+        },
       },
     },
-  },
-} as const;
+  } as const;
+}
 
 function createAuth() {
   const env = getEnv();
@@ -121,13 +129,13 @@ function createAuth() {
           clientSecret: googleSecret,
         },
       },
-      plugins: [nextCookies(), expo(), apiKey(apiKeyPluginOptions)],
+      plugins: [nextCookies(), expo(), apiKey(apiKeyPluginOptions(env))],
     });
   }
 
   return betterAuth({
     ...shared,
-    plugins: [nextCookies(), expo(), apiKey(apiKeyPluginOptions)],
+    plugins: [nextCookies(), expo(), apiKey(apiKeyPluginOptions(env))],
   });
 }
 
