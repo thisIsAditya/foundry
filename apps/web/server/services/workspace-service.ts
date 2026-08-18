@@ -25,6 +25,8 @@ import { getEnv } from '../../lib/env';
 import { withIdempotency, type CoordinationStore } from '../coordination';
 import type { ProviderService } from './provider-service';
 
+const DEFAULT_WORKSPACE_IDEMPOTENCY_KEY = '00000000-0000-4000-8000-000000000001';
+
 export class WorkspaceService {
   constructor(
     private readonly sql: PoolSql,
@@ -70,7 +72,10 @@ export class WorkspaceService {
       const workspace = await this.getById(membership.workspaceId);
       if (workspace !== null) return workspace;
     }
-    return this.create(userId, { name: 'Your workspace', idempotencyKey: randomUUID() });
+    return this.create(userId, {
+      name: 'Your workspace',
+      idempotencyKey: DEFAULT_WORKSPACE_IDEMPOTENCY_KEY,
+    });
   }
 
   async list(memberships: readonly WorkspaceMembership[]): Promise<Workspace[]> {

@@ -69,6 +69,19 @@ describe('workspace procedures', () => {
     expect(listed.map((workspace) => workspace.id)).toEqual([first.id]);
   });
 
+  it('ensureDefaultWorkspace returns the same workspace when called in parallel', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `parallel-${randomUUID()}@example.com`,
+    });
+    const ctx = await createTestContext(sql, user);
+    const [first, second] = await Promise.all([
+      ctx.services.workspaceService.ensureDefaultWorkspace(user.id),
+      ctx.services.workspaceService.ensureDefaultWorkspace(user.id),
+    ]);
+    expect(second.id).toBe(first.id);
+  });
+
   it('does not list another user workspace', async () => {
     const owner = await insertUser(sql, {
       name: 'Owner',

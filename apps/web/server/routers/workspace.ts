@@ -1,4 +1,5 @@
 import { CreateWorkspaceInputSchema } from '@foundry/api-contracts';
+import { listWorkspaceMembershipsByUserId } from '@foundry/db';
 
 import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
 import { protectedProcedure, router } from '../trpc';
@@ -17,6 +18,7 @@ export const workspaceRouter = router({
     if (ctx.actor.type !== 'user') {
       throw new Error('protectedProcedure requires a user actor');
     }
-    return ctx.services.workspaceService.list(ctx.actor.memberships);
+    const memberships = await listWorkspaceMembershipsByUserId(ctx.sql, ctx.actor.userId);
+    return ctx.services.workspaceService.list(memberships);
   }),
 });
