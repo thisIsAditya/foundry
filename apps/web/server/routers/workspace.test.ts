@@ -53,6 +53,22 @@ describe('workspace procedures', () => {
     });
   });
 
+  it('ensureDefaultWorkspace creates once and reuses the existing workspace', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `default-${randomUUID()}@example.com`,
+    });
+    const ctx = await createTestContext(sql, user);
+    const first = await ctx.services.workspaceService.ensureDefaultWorkspace(user.id);
+    expect(first.name).toBe('Your workspace');
+    const second = await ctx.services.workspaceService.ensureDefaultWorkspace(user.id);
+    expect(second.id).toBe(first.id);
+    const listed = await appRouter
+      .createCaller(await createTestContext(sql, user))
+      .workspace.list();
+    expect(listed.map((workspace) => workspace.id)).toEqual([first.id]);
+  });
+
   it('does not list another user workspace', async () => {
     const owner = await insertUser(sql, {
       name: 'Owner',

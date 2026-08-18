@@ -22,12 +22,17 @@
   "engines": {
     "node": ">=24 <25"
   },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  },
   "dependencies": {
     "@foundry/domain": "workspace:*"
   },
   "devDependencies": {
     "@foundry/config": "workspace:*",
+    "@types/react": "19.2.18",
     "eslint": "9.39.5",
+    "react": "19.2.8",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
   }

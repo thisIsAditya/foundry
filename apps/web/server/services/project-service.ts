@@ -19,6 +19,8 @@ import {
   type PoolSql,
 } from '@foundry/db';
 import {
+  deriveJourneyPhase,
+  type JourneyPhase,
   type PackRevisionId,
   type Project,
   type SprintId,
@@ -34,10 +36,12 @@ import superjson from 'superjson';
 import { withIdempotency, type CoordinationStore } from '../coordination';
 import type { InitialDraftService } from './initial-draft-service';
 import { ensurePackRevision, loadPackSnapshot } from './pack-snapshot';
+import type { PlanSectionAggregatorService } from './plan-section-aggregator';
 import { hashContract } from './sprint-service';
 
 export type ProjectRuntimeDeps = {
   initialDraftService?: InitialDraftService;
+  planSectionAggregator?: PlanSectionAggregatorService;
 };
 
 export class ProjectService {
@@ -120,6 +124,7 @@ export class ProjectService {
     project: Project;
     packRevisionId: Project['currentPackRevisionId'];
     phase: Project['currentPhase'];
+    derivedPhase: JourneyPhase;
     interviewCount: number;
     staleArtifactCount: number;
     moneyRulesSet: boolean;
@@ -143,6 +148,8 @@ export class ProjectService {
         nextAction: 'Ask a workspace admin to change your role.',
       });
     }
+    const sectionCardsPromise =
+      this.runtime.planSectionAggregator?.listAll(actor) ?? Promise.resolve([]);
     return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
       const [
         interviews,
@@ -255,10 +262,18 @@ export class ProjectService {
         revisionPendingReview: pendingPackRevisionId !== null,
         latestCofounderMessage: recentMessages.find((item) => item.actor === 'co_founder') ?? null,
       };
+      const sectionCards = await sectionCardsPromise;
+      const derivedPhase = deriveJourneyPhase({
+        sections: sectionCards.map((card) => ({ key: card.key, status: card.status })),
+        score: planScore?.dimensions ?? null,
+        gateA: { passed: gateA.passed },
+        wtpEventCount: snapshot?.wtpEvents.length ?? 0,
+      });
       return {
         project: actor.project,
         packRevisionId: actor.project.currentPackRevisionId,
         phase: actor.project.currentPhase,
+        derivedPhase,
         interviewCount: interviews.length,
         staleArtifactCount,
         moneyRulesSet,

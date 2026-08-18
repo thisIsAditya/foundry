@@ -50,6 +50,11 @@ export {
   type PackRevisionStatus,
 } from './journey-status.js';
 export {
+  deriveJourneyPhase,
+  type BusinessModelSectionSummary,
+  type DeriveJourneyPhaseInput,
+} from './derive-journey-phase.js';
+export {
   ConversationActorSchema,
   ConversationActors,
   ConversationBlockKindSchema,

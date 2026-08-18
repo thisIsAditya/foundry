@@ -1,3 +1,9 @@
+export const fontFamily = {
+  display: 'var(--font-display)',
+  sans: 'var(--font-sans)',
+  mono: 'var(--font-mono)',
+} as const;
+
 export const fontSize = {
   xs: ['12px', { lineHeight: '16px' }],
   sm: ['14px', { lineHeight: '20px' }],

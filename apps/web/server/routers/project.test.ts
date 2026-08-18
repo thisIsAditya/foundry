@@ -33,6 +33,7 @@ describe('project procedures', () => {
 
     const desk = await caller.project.getDeskSummary({ projectId: created.id });
     expect(desk.phase).toBe('diagnose');
+    expect(desk.derivedPhase).toBe('problem');
     expect(desk.moneyRulesSet).toBe(false);
     expect(desk.nextAction).toBe('Set canonical MoneyRules.');
     expect(desk.overview.runningAiWork).toEqual([]);

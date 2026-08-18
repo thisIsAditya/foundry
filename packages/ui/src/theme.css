@@ -1,17 +1,23 @@
 /* Keep in sync with packages/ui/src/tokens. */
 @theme {
-  --color-surface: #fafafa;
+  --color-surface: #f6f4ef;
   --color-surface-raised: #ffffff;
-  --color-border: #e5e5e5;
-  --color-text: #171717;
-  --color-text-muted: #737373;
-  --color-status-draft: #d97706;
-  --color-status-warning: #ea580c;
-  --color-status-info: #2563eb;
-  --color-status-success: #16a34a;
-  --color-status-danger: #dc2626;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --color-border: #e4e0d6;
+  --color-text: #14161a;
+  --color-text-muted: #6b6d72;
+  --color-status-draft: #d9a62b;
+  --color-status-warning: #d9663d;
+  --color-status-info: #3b5ba5;
+  --color-status-success: #4c8b5d;
+  --color-status-danger: #c6432e;
+  --color-gauge-orange: #d9663d;
+  --color-gauge-amber: #d9a62b;
+  --color-gauge-green: #4c8b5d;
+  --color-ink: #14161a;
+  --color-paper: #f6f4ef;
+  --font-display: var(--font-display-loaded), 'Space Grotesk', ui-sans-serif, sans-serif;
+  --font-sans: var(--font-sans-loaded), 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-loaded), 'IBM Plex Mono', ui-monospace, monospace;
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;

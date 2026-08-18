@@ -116,6 +116,15 @@ export function createServices(
   policyService: PolicyService,
   extras: ServiceExtras,
 ): ServiceContainer {
+  const providerService = new ProviderService(
+    sql,
+    coordination,
+    policyService,
+    extras.secretBox,
+    extras.secrets,
+    extras.capabilityProbe ?? probeProviderCapabilities,
+  );
+  const planSectionAggregatorService = new PlanSectionAggregatorService(sql, policyService);
   const scoringService = new ScoringService(sql, extras.streamBus, extras.jobQueue);
   const founderTaskService = new FounderTaskService(
     sql,
@@ -154,9 +163,10 @@ export function createServices(
   );
   return {
     policyService,
-    workspaceService: new WorkspaceService(sql, coordination),
+    workspaceService: new WorkspaceService(sql, coordination, providerService),
     projectService: new ProjectService(sql, coordination, policyService, {
       initialDraftService,
+      planSectionAggregator: planSectionAggregatorService,
     }),
     documentService: new DocumentService(
       sql,
@@ -167,14 +177,7 @@ export function createServices(
       scoringService,
     ),
     interviewService: new InterviewService(sql, coordination, policyService, scoringService),
-    providerService: new ProviderService(
-      sql,
-      coordination,
-      policyService,
-      extras.secretBox,
-      extras.secrets,
-      extras.capabilityProbe ?? probeProviderCapabilities,
-    ),
+    providerService,
     mcpServerService: new McpServerService(
       sql,
       coordination,
@@ -202,7 +205,7 @@ export function createServices(
     founderTaskService,
     conversationService,
     jobService: new JobService(sql, coordination, policyService, sprintService),
-    planSectionAggregatorService: new PlanSectionAggregatorService(sql, policyService),
+    planSectionAggregatorService,
     initialDraftService,
     researchFindingService: new ResearchFindingService(sql),
   };

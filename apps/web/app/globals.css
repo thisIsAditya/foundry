@@ -57,7 +57,7 @@
   }
 
   .page-title {
-    @apply text-xl font-medium tracking-tight;
+    @apply font-display text-xl font-medium tracking-tight;
   }
 
   .lede {
@@ -174,7 +174,7 @@
   }
 
   .callout-eyebrow {
-    @apply text-xs font-semibold tracking-wide text-status-info uppercase;
+    @apply font-display text-xs font-semibold tracking-wide text-status-info uppercase;
   }
 
   .callout-title {

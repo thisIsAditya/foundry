@@ -32,6 +32,7 @@ export const DeskSummarySchema = z.object({
   project: ProjectSchema,
   packRevisionId: PackRevisionIdSchema.nullable(),
   phase: ProjectSchema.shape.currentPhase,
+  derivedPhase: ProjectSchema.shape.currentPhase,
   interviewCount: z.number().int().nonnegative(),
   staleArtifactCount: z.number().int().nonnegative(),
   moneyRulesSet: z.boolean(),

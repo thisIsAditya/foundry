@@ -1,7 +1,7 @@
 'use client';
 
 import type { AiJobSummary } from '@foundry/api-contracts';
-import { productJobStatusPresentation } from '@foundry/ui';
+import { Gauge, productJobStatusPresentation } from '@foundry/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 
@@ -50,12 +50,12 @@ export function JobCard({
       <p className="muted">
         {job.roleLabel ?? 'Co-founder job'} · {formatCost(job)} · {job.citationCount} citations
       </p>
-      <div
-        className="progress-track"
-        aria-label={`Progress ${String(job.progressPercent)} percent`}
-      >
-        <div className="progress-fill" style={{ width: `${String(job.progressPercent)}%` }} />
-      </div>
+      <Gauge
+        value={job.progressPercent}
+        size="sm"
+        colorToken="statusInfo"
+        label={`Progress ${String(job.progressPercent)} percent`}
+      />
       {job.founderActionRequired === undefined ? null : (
         <p className="text-sm">{job.founderActionRequired}</p>
       )}
