@@ -24,47 +24,59 @@ export function JobCard({
   job,
   selected = false,
   onSelect,
+  onQuickAction,
 }: {
   projectId: string;
   job: AiJobSummary;
   selected?: boolean;
   onSelect?: () => void;
+  onQuickAction?: { label: string; onClick: () => void };
 }) {
   const presentation = productJobStatusPresentation(job.status);
   return (
-    <button
-      type="button"
-      className={selected ? 'card-accent stack text-left' : 'card stack text-left'}
-      onClick={onSelect}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="badge">
-          <span aria-hidden="true">{presentation.icon}</span>
-          {presentation.label}
-        </span>
-        <span className="badge">{job.jobKind}</span>
-        <span className="muted">{job.owner.replaceAll('_', ' ')}</span>
-      </div>
-      <p className="card-title">{job.objective}</p>
-      {job.whyNow === undefined ? null : <p className="hint">{job.whyNow}</p>}
-      <p className="muted">
-        {job.roleLabel ?? 'Co-founder job'} · {formatCost(job)} · {job.citationCount} citations
-      </p>
-      {job.status === 'running' || job.progressPercent > 0 ? (
-        <Gauge
-          value={job.progressPercent}
-          size="sm"
-          colorToken="statusInfo"
-          label={`Progress ${String(job.progressPercent)} percent`}
-        />
-      ) : null}
-      {job.founderActionRequired === undefined ? null : (
-        <p className="text-sm">{job.founderActionRequired}</p>
+    <div className={selected ? 'card-accent stack' : 'card stack'}>
+      <button type="button" className="stack text-left" onClick={onSelect}>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="badge">
+            <span aria-hidden="true">{presentation.icon}</span>
+            {presentation.label}
+          </span>
+          <span className="badge">{job.jobKind}</span>
+          <span className="muted">{job.owner.replaceAll('_', ' ')}</span>
+        </div>
+        <p className="card-title">{job.objective}</p>
+        {job.whyNow === undefined ? null : <p className="hint">{job.whyNow}</p>}
+        <p className="muted">
+          {job.roleLabel ?? 'Co-founder job'} · {formatCost(job)} · {job.citationCount} citations
+        </p>
+        {job.status === 'running' || job.progressPercent > 0 ? (
+          <Gauge
+            value={job.progressPercent}
+            size="sm"
+            colorToken="statusInfo"
+            label={`Progress ${String(job.progressPercent)} percent`}
+          />
+        ) : null}
+        {job.founderActionRequired === undefined ? null : (
+          <p className="text-sm">{job.founderActionRequired}</p>
+        )}
+        {job.changedSectionKeys.length === 0 ? null : (
+          <p className="hint">Touches {job.changedSectionKeys.join(', ')}</p>
+        )}
+      </button>
+      {onQuickAction === undefined ? null : (
+        <button
+          type="button"
+          className="btn w-fit"
+          onClick={(event) => {
+            event.stopPropagation();
+            onQuickAction.onClick();
+          }}
+        >
+          {onQuickAction.label}
+        </button>
       )}
-      {job.changedSectionKeys.length === 0 ? null : (
-        <p className="hint">Touches {job.changedSectionKeys.join(', ')}</p>
-      )}
-    </button>
+    </div>
   );
 }
 

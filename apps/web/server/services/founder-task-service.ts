@@ -114,6 +114,12 @@ export class FounderTaskService {
       (value) => superjson.stringify(value),
       async () => {
         const task = await this.requireTask(actor, founderTaskId);
+        // The script is static (derived from the task's own explanation), so a
+        // second request would only insert a byte-identical duplicate message.
+        // Requesting help again just points back at what's already there.
+        if (task.preparation.helpMessageId !== undefined) {
+          return task;
+        }
         return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
           const help = await insertConversationMessage(tx, {
             projectId: actor.project.id,

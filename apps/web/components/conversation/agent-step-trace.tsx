@@ -52,32 +52,53 @@ export function AgentStepTrace({
 
   const tools = steps.filter((step) => step.kind === 'tool').length;
   if (steps.length === 0 && !complete) {
-    return <p className="hint">Thinking…</p>;
+    return (
+      <p className="chat-trace-idle" aria-live="polite">
+        <span className="chat-thinking-dots" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
+        Thinking…
+      </p>
+    );
   }
   if (steps.length === 0) {
     return null;
   }
 
   return (
-    <div className="panel stack-tight">
-      <button type="button" className="text-left" onClick={() => setOpen((current) => !current)}>
-        <p className="hint">{complete ? 'Worked this turn' : 'Working…'}</p>
-        <p className="text-sm">{complete ? workedSummary(elapsed, tools) : 'Thinking'}</p>
+    <div className="chat-trace">
+      <button
+        type="button"
+        className="chat-trace-toggle"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <ChevronGlyph
+          className={open ? 'chat-trace-chevron chat-trace-chevron-open' : 'chat-trace-chevron'}
+        />
+        <span>{complete ? workedSummary(elapsed, tools) : 'Thinking…'}</span>
       </button>
       {open ? (
-        <ol className="flex flex-col gap-2">
+        <ol className="chat-trace-steps">
           {steps.map((step) => (
-            <li key={step.id} className="text-sm">
-              <span className="hint">{step.status}</span>
+            <li key={step.id} className="chat-trace-step">
               {step.detail === undefined ? (
-                <p>{step.label}</p>
+                <p>
+                  <span className="chat-trace-step-status">{step.status}</span>
+                  {step.label}
+                </p>
               ) : (
                 <button
                   type="button"
                   className="block text-left"
                   onClick={() => setExpanded((current) => (current === step.id ? null : step.id))}
                 >
-                  <p>{step.label}</p>
+                  <p>
+                    <span className="chat-trace-step-status">{step.status}</span>
+                    {step.label}
+                  </p>
                   {expanded === step.id ? <p className="hint">{step.detail}</p> : null}
                 </button>
               )}
@@ -91,5 +112,13 @@ export function AgentStepTrace({
         </ol>
       ) : null}
     </div>
+  );
+}
+
+function ChevronGlyph({ className }: { className: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+      <path fill="currentColor" d="M6 3.5 11 8l-5 4.5-.9-1 4-3.5-4-3.5.9-1Z" />
+    </svg>
   );
 }

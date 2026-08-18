@@ -45,8 +45,11 @@ function createProjectStreamStore(): ProjectStreamStore {
             event.type === 'conversation_message_appended' && event.actor === 'co_founder'
               ? state.unreadCount + 1
               : state.unreadCount,
+          // Cleared on completion too: the final answer lands in conversation
+          // history right after, so this scratch pad must not linger and
+          // render as a second, unlabeled copy of the same text.
           transcript:
-            event.type === 'message_started'
+            event.type === 'message_started' || event.type === 'message_completed'
               ? ''
               : event.type === 'text_delta'
                 ? `${state.transcript}${event.delta}`

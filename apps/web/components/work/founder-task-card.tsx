@@ -45,6 +45,7 @@ export function FounderTaskDetail({
   const completeKey = useRef(crypto.randomUUID());
   const [reason, setReason] = useState('');
   const [evidenceId, setEvidenceId] = useState('');
+  const [observation, setObservation] = useState('');
   const interviews = useQuery(trpc.evidence.listInterviews.queryOptions({ projectId }));
   const helpMessages = useQuery(trpc.conversation.list.queryOptions({ projectId, limit: 40 }));
 
@@ -60,6 +61,26 @@ export function FounderTaskDetail({
   const complete = useMutation(trpc.founderTask.complete.mutationOptions());
   const defer = useMutation(trpc.founderTask.defer.mutationOptions());
   const skip = useMutation(trpc.founderTask.skip.mutationOptions());
+  const record = useMutation(trpc.evidence.recordObservation.mutationOptions());
+
+  async function onCompleteWithObservation(): Promise<void> {
+    const trimmed = observation.trim();
+    if (trimmed.length === 0) {
+      return;
+    }
+    const item = await record.mutateAsync({
+      projectId,
+      summary: trimmed,
+      idempotencyKey: crypto.randomUUID(),
+    });
+    await complete.mutateAsync({
+      projectId,
+      founderTaskId,
+      evidenceRef: { kind: 'evidence', id: item.id },
+      idempotencyKey: completeKey.current,
+    });
+    setObservation('');
+  }
 
   if (task.isLoading) {
     return <p className="muted">Loading task…</p>;
@@ -121,61 +142,87 @@ export function FounderTaskDetail({
       {helpMessage === undefined ? null : (
         <ConversationMessageView projectId={projectId} message={helpMessage} />
       )}
-      <div className="flex flex-wrap gap-2">
+      {item.preparation.helpMessageId === undefined ? (
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="btn"
+            type="button"
+            disabled={help.isPending}
+            onClick={() =>
+              void help.mutateAsync({
+                projectId,
+                founderTaskId,
+                idempotencyKey: helpKey.current,
+              })
+            }
+          >
+            {help.isPending ? 'Preparing…' : 'Help me'}
+          </button>
+        </div>
+      ) : null}
+      <div className="stack-tight">
+        <p className="hint">Write it down</p>
+        <p className="text-sm text-text-muted">
+          The fastest way to close this out — describe what you now know, right here. No interview
+          required to start.
+        </p>
+        <textarea
+          className="input"
+          rows={3}
+          value={observation}
+          onChange={(event) => setObservation(event.target.value)}
+          placeholder="e.g. Cafe owners spend 3–4 hrs/week juggling shift swaps over WhatsApp…"
+        />
         <button
-          className="btn"
+          className="btn w-fit"
           type="button"
-          disabled={help.isPending}
-          onClick={() =>
-            void help.mutateAsync({
-              projectId,
-              founderTaskId,
-              idempotencyKey: helpKey.current,
-            })
-          }
+          disabled={record.isPending || complete.isPending || observation.trim().length === 0}
+          onClick={() => void onCompleteWithObservation()}
         >
-          {help.isPending ? 'Preparing…' : 'Help me'}
+          {record.isPending || complete.isPending ? 'Saving…' : 'Save & complete'}
         </button>
       </div>
-      <form
-        className="stack"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (evidenceId.length === 0) {
-            return;
-          }
-          void complete.mutateAsync({
-            projectId,
-            founderTaskId,
-            evidenceRef: { kind: 'evidence', id: evidenceId },
-            idempotencyKey: completeKey.current,
-          });
-        }}
-      >
-        <label className="field">
-          <span>Completion evidence (interview)</span>
-          <select
-            className="input"
-            value={evidenceId}
-            onChange={(event) => setEvidenceId(event.target.value)}
-            required
-          >
-            <option value="">Select an interview</option>
-            {(interviews.data ?? []).map((entry) => (
-              <option key={entry.interview.id} value={entry.interview.id}>
-                {entry.interview.participantType} · {entry.quoteCount} quotes
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          className="btn"
-          type="submit"
-          disabled={complete.isPending || evidenceId.length === 0}
+      {(interviews.data ?? []).length === 0 ? null : (
+        <form
+          className="stack"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (evidenceId.length === 0) {
+              return;
+            }
+            void complete.mutateAsync({
+              projectId,
+              founderTaskId,
+              evidenceRef: { kind: 'evidence', id: evidenceId },
+              idempotencyKey: completeKey.current,
+            });
+          }}
         >
-          {complete.isPending ? 'Saving…' : 'Complete'}
-        </button>
-      </form>
+          <label className="field">
+            <span>Or complete with an interview you already logged</span>
+            <select
+              className="input"
+              value={evidenceId}
+              onChange={(event) => setEvidenceId(event.target.value)}
+              required
+            >
+              <option value="">Select an interview</option>
+              {(interviews.data ?? []).map((entry) => (
+                <option key={entry.interview.id} value={entry.interview.id}>
+                  {entry.interview.participantType} · {entry.quoteCount} quotes
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="btn"
+            type="submit"
+            disabled={complete.isPending || evidenceId.length === 0}
+          >
+            {complete.isPending ? 'Saving…' : 'Complete with this interview'}
+          </button>
+        </form>
+      )}
       <form
         className="row-form"
         onSubmit={(event) => {
@@ -223,6 +270,9 @@ export function FounderTaskDetail({
       </form>
       {errorMessageOf(help.error) === null ? null : (
         <p className="alert">{errorMessageOf(help.error)}</p>
+      )}
+      {errorMessageOf(record.error) === null ? null : (
+        <p className="alert">{errorMessageOf(record.error)}</p>
       )}
       {errorMessageOf(complete.error) === null ? null : (
         <p className="alert">{errorMessageOf(complete.error)}</p>

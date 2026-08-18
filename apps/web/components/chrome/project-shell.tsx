@@ -50,7 +50,7 @@ export function ProjectShell({ projectId }: { projectId: string }) {
         <PlanDrawer projectId={projectId} section={drawer.section} />
       </DrawerShell>
       <DrawerShell title="Work" open={drawer.panel === 'work'} onClose={drawer.close}>
-        <WorkDrawer projectId={projectId} view={drawer.view} job={drawer.job} task={drawer.task} />
+        <WorkDrawer projectId={projectId} job={drawer.job} task={drawer.task} />
       </DrawerShell>
       <DrawerShell title="Research" open={drawer.panel === 'research'} onClose={drawer.close}>
         <ResearchView

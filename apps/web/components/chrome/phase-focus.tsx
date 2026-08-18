@@ -1,31 +1,84 @@
 'use client';
 
-import type { OverviewSummary } from '@foundry/api-contracts';
-import type { JourneyPhase } from '@foundry/domain';
+import type { AiJobSummary, OverviewSummary } from '@foundry/api-contracts';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 
+import { topWaitingFounderTask } from '../../lib/founder-task-priority';
 import { journeyPhaseCount, journeyStep, journeyStepIndex } from '../../lib/journey';
 import { projectPanelHref } from '../../lib/project-href';
 import { useTRPC } from '../../lib/trpc/client';
+import { InterviewCapture } from '../evidence/interview-capture';
 import { EmptyState } from '../ui/empty-state';
+import { FounderTaskDetail } from '../work/founder-task-card';
 
-export const phaseFocusFields = {
-  diagnose: ['topAssumptions', 'proposedResearchJob'],
-  problem: ['topAssumptions', 'proposedResearchJob'],
-  evidence: ['waitingFounderTasks'],
-  market_and_competition: ['proposedResearchJob', 'runningAiWork'],
-  model_and_pricing: ['topAssumptions', 'revisionPendingReview'],
-  willingness_to_pay: ['topAssumptions'],
-  product: ['revisionPendingReview', 'waitingFounderTasks'],
-  build_and_launch: ['runningAiWork', 'waitingFounderTasks'],
-  operate: ['runningAiWork', 'revisionPendingReview'],
-} as const satisfies Record<JourneyPhase, readonly (keyof OverviewSummary)[]>;
+type PrimaryAction = {
+  title: string;
+  detail?: string;
+  href?: string;
+  actionLabel?: string;
+  /** When set, the main window renders the task's own action UI instead of a link-out. */
+  founderTaskId?: string;
+};
+
+/**
+ * Collapses everything that could plausibly be "what should I do right now"
+ * into a single, ranked answer instead of a grid of equally-weighted cards.
+ * Approving/reviewing something the AI already produced outranks starting
+ * new work, which outranks founder legwork, which outranks passive status.
+ */
+function primaryActionOf(
+  projectId: string,
+  overview: OverviewSummary,
+  fallback: string,
+  topTaskId: string | undefined,
+): PrimaryAction {
+  if (overview.revisionPendingReview) {
+    return {
+      title: 'Review the draft plan your co-founder wrote',
+      detail: 'A revision is ready. It will not replace the live plan until you approve it.',
+      href: projectPanelHref(projectId, 'plan'),
+      actionLabel: 'Review the draft',
+    };
+  }
+  if (overview.proposedResearchJob !== null) {
+    return {
+      title: overview.proposedResearchJob.objective,
+      detail: 'Research is proposed and waiting for your go-ahead before it starts.',
+      href: projectPanelHref(projectId, 'work', { job: overview.proposedResearchJob.id }),
+      actionLabel: 'Review and start',
+    };
+  }
+  if (overview.waitingFounderTasks > 0 && topTaskId !== undefined) {
+    return {
+      title:
+        overview.waitingFounderTasks === 1
+          ? 'This needs something only you can do'
+          : `This needs you — ${String(overview.waitingFounderTasks)} tasks are waiting`,
+      detail: 'The AI cannot do this one for you. Resolve it below, right where it came up.',
+      founderTaskId: topTaskId,
+    };
+  }
+  if (overview.runningAiWork.length > 0) {
+    const first = overview.runningAiWork[0] as AiJobSummary;
+    return {
+      title: `Your co-founder is working on it: ${first.objective}`,
+      detail:
+        overview.runningAiWork.length > 1
+          ? `${String(overview.runningAiWork.length)} jobs running right now.`
+          : 'No action needed — check back or keep chatting while this runs.',
+      href: projectPanelHref(projectId, 'work'),
+      actionLabel: 'Watch progress',
+    };
+  }
+  return { title: fallback };
+}
 
 export function PhaseFocus({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
   const desk = useQuery(trpc.project.getDeskSummary.queryOptions({ projectId }));
   const score = useQuery(trpc.score.getCurrent.queryOptions({ projectId }));
+  const tasks = useQuery(trpc.founderTask.list.queryOptions({ projectId }));
 
   if (desk.isLoading) {
     return <p className="muted">Loading this phase…</p>;
@@ -46,11 +99,14 @@ export function PhaseFocus({ projectId }: { projectId: string }) {
   const step = journeyStep(phase);
   const index = journeyStepIndex(phase) + 1;
   const overview = desk.data.overview;
-  const fields = phaseFocusFields[phase];
   const nextAction = score.data?.topActions[0]?.action ?? desk.data.nextAction;
   const wtpReason = (score.data?.reasons ?? []).find(
     (item) => item.dimension === 'willingness_to_pay',
   );
+  const topTask = topWaitingFounderTask(tasks.data ?? []);
+  const primary = primaryActionOf(projectId, overview, nextAction, topTask?.id);
+  const hasSupportingContext =
+    overview.topAssumptions.length > 0 || overview.runningAiWork.length > 0;
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
@@ -63,13 +119,34 @@ export function PhaseFocus({ projectId }: { projectId: string }) {
       </header>
 
       <section className="callout">
-        <p className="callout-eyebrow">Recommended next action</p>
-        <p className="callout-title">{nextAction}</p>
+        <p className="callout-eyebrow">What to do next</p>
+        <p className="callout-title">{primary.title}</p>
+        {primary.detail === undefined ? null : (
+          <p className="text-sm text-text-muted">{primary.detail}</p>
+        )}
+        {primary.href === undefined ? null : (
+          <Link href={primary.href} className="btn mt-1 w-fit">
+            {primary.actionLabel ?? 'Open'}
+          </Link>
+        )}
       </section>
 
-      {fields.map((field) => (
-        <PhaseField key={field} field={field} projectId={projectId} overview={overview} />
-      ))}
+      {primary.founderTaskId === undefined ? null : (
+        <FounderTaskDetail projectId={projectId} founderTaskId={primary.founderTaskId} />
+      )}
+
+      {phase === 'evidence' ? (
+        <section className="stack-tight">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="card-title">Log an interview</h2>
+            <span className="hint">
+              {String(desk.data.gateA.qualifyingInterviews)} of{' '}
+              {String(desk.data.gateA.requiredInterviews)} independent interviews so far
+            </span>
+          </div>
+          <InterviewCapture projectId={projectId} />
+        </section>
+      ) : null}
 
       {phase === 'willingness_to_pay' ? (
         <section className="card stack">
@@ -84,126 +161,29 @@ export function PhaseFocus({ projectId }: { projectId: string }) {
         </section>
       ) : null}
 
-      {phase === 'evidence' ? (
-        <section className="card stack">
-          <h2 className="card-title">Interviews so far</h2>
-          <p className="text-sm">
-            {desk.data.interviewCount === 0
-              ? 'No interviews recorded yet.'
-              : `${String(desk.data.interviewCount)} interview${desk.data.interviewCount === 1 ? '' : 's'} captured.`}
-          </p>
-          <Link href={projectPanelHref(projectId, 'research')} className="text-sm">
-            Open research
-          </Link>
-        </section>
-      ) : null}
-    </div>
-  );
-}
-
-function PhaseField({
-  field,
-  projectId,
-  overview,
-}: {
-  field: keyof OverviewSummary;
-  projectId: string;
-  overview: OverviewSummary;
-}) {
-  switch (field) {
-    case 'topAssumptions':
-      return (
-        <section className="card stack">
-          <h2 className="card-title">Top assumptions</h2>
-          {overview.topAssumptions.length === 0 ? (
-            <p className="hint">No open assumptions on this phase yet.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
+      {hasSupportingContext ? (
+        <section className="stack-tight">
+          <h2 className="hint font-medium tracking-wide uppercase">What we know</h2>
+          {overview.topAssumptions.length === 0 ? null : (
+            <ul className="flex flex-col gap-1.5">
               {overview.topAssumptions.slice(0, 3).map((item) => (
-                <li key={item} className="text-sm">
+                <li key={item} className="text-sm text-text-muted">
                   {item}
                 </li>
               ))}
             </ul>
           )}
-        </section>
-      );
-    case 'proposedResearchJob':
-      return (
-        <section className="card stack">
-          <h2 className="card-title">Research waiting to start</h2>
-          {overview.proposedResearchJob === null ? (
-            <p className="hint">No research proposal waiting.</p>
-          ) : (
-            <>
-              <p className="text-sm">{overview.proposedResearchJob.objective}</p>
-              <Link
-                href={projectPanelHref(projectId, 'work', {
-                  job: overview.proposedResearchJob.id,
-                })}
-                className="text-sm"
-              >
-                Review before it starts
-              </Link>
-            </>
-          )}
-        </section>
-      );
-    case 'runningAiWork':
-      return (
-        <section className="card stack">
-          <h2 className="card-title">AI work running</h2>
-          {overview.runningAiWork.length === 0 ? (
-            <p className="hint">Nothing running right now.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {overview.runningAiWork.map((job) => (
-                <li key={job.id}>
-                  <Link href={projectPanelHref(projectId, 'work', { job: job.id })}>
-                    {job.objective}
-                  </Link>
+          {overview.runningAiWork.length === 0 || overview.waitingFounderTasks > 0 ? null : (
+            <ul className="flex flex-col gap-1.5">
+              {overview.runningAiWork.slice(0, 3).map((job) => (
+                <li key={job.id} className="text-sm text-text-muted">
+                  Running: {job.objective}
                 </li>
               ))}
             </ul>
           )}
         </section>
-      );
-    case 'waitingFounderTasks':
-      return (
-        <section className="card stack">
-          <h2 className="card-title">Waiting on you</h2>
-          {overview.waitingFounderTasks === 0 ? (
-            <p className="hint">No founder tasks waiting.</p>
-          ) : (
-            <>
-              <p className="text-sm">
-                {String(overview.waitingFounderTasks)} founder task
-                {overview.waitingFounderTasks === 1 ? '' : 's'}.
-              </p>
-              <Link
-                href={projectPanelHref(projectId, 'work', { view: 'needs_me' })}
-                className="text-sm"
-              >
-                Open work
-              </Link>
-            </>
-          )}
-        </section>
-      );
-    case 'revisionPendingReview':
-      return (
-        <section className="card stack">
-          <h2 className="card-title">Revision waiting for review</h2>
-          {overview.revisionPendingReview ? (
-            <Link href={projectPanelHref(projectId, 'plan')} className="text-sm">
-              Review the draft plan
-            </Link>
-          ) : (
-            <p className="hint">No draft revision pending.</p>
-          )}
-        </section>
-      );
-    default:
-      return null;
-  }
+      ) : null}
+    </div>
+  );
 }

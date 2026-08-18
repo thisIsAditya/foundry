@@ -123,6 +123,24 @@ export function scoreDimensionSupporting(dimension: string): string {
   return scoreDimensionLabels[dimension]?.supporting ?? dimension.replaceAll('_', ' ');
 }
 
+export function formatMessageTimestamp(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const now = new Date();
+  const sameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+  const time = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  if (sameDay) {
+    return time;
+  }
+  const day = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return `${day} · ${time}`;
+}
+
 export function formatUnknown(value: unknown): string {
   if (value === null || value === undefined || value === '') {
     return 'Not set yet';

@@ -22,13 +22,22 @@ export function ProjectHeader({
   const desk = useQuery(trpc.project.getDeskSummary.queryOptions({ projectId }));
   const score = useQuery(trpc.score.getCurrent.queryOptions({ projectId }));
   const jobs = useQuery(trpc.job.list.queryOptions({ projectId, view: 'kanban' }));
+  const tasks = useQuery(trpc.founderTask.list.queryOptions({ projectId }));
+  const approvals = useQuery(trpc.approval.list.queryOptions({ projectId }));
   const decisions = useQuery(trpc.decision.list.queryOptions({ projectId }));
   const [seenDecisionsAt, setSeenDecisionsAt] = useState(0);
   const name = desk.data?.project.name ?? 'Venture';
   const overall = score.data === undefined || score.data === null ? null : score.data.overall;
-  const workCount = (jobs.data ?? []).filter(
-    (job) => job.status === 'needs_founder' || job.status === 'needs_approval',
+  const needsYouJobs = (jobs.data ?? []).filter((job) =>
+    ['proposed', 'needs_founder', 'needs_approval', 'blocked', 'failed'].includes(job.status),
   ).length;
+  const needsYouTasks = (tasks.data ?? []).filter((task) =>
+    ['proposed', 'active', 'deferred'].includes(task.status),
+  ).length;
+  const pendingApprovals = (approvals.data ?? []).filter(
+    (item) => item.status === 'pending',
+  ).length;
+  const workCount = needsYouJobs + needsYouTasks + pendingApprovals;
   const researchCount = (jobs.data ?? []).filter(
     (job) => job.jobKind === 'research' && job.status === 'proposed',
   ).length;
