@@ -50,12 +50,14 @@ export function JobCard({
       <p className="muted">
         {job.roleLabel ?? 'Co-founder job'} · {formatCost(job)} · {job.citationCount} citations
       </p>
-      <Gauge
-        value={job.progressPercent}
-        size="sm"
-        colorToken="statusInfo"
-        label={`Progress ${String(job.progressPercent)} percent`}
-      />
+      {job.status === 'running' || job.progressPercent > 0 ? (
+        <Gauge
+          value={job.progressPercent}
+          size="sm"
+          colorToken="statusInfo"
+          label={`Progress ${String(job.progressPercent)} percent`}
+        />
+      ) : null}
       {job.founderActionRequired === undefined ? null : (
         <p className="text-sm">{job.founderActionRequired}</p>
       )}

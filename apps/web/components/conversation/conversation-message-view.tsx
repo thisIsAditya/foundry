@@ -12,7 +12,7 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
       return <p className="text-sm whitespace-pre-wrap">{block.text}</p>;
     case 'cited_finding':
       return (
-        <div className="panel stack" style={{ gap: '0.5rem' }}>
+        <div className="panel stack-tight">
           <p className="hint">Cited finding</p>
           <p className="text-sm whitespace-pre-wrap">{block.text}</p>
           {block.citationIds.length === 0 ? null : (
@@ -32,14 +32,14 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
       );
     case 'assumption_card':
       return (
-        <div className="panel stack" style={{ gap: '0.5rem' }}>
+        <div className="panel stack-tight">
           <p className="hint">Assumption — not a fact</p>
           <p className="text-sm whitespace-pre-wrap">{block.text}</p>
         </div>
       );
     case 'proposed_plan_change':
       return (
-        <div className="panel stack" style={{ gap: '0.5rem' }}>
+        <div className="panel stack-tight">
           <p className="hint">Proposed plan change</p>
           <p className="text-sm">
             {block.sectionKey === undefined
@@ -60,7 +60,7 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
       );
     case 'research_plan':
       return (
-        <div className="panel stack" style={{ gap: '0.5rem' }}>
+        <div className="panel stack-tight">
           <p className="hint">Research plan</p>
           <Link
             href={projectPanelHref(projectId, 'work', { job: block.jobId })}
@@ -72,7 +72,7 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
       );
     case 'founder_task':
       return (
-        <div className="panel stack" style={{ gap: '0.5rem' }}>
+        <div className="panel stack-tight">
           <p className="hint">Founder task</p>
           <Link
             href={projectPanelHref(projectId, 'work', { task: block.founderTaskId })}
@@ -84,7 +84,7 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
       );
     case 'job_request':
       return (
-        <div className="panel stack" style={{ gap: '0.5rem' }}>
+        <div className="panel stack-tight">
           <p className="hint">Job request</p>
           <Link
             href={projectPanelHref(projectId, 'work', { job: block.jobId })}
@@ -96,14 +96,14 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
       );
     case 'draft_action':
       return (
-        <div className="panel stack" style={{ gap: '0.5rem' }}>
+        <div className="panel stack-tight">
           <p className="hint">Draft help</p>
           <p className="text-sm whitespace-pre-wrap">{block.text}</p>
         </div>
       );
     case 'decision_card':
       return (
-        <div className="panel stack" style={{ gap: '0.5rem' }}>
+        <div className="panel stack-tight">
           <p className="hint">Decision</p>
           <p className="text-sm whitespace-pre-wrap">{block.text}</p>
           <Link href={projectPanelHref(projectId, 'decisions')} className="text-sm">
@@ -113,7 +113,7 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
       );
     case 'blocker':
       return (
-        <div className="panel stack" style={{ gap: '0.5rem' }}>
+        <div className="panel stack-tight">
           <p className="hint">Blocked</p>
           <p className="text-sm whitespace-pre-wrap">{block.text}</p>
           {block.recoveryAction === undefined ? null : (
@@ -137,7 +137,7 @@ export function ConversationMessageView({
     (ref) => ref.kind === 'evidence' || ref.kind === 'source',
   );
   return (
-    <article className="stack" style={{ gap: '0.5rem' }}>
+    <article className="stack-tight">
       <p className="muted">{message.actor === 'founder' ? 'You' : 'Co-founder'}</p>
       {attachments.length === 0 ? null : (
         <ul className="flex flex-wrap gap-2" aria-label="Attached files">

@@ -54,10 +54,6 @@ export function ConversationThread({ projectId }: { projectId: string }) {
   );
 
   useEffect(() => {
-    stream.markRead();
-  }, [stream, history.data?.items.length]);
-
-  useEffect(() => {
     const node = scroller.current;
     if (node !== null) {
       node.scrollTop = node.scrollHeight;

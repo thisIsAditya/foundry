@@ -1,27 +1,25 @@
-'use client';
-
-import { useQuery } from '@tanstack/react-query';
-
 import { VenturesHome } from '../../../components/onboarding/ventures-home';
-import { useTRPC } from '../../../lib/trpc/client';
+import { createServerApi } from '../../../lib/trpc/server';
 
-export default function HomePage() {
-  const trpc = useTRPC();
-  const workspaces = useQuery(trpc.workspace.list.queryOptions());
-  const workspaceId = workspaces.data?.[0]?.id;
-
-  if (workspaces.isLoading) {
-    return <p className="muted px-6 py-10">Loading your workspace…</p>;
-  }
-  if (workspaces.isError) {
-    return <p className="alert px-6 py-10">{workspaces.error.message}</p>;
-  }
-  if (workspaceId === undefined) {
+export default async function HomePage() {
+  try {
+    const api = await createServerApi();
+    const workspaces = await api.workspace.list();
+    const workspaceId = workspaces[0]?.id;
+    if (workspaceId === undefined) {
+      return (
+        <p className="alert px-6 py-10">
+          No workspace is ready yet. Refresh the page — one is created automatically.
+        </p>
+      );
+    }
+    const projects = await api.project.list({ workspaceId });
+    return <VenturesHome workspaceId={workspaceId} initialProjects={projects} />;
+  } catch (error) {
     return (
       <p className="alert px-6 py-10">
-        No workspace is ready yet. Refresh the page — one is created automatically.
+        {error instanceof Error ? error.message : 'Could not load your workspace.'}
       </p>
     );
   }
-  return <VenturesHome workspaceId={workspaceId} />;
 }

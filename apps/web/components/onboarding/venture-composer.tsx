@@ -2,7 +2,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 
 import { errorMessageOf } from '../../lib/error-message';
 import {
@@ -33,25 +33,12 @@ export function VentureComposer({
   const idempotencyKey = useRef(crypto.randomUUID());
   const [pitch, setPitch] = useState('');
   const [files, setFiles] = useState<File[]>([]);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(-1);
   const createProject = useMutation(trpc.project.create.mutationOptions());
   const createIntent = useMutation(trpc.evidence.createUploadIntent.mutationOptions());
   const confirm = useMutation(trpc.evidence.confirmUpload.mutationOptions());
   const observe = useMutation(trpc.evidence.recordObservation.mutationOptions());
-  const pending = createProject.isPending;
-
-  useEffect(() => {
-    if (!pending) {
-      return;
-    }
-    setProgress(0);
-    const first = window.setTimeout(() => setProgress(1), 1200);
-    const second = window.setTimeout(() => setProgress(2), 2400);
-    return () => {
-      window.clearTimeout(first);
-      window.clearTimeout(second);
-    };
-  }, [pending]);
+  const pending = progress >= 0;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -60,6 +47,7 @@ export function VentureComposer({
       return;
     }
     try {
+      setProgress(0);
       const attachmentIds: string[] = [];
       for (const file of files) {
         const uploaded = await uploadEvidenceAttachment({
@@ -71,6 +59,7 @@ export function VentureComposer({
         });
         attachmentIds.push(uploaded.evidenceItemId);
       }
+      setProgress(1);
       const created = await createProject.mutateAsync({
         workspaceId,
         name: ventureNameFromPitch(trimmed),
@@ -78,10 +67,11 @@ export function VentureComposer({
         ...(attachmentIds.length === 0 ? {} : { attachmentIds }),
         idempotencyKey: idempotencyKey.current,
       });
+      setProgress(2);
       idempotencyKey.current = crypto.randomUUID();
       router.push(`/p/${created.id}`);
     } catch {
-      // Keep the same idempotency key so a retry is safe.
+      setProgress(-1);
     }
   }
 

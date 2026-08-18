@@ -61,3 +61,24 @@ export function describeToolCall(toolDefinitionId: string, input: unknown): stri
   }
   return `${template.replace(/…$/, '')} ${detail}`;
 }
+
+export function summarizeToolResult(result: unknown): string | null {
+  if (result === null || result === undefined) {
+    return null;
+  }
+  if (typeof result === 'string') {
+    const trimmed = result.trim();
+    return trimmed.length === 0 ? null : trimmed.slice(0, 180);
+  }
+  if (typeof result !== 'object') {
+    return null;
+  }
+  const record = result as Record<string, unknown>;
+  for (const key of ['summary', 'title', 'message', 'error', 'detail']) {
+    const value = record[key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim().slice(0, 180);
+    }
+  }
+  return 'Step finished';
+}

@@ -1,5 +1,6 @@
 'use client';
 
+import type { Project } from '@foundry/domain';
 import { Gauge } from '@foundry/ui';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -9,9 +10,18 @@ import { journeyStep } from '../../lib/journey';
 import { useTRPC } from '../../lib/trpc/client';
 import { VentureComposer } from './venture-composer';
 
-export function VenturesHome({ workspaceId }: { workspaceId: string }) {
+export function VenturesHome({
+  workspaceId,
+  initialProjects,
+}: {
+  workspaceId: string;
+  initialProjects: Project[];
+}) {
   const trpc = useTRPC();
-  const projects = useQuery(trpc.project.list.queryOptions({ workspaceId }));
+  const projects = useQuery({
+    ...trpc.project.list.queryOptions({ workspaceId }),
+    initialData: initialProjects,
+  });
   const [composing, setComposing] = useState(false);
   const items = projects.data ?? [];
 
@@ -55,9 +65,8 @@ export function VenturesHome({ workspaceId }: { workspaceId: string }) {
 function VentureRow({ projectId, name }: { projectId: string; name: string }) {
   const trpc = useTRPC();
   const desk = useQuery(trpc.project.getDeskSummary.queryOptions({ projectId }));
-  const score = useQuery(trpc.score.getCurrent.queryOptions({ projectId }));
   const phase = desk.data?.derivedPhase;
-  const overall = score.data === undefined || score.data === null ? null : score.data.overall;
+  const overall = desk.data?.overview.overallScore ?? null;
 
   return (
     <li className="list-row">

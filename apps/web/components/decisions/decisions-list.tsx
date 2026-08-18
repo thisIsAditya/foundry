@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 
 import { formatUnknown } from '../../lib/format';
 import { useTRPC } from '../../lib/trpc/client';
-import { Scorecard } from '../score/scorecard';
 import { EmptyState } from '../ui/empty-state';
 
 export function DecisionsList({ projectId }: { projectId: string }) {
@@ -16,13 +15,8 @@ export function DecisionsList({ projectId }: { projectId: string }) {
     <div className="stack">
       <header>
         <h1 className="page-title">Decisions</h1>
-        <p className="lede">
-          GO, PIVOT, and KILL sit next to score history so you can see why the plan changed.
-        </p>
+        <p className="lede">GO, PIVOT, and KILL — the calls that changed the plan, and why.</p>
       </header>
-      <section className="card">
-        <Scorecard projectId={projectId} />
-      </section>
       {list.isLoading ? <p className="muted">Loading…</p> : null}
       {list.isError ? <p className="alert">{list.error.message}</p> : null}
       {!list.isLoading && items.length === 0 ? (

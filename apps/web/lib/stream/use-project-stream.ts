@@ -22,6 +22,7 @@ type ProjectStreamState = {
 type ProjectStreamStore = UseBoundStore<StoreApi<ProjectStreamState>>;
 
 const stores = new Map<string, ProjectStreamStore>();
+const sources = new Map<string, { source: EventSource; refs: number }>();
 
 function createProjectStreamStore(): ProjectStreamStore {
   return create<ProjectStreamState>((set) => ({
@@ -65,6 +66,45 @@ function storeFor(projectId: string): ProjectStreamStore {
   return created;
 }
 
+function retainSource(projectId: string, store: ProjectStreamStore): void {
+  const existing = sources.get(projectId);
+  if (existing !== undefined) {
+    existing.refs += 1;
+    return;
+  }
+  const source = new EventSource(`/api/stream/${projectId}`);
+  source.onmessage = (message) => {
+    const seq = Number(message.lastEventId);
+    if (!Number.isFinite(seq)) {
+      return;
+    }
+    let payload: unknown;
+    try {
+      payload = JSON.parse(message.data) as unknown;
+    } catch {
+      return;
+    }
+    const parsed = StreamEventSchema.safeParse(payload);
+    if (parsed.success) {
+      store.getState().append(seq, parsed.data);
+    }
+  };
+  sources.set(projectId, { source, refs: 1 });
+}
+
+function releaseSource(projectId: string): void {
+  const existing = sources.get(projectId);
+  if (existing === undefined) {
+    return;
+  }
+  existing.refs -= 1;
+  if (existing.refs > 0) {
+    return;
+  }
+  existing.source.close();
+  sources.delete(projectId);
+}
+
 export function useProjectStream(projectId: string): ProjectStreamState {
   const store = useMemo(() => storeFor(projectId), [projectId]);
   const events = store((state) => state.events);
@@ -77,27 +117,11 @@ export function useProjectStream(projectId: string): ProjectStreamState {
   const append = store((state) => state.append);
 
   useEffect(() => {
-    const source = new EventSource(`/api/stream/${projectId}`);
-    source.onmessage = (message) => {
-      const seq = Number(message.lastEventId);
-      if (!Number.isFinite(seq)) {
-        return;
-      }
-      let payload: unknown;
-      try {
-        payload = JSON.parse(message.data) as unknown;
-      } catch {
-        return;
-      }
-      const parsed = StreamEventSchema.safeParse(payload);
-      if (parsed.success) {
-        append(seq, parsed.data);
-      }
-    };
+    retainSource(projectId, store);
     return () => {
-      source.close();
+      releaseSource(projectId);
     };
-  }, [append, projectId]);
+  }, [projectId, store]);
 
   return { events, lastSeq, transcript, unreadCount, effort, setEffort, markRead, append };
 }

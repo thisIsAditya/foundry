@@ -2,7 +2,7 @@
 
 import { Gauge } from '@foundry/ui';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 import type { DrawerControls } from '../../lib/drawer-state';
 import {
@@ -67,18 +67,21 @@ export function ProjectHeader({
           count={workCount}
           pressed={drawer.panel === 'work'}
           onClick={() => (drawer.panel === 'work' ? drawer.close() : drawer.open('work'))}
+          icon={<WorkGlyph />}
         />
         <HeaderButton
           label="Research"
           count={researchCount}
           pressed={drawer.panel === 'research'}
           onClick={() => (drawer.panel === 'research' ? drawer.close() : drawer.open('research'))}
+          icon={<ResearchGlyph />}
         />
         <HeaderButton
           label="Decisions"
           count={decisionsUnread}
           pressed={drawer.panel === 'decisions'}
           onClick={() => (drawer.panel === 'decisions' ? drawer.close() : drawer.open('decisions'))}
+          icon={<DecisionsGlyph />}
         />
         <button
           type="button"
@@ -99,19 +102,61 @@ function HeaderButton({
   count,
   pressed,
   onClick,
+  icon,
 }: {
   label: string;
   count: number;
   pressed: boolean;
   onClick: () => void;
+  icon: ReactNode;
 }) {
   return (
-    <button type="button" className="project-header-btn" aria-pressed={pressed} onClick={onClick}>
-      {label}
+    <button
+      type="button"
+      className="project-header-btn"
+      aria-pressed={pressed}
+      aria-label={label}
+      onClick={onClick}
+    >
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
       {count === 0 ? null : (
         <span className="header-badge">{count > 9 ? '9+' : String(count)}</span>
       )}
     </button>
+  );
+}
+
+function WorkGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M2 4.5A1.5 1.5 0 0 1 3.5 3h9A1.5 1.5 0 0 1 14 4.5v8A1.5 1.5 0 0 1 12.5 14h-9A1.5 1.5 0 0 1 2 12.5v-8ZM3.5 4a.5.5 0 0 0-.5.5V6h10V4.5a.5.5 0 0 0-.5-.5h-9ZM13 7H3v5.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V7Z"
+      />
+    </svg>
+  );
+}
+
+function ResearchGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M7 2a5 5 0 1 0 3.1 8.9l2.5 2.5 1.4-1.4-2.5-2.5A5 5 0 0 0 7 2Zm0 1.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Z"
+      />
+    </svg>
+  );
+}
+
+function DecisionsGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M4 2.5h8A1.5 1.5 0 0 1 13.5 4v9L8 11.2 2.5 13V4A1.5 1.5 0 0 1 4 2.5Zm0 1a.5.5 0 0 0-.5.5v7.4L8 10l4.5 1.4V4a.5.5 0 0 0-.5-.5H4Z"
+      />
+    </svg>
   );
 }
 

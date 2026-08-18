@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { ModelProviderPanel } from '../../app/(app)/p/[projectId]/model-provider-panel';
+import { ModelProviderPanel } from './model-provider-panel';
 import { useTRPC } from '../../lib/trpc/client';
 
 type SettingsTab = 'project' | 'provider';

@@ -159,6 +159,10 @@
     @apply flex flex-col gap-6;
   }
 
+  .stack-tight {
+    @apply flex flex-col gap-2;
+  }
+
   .field {
     @apply flex min-w-0 flex-1 flex-col gap-1;
   }
@@ -304,31 +308,6 @@
 
   .progress-fill {
     @apply h-full rounded-full bg-status-info transition-[width];
-  }
-
-  /* Journey stepper across the top of the desk. */
-  .journey {
-    @apply flex flex-wrap items-center gap-x-1 gap-y-2;
-  }
-
-  .journey-dot {
-    @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-medium;
-  }
-
-  .journey-dot-done {
-    @apply border-status-success bg-status-success text-surface-raised;
-  }
-
-  .journey-dot-current {
-    @apply border-text bg-text text-surface-raised;
-  }
-
-  .journey-dot-todo {
-    @apply border-border text-text-muted;
-  }
-
-  .journey-connector {
-    @apply h-px w-3 shrink-0 bg-border sm:w-6;
   }
 
   .hint {

@@ -5,16 +5,8 @@ import type { ProviderFamily } from '@foundry/domain';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type FormEvent } from 'react';
 
-import { useTRPC } from '../../../../lib/trpc/client';
-
-function errorMessageOf(error: unknown): string | null {
-  return error !== null &&
-    typeof error === 'object' &&
-    'message' in error &&
-    typeof error.message === 'string'
-    ? error.message
-    : null;
-}
+import { errorMessageOf } from '../../lib/error-message';
+import { useTRPC } from '../../lib/trpc/client';
 
 type ProviderPreset = 'ollama' | 'anthropic' | 'openai';
 
@@ -57,11 +49,6 @@ const PRESETS: Record<
   },
 };
 
-/**
- * Nothing that talks to the AI works until a workspace has a healthy provider
- * connection. There is no separate "workspace settings" screen yet, so this
- * lives on the desk — the first place a founder hits the "no provider" error.
- */
 export function ModelProviderPanel({ workspaceId }: { workspaceId: string }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -105,7 +92,10 @@ export function ModelProviderPanel({ workspaceId }: { workspaceId: string }) {
   }
 
   if (connections.isLoading) {
-    return null;
+    return <p className="muted">Loading providers…</p>;
+  }
+  if (connections.isError) {
+    return <p className="alert">{connections.error.message}</p>;
   }
 
   if (healthy !== undefined) {
@@ -190,12 +180,14 @@ export function ModelProviderPanel({ workspaceId }: { workspaceId: string }) {
       {errorMessageOf(connect.error) === null ? null : (
         <p className="alert">{errorMessageOf(connect.error)}</p>
       )}
-      {items.length > 0 ? (
+      {items.length === 0 ? (
+        <p className="hint">No provider connected yet.</p>
+      ) : (
         <p className="hint">
           {items.length} connection{items.length === 1 ? '' : 's'} saved, but none are healthy yet —
           double check the model name and try again.
         </p>
-      ) : null}
+      )}
     </section>
   );
 }
