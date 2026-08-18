@@ -18,7 +18,14 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
           {block.citationIds.length === 0 ? null : (
             <p className="muted">{block.citationIds.length} citation(s)</p>
           )}
-          <Link href={projectPanelHref(projectId, 'research')} className="text-sm">
+          <Link
+            href={
+              block.evidenceItemId === undefined
+                ? projectPanelHref(projectId, 'research')
+                : projectPanelHref(projectId, 'research', { finding: block.evidenceItemId })
+            }
+            className="text-sm"
+          >
             Open research
           </Link>
         </div>
@@ -126,9 +133,26 @@ export function ConversationMessageView({
 }) {
   const material = message.blocks.filter((block) => block.kind !== 'concise_answer');
   const textBlocks = message.blocks.filter((block) => block.kind === 'concise_answer');
+  const attachments = message.references.filter(
+    (ref) => ref.kind === 'evidence' || ref.kind === 'source',
+  );
   return (
     <article className="stack" style={{ gap: '0.5rem' }}>
       <p className="muted">{message.actor === 'founder' ? 'You' : 'Co-founder'}</p>
+      {attachments.length === 0 ? null : (
+        <ul className="flex flex-wrap gap-2" aria-label="Attached files">
+          {attachments.map((ref) => (
+            <li key={`${ref.kind}-${ref.id}`}>
+              <Link
+                href={projectPanelHref(projectId, 'research', { finding: ref.id })}
+                className="badge no-underline"
+              >
+                Attached file
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
       {textBlocks.length === 0 && material.length === 0 ? (
         <p className="text-sm whitespace-pre-wrap">{message.text}</p>
       ) : null}

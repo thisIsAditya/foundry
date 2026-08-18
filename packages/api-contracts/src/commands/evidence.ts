@@ -4,19 +4,23 @@ import {
   ProjectIdSchema,
   SourceIdSchema,
   SourceKindSchema,
+  WorkspaceIdSchema,
 } from '@foundry/domain';
 import { z } from 'zod';
 
 import { IdempotencyKeySchema } from './idempotency.js';
 
-export const CreateUploadIntentInputSchema = z.object({
-  projectId: ProjectIdSchema,
-  filename: z.string().min(1).max(255),
-  mimeType: z.string().min(1),
-  sizeBytes: z.number().int().positive(),
-  kind: SourceKindSchema.optional(),
-  idempotencyKey: IdempotencyKeySchema,
-});
+export const CreateUploadIntentInputSchema = z
+  .object({
+    projectId: ProjectIdSchema.optional(),
+    workspaceId: WorkspaceIdSchema.optional(),
+    filename: z.string().min(1).max(255),
+    mimeType: z.string().min(1),
+    sizeBytes: z.number().int().positive(),
+    kind: SourceKindSchema.optional(),
+    idempotencyKey: IdempotencyKeySchema,
+  })
+  .refine((value) => value.projectId !== undefined || value.workspaceId !== undefined);
 export type CreateUploadIntentInput = z.infer<typeof CreateUploadIntentInputSchema>;
 
 export const ConfirmUploadInputSchema = z.object({

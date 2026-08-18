@@ -1,6 +1,6 @@
 'use client';
 
-import { BusinessModelSectionView } from '../../app/(app)/p/[projectId]/plan/[section]/section-detail';
+import { BusinessModelSectionView } from './section-detail';
 import { PlanSectionList } from './section-list';
 
 export function PlanDrawer({

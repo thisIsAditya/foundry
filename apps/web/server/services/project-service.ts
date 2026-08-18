@@ -40,6 +40,7 @@ import type { InitialDraftService } from './initial-draft-service';
 import { ensurePackRevision, loadPackSnapshot } from './pack-snapshot';
 import type { PlanSectionAggregatorService } from './plan-section-aggregator';
 import { hashContract } from './sprint-service';
+import { isUploadInboxProject } from './upload-inbox';
 
 export type ProjectRuntimeDeps = {
   initialDraftService?: InitialDraftService;
@@ -129,9 +130,10 @@ export class ProjectService {
         nextAction: 'Ask a workspace admin to change your role.',
       });
     }
-    return withWorkspaceScope(this.sql, [workspaceId], async (tx) =>
-      listProjectsByWorkspaceId(tx, workspaceId),
-    );
+    return withWorkspaceScope(this.sql, [workspaceId], async (tx) => {
+      const projects = await listProjectsByWorkspaceId(tx, workspaceId);
+      return projects.filter((project) => !isUploadInboxProject(project));
+    });
   }
 
   async getDeskSummary(actor: { membership: WorkspaceMembership; project: Project }): Promise<{

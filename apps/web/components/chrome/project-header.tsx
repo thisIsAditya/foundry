@@ -2,8 +2,13 @@
 
 import { Gauge } from '@foundry/ui';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 
 import type { DrawerControls } from '../../lib/drawer-state';
+import {
+  readLastViewedDecisionsAt,
+  writeLastViewedDecisionsAt,
+} from '../../lib/last-viewed-decisions';
 import { useTRPC } from '../../lib/trpc/client';
 
 export function ProjectHeader({
@@ -16,8 +21,33 @@ export function ProjectHeader({
   const trpc = useTRPC();
   const desk = useQuery(trpc.project.getDeskSummary.queryOptions({ projectId }));
   const score = useQuery(trpc.score.getCurrent.queryOptions({ projectId }));
+  const jobs = useQuery(trpc.job.list.queryOptions({ projectId, view: 'kanban' }));
+  const decisions = useQuery(trpc.decision.list.queryOptions({ projectId }));
+  const [seenDecisionsAt, setSeenDecisionsAt] = useState(0);
   const name = desk.data?.project.name ?? 'Venture';
   const overall = score.data === undefined || score.data === null ? null : score.data.overall;
+  const workCount = (jobs.data ?? []).filter(
+    (job) => job.status === 'needs_founder' || job.status === 'needs_approval',
+  ).length;
+  const researchCount = (jobs.data ?? []).filter(
+    (job) => job.jobKind === 'research' && job.status === 'proposed',
+  ).length;
+  const newestDecision = (decisions.data ?? []).reduce<number>(
+    (latest, item) => Math.max(latest, new Date(item.createdAt).getTime()),
+    0,
+  );
+  const decisionsUnread = newestDecision > seenDecisionsAt ? 1 : 0;
+
+  useEffect(() => {
+    setSeenDecisionsAt(readLastViewedDecisionsAt(projectId));
+  }, [projectId]);
+
+  useEffect(() => {
+    if (drawer.panel !== 'decisions') {
+      return;
+    }
+    setSeenDecisionsAt(writeLastViewedDecisionsAt(projectId));
+  }, [drawer.panel, projectId]);
 
   return (
     <header className="project-header">
@@ -34,16 +64,19 @@ export function ProjectHeader({
         </button>
         <HeaderButton
           label="Work"
+          count={workCount}
           pressed={drawer.panel === 'work'}
           onClick={() => (drawer.panel === 'work' ? drawer.close() : drawer.open('work'))}
         />
         <HeaderButton
           label="Research"
+          count={researchCount}
           pressed={drawer.panel === 'research'}
           onClick={() => (drawer.panel === 'research' ? drawer.close() : drawer.open('research'))}
         />
         <HeaderButton
           label="Decisions"
+          count={decisionsUnread}
           pressed={drawer.panel === 'decisions'}
           onClick={() => (drawer.panel === 'decisions' ? drawer.close() : drawer.open('decisions'))}
         />
@@ -63,16 +96,21 @@ export function ProjectHeader({
 
 function HeaderButton({
   label,
+  count,
   pressed,
   onClick,
 }: {
   label: string;
+  count: number;
   pressed: boolean;
   onClick: () => void;
 }) {
   return (
     <button type="button" className="project-header-btn" aria-pressed={pressed} onClick={onClick}>
       {label}
+      {count === 0 ? null : (
+        <span className="header-badge">{count > 9 ? '9+' : String(count)}</span>
+      )}
     </button>
   );
 }

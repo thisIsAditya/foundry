@@ -9,18 +9,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
-import { Checklist, type ChecklistItem } from '../../../../../../components/ui/checklist';
-import { InterviewCapture } from '../../../../../../components/evidence/interview-capture';
-import { SectionStatusBadge } from '../../../../../../components/plan/section-status-badge';
-import { EmptyState } from '../../../../../../components/ui/empty-state';
-import { errorMessageOf } from '../../../../../../lib/error-message';
+import { InterviewCapture } from '../evidence/interview-capture';
+import { Checklist, type ChecklistItem } from '../ui/checklist';
+import { EmptyState } from '../ui/empty-state';
+import { errorMessageOf } from '../../lib/error-message';
 import {
   businessModelSectionLabel,
   formatUnknown,
   packFieldLabel,
-} from '../../../../../../lib/format';
-import { projectPanelHref } from '../../../../../../lib/project-href';
-import { useTRPC } from '../../../../../../lib/trpc/client';
+} from '../../lib/format';
+import { projectPanelHref } from '../../lib/project-href';
+import { useTRPC } from '../../lib/trpc/client';
+import { SectionStatusBadge } from './section-status-badge';
 
 export function BusinessModelSectionView({
   projectId,

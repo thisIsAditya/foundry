@@ -1,10 +1,5 @@
-import { WorkspaceProjects } from './workspace-projects';
+import { redirect } from 'next/navigation';
 
-export default async function WorkspacePage({
-  params,
-}: {
-  params: Promise<{ workspaceId: string }>;
-}) {
-  const { workspaceId } = await params;
-  return <WorkspaceProjects workspaceId={workspaceId} />;
+export default function WorkspaceRedirect() {
+  redirect('/home');
 }

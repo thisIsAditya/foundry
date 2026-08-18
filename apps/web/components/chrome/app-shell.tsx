@@ -10,7 +10,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             Foundry
           </Link>
           <Link href="/home" className="nav-link">
-            All workspaces
+            Ventures
           </Link>
         </div>
       </header>

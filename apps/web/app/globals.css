@@ -338,4 +338,69 @@
   .empty-state {
     @apply flex flex-col items-center gap-2 rounded-md border border-dashed border-border px-6 py-10 text-center;
   }
+
+  .venture-hero,
+  .venture-overlay {
+    @apply flex flex-col justify-center px-6 py-12;
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .venture-hero {
+    min-height: calc(100dvh - var(--height-app-header));
+  }
+
+  .venture-overlay {
+    @apply fixed inset-0 z-40 overflow-y-auto;
+    top: var(--height-app-header);
+  }
+
+  .venture-composer {
+    @apply mx-auto flex w-full max-w-2xl flex-col gap-6;
+  }
+
+  .venture-hero .page-title,
+  .venture-overlay .page-title,
+  .venture-hero .lede,
+  .venture-overlay .lede,
+  .venture-hero .field > span,
+  .venture-overlay .field > span {
+    color: var(--color-paper);
+  }
+
+  .venture-hero .hint,
+  .venture-overlay .hint {
+    color: color-mix(in oklab, var(--color-paper) 70%, transparent);
+  }
+
+  .venture-hero .textarea,
+  .venture-overlay .textarea,
+  .venture-hero .btn-secondary,
+  .venture-overlay .btn-secondary {
+    background: transparent;
+    color: var(--color-paper);
+    border-color: color-mix(in oklab, var(--color-paper) 30%, transparent);
+  }
+
+  .venture-hero .btn,
+  .venture-overlay .btn {
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  .composer-grow {
+    @apply min-h-28 resize-none overflow-hidden;
+  }
+
+  .header-badge {
+    @apply inline-flex min-w-4 items-center justify-center rounded-full bg-text px-1 text-xs text-surface;
+  }
+
+  .score-sparkline {
+    @apply block h-12 w-full text-text;
+  }
+
+  .finding-target {
+    @apply ring-1 ring-text;
+  }
 }

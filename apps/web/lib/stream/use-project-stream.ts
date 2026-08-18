@@ -1,6 +1,10 @@
 'use client';
 
-import { StreamEventSchema, type StreamEvent } from '@foundry/api-contracts';
+import {
+  StreamEventSchema,
+  type ConversationEffort,
+  type StreamEvent,
+} from '@foundry/api-contracts';
 import { useEffect, useMemo } from 'react';
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
 
@@ -9,6 +13,8 @@ type ProjectStreamState = {
   lastSeq: number;
   transcript: string;
   unreadCount: number;
+  effort: ConversationEffort;
+  setEffort: (effort: ConversationEffort) => void;
   markRead: () => void;
   append: (seq: number, event: StreamEvent) => void;
 };
@@ -23,6 +29,8 @@ function createProjectStreamStore(): ProjectStreamStore {
     lastSeq: 0,
     transcript: '',
     unreadCount: 0,
+    effort: 'standard',
+    setEffort: (effort) => set({ effort }),
     markRead: () => set({ unreadCount: 0 }),
     append: (seq, event) =>
       set((state) => {
@@ -37,7 +45,11 @@ function createProjectStreamStore(): ProjectStreamStore {
               ? state.unreadCount + 1
               : state.unreadCount,
           transcript:
-            event.type === 'text_delta' ? `${state.transcript}${event.delta}` : state.transcript,
+            event.type === 'message_started'
+              ? ''
+              : event.type === 'text_delta'
+                ? `${state.transcript}${event.delta}`
+                : state.transcript,
         };
       }),
   }));
@@ -59,6 +71,8 @@ export function useProjectStream(projectId: string): ProjectStreamState {
   const lastSeq = store((state) => state.lastSeq);
   const transcript = store((state) => state.transcript);
   const unreadCount = store((state) => state.unreadCount);
+  const effort = store((state) => state.effort);
+  const setEffort = store((state) => state.setEffort);
   const markRead = store((state) => state.markRead);
   const append = store((state) => state.append);
 
@@ -85,5 +99,5 @@ export function useProjectStream(projectId: string): ProjectStreamState {
     };
   }, [append, projectId]);
 
-  return { events, lastSeq, transcript, unreadCount, markRead, append };
+  return { events, lastSeq, transcript, unreadCount, effort, setEffort, markRead, append };
 }

@@ -11,7 +11,9 @@ import {
   getProjectById,
   getSourceById,
   insertEvidenceItem,
+  insertProject,
   insertSource,
+  listProjectsByWorkspaceId,
   listAssumptionsByProjectId,
   listEvidenceItemsByProjectId,
   listInterviewsByProjectId,
@@ -31,6 +33,7 @@ import {
   type Source,
   type SourceId,
   type UserId,
+  type WorkspaceId,
   type WorkspaceMembership,
 } from '@foundry/domain';
 import { AppError } from '@foundry/observability';
@@ -42,9 +45,11 @@ import { withIdempotency, type CoordinationStore } from '../coordination';
 import type { IngestionJobData, JobQueue } from '../queue/job-queue';
 import type { ObjectStore } from '../storage/object-store';
 import type { ScoringService } from './scoring-service';
+import { isUploadInboxProject, UPLOAD_INBOX_PROJECT_NAME } from './upload-inbox';
 
 export type UploadIntentResult = {
   sourceId: SourceId;
+  projectId: Project['id'];
   uploadUrl: string;
   uploadFields: Record<string, string>;
   expiresAt: Date;
@@ -76,6 +81,86 @@ export class DocumentService {
     private readonly jobQueue: JobQueue,
     private readonly scoringService?: ScoringService,
   ) {}
+
+  async resolveUploadProject(
+    actor: { userId: UserId; memberships: WorkspaceMembership[] },
+    input: CreateUploadIntentInput,
+    correlationId: string,
+  ): Promise<{ membership: WorkspaceMembership; project: Project }> {
+    const scoped = actor.memberships.map((item) => item.workspaceId);
+    const projectId = input.projectId;
+    if (projectId !== undefined) {
+      const project = await withWorkspaceScope(this.sql, scoped, async (tx) =>
+        getProjectById(tx, projectId),
+      );
+      if (project === null) {
+        throw new AppError({
+          code: 'not_found',
+          explanation: 'Project not found.',
+          nextAction: 'Pick a venture you have access to.',
+          correlationId,
+        });
+      }
+      const membership =
+        actor.memberships.find((item) => item.workspaceId === project.workspaceId) ?? null;
+      if (membership === null) {
+        throw new AppError({
+          code: 'unauthorized',
+          explanation: 'You do not have access to this workspace.',
+          nextAction: 'Ask a workspace owner to invite you.',
+          correlationId,
+        });
+      }
+      return { membership, project };
+    }
+    if (input.workspaceId === undefined) {
+      throw new AppError({
+        code: 'invalid_input',
+        explanation: 'A workspace or venture is required to upload.',
+        nextAction: 'Refresh and try again.',
+        correlationId,
+      });
+    }
+    const membership =
+      actor.memberships.find((item) => item.workspaceId === input.workspaceId) ?? null;
+    if (membership === null) {
+      throw new AppError({
+        code: 'unauthorized',
+        explanation: 'You do not have access to this workspace.',
+        nextAction: 'Ask a workspace owner to invite you.',
+        correlationId,
+      });
+    }
+    return {
+      membership,
+      project: await this.ensureUploadInbox(membership, input.workspaceId),
+    };
+  }
+
+  async ensureUploadInbox(
+    membership: WorkspaceMembership,
+    workspaceId: WorkspaceId,
+  ): Promise<Project> {
+    if (!this.policyService.can(membership, 'evidence.upload')) {
+      throw new AppError({
+        code: 'policy_forbidden',
+        explanation: 'Your role cannot upload evidence in this workspace.',
+        nextAction: 'Ask a workspace admin to change your role.',
+      });
+    }
+    return withWorkspaceScope(this.sql, [workspaceId], async (tx) => {
+      const existing = (await listProjectsByWorkspaceId(tx, workspaceId)).find((project) =>
+        isUploadInboxProject(project),
+      );
+      if (existing !== undefined) {
+        return existing;
+      }
+      return insertProject(tx, {
+        workspaceId,
+        name: UPLOAD_INBOX_PROJECT_NAME,
+      });
+    });
+  }
 
   async createUploadIntent(
     actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
@@ -164,6 +249,7 @@ export class DocumentService {
     );
     return {
       sourceId: cached.sourceId,
+      projectId: actor.project.id,
       uploadUrl: upload.url,
       uploadFields: upload.fields,
       expiresAt: upload.expiresAt,

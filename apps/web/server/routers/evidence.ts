@@ -14,15 +14,20 @@ import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
 import { projectProcedure, projectReadProcedure, protectedProcedure, router } from '../trpc';
 
 export const evidenceRouter = router({
-  createUploadIntent: projectProcedure
+  createUploadIntent: protectedProcedure
     .meta({ invalidates: mutationInvalidations['evidence.createUploadIntent'] })
     .input(CreateUploadIntentInputSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.actor.type !== 'user') {
-        throw new Error('projectProcedure requires a user actor');
+        throw new Error('protectedProcedure requires a user actor');
       }
+      const resolved = await ctx.services.documentService.resolveUploadProject(
+        { userId: ctx.actor.userId, memberships: ctx.actor.memberships },
+        input,
+        ctx.correlationId,
+      );
       return ctx.services.documentService.createUploadIntent(
-        { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
+        { userId: ctx.actor.userId, membership: resolved.membership, project: resolved.project },
         input,
         ctx.correlationId,
       );

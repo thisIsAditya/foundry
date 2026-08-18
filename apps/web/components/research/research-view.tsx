@@ -3,6 +3,7 @@
 import { EvidenceLibraryFilters } from '@foundry/api-contracts';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 
 import { projectPanelHref } from '../../lib/project-href';
 import { useTRPC } from '../../lib/trpc/client';
@@ -12,9 +13,11 @@ import { EmptyState } from '../ui/empty-state';
 export function ResearchView({
   projectId,
   filter,
+  finding,
 }: {
   projectId: string;
   filter?: string;
+  finding?: string;
 }) {
   const selected = EvidenceLibraryFilters.find((item) => item === filter);
   const trpc = useTRPC();
@@ -26,6 +29,11 @@ export function ResearchView({
   );
   const findings = useQuery(trpc.evidence.listFindings.queryOptions({ projectId }));
   const jobs = useQuery(trpc.job.list.queryOptions({ projectId, view: 'waiting_for_research' }));
+  const focused = useRef<HTMLLIElement>(null);
+
+  useEffect(() => {
+    focused.current?.scrollIntoView({ block: 'nearest' });
+  }, [finding, findings.data, library.data]);
 
   return (
     <div className="stack">
@@ -86,19 +94,27 @@ export function ResearchView({
           />
         ) : (
           <ul className="stack">
-            {(findings.data ?? []).map((finding) => (
-              <li key={finding.id} className="panel flex flex-col gap-1">
-                <p className="text-sm">{finding.claim}</p>
+            {(findings.data ?? []).map((item) => (
+              <li
+                key={item.id}
+                ref={finding === item.id ? focused : undefined}
+                className={
+                  finding === item.id
+                    ? 'panel finding-target flex flex-col gap-1'
+                    : 'panel flex flex-col gap-1'
+                }
+              >
+                <p className="text-sm">{item.claim}</p>
                 <p className="muted">
-                  {finding.affectedSectionKeys.join(', ') || 'Unassigned'} ·{' '}
-                  {finding.citationIds.length} citations
+                  {item.affectedSectionKeys.join(', ') || 'Unassigned'} ·{' '}
+                  {item.citationIds.length} citations
                 </p>
-                {finding.conflictsWithFindingIds.length === 0 ? (
+                {item.conflictsWithFindingIds.length === 0 ? (
                   <span className="badge badge-success">Agrees with current sources</span>
                 ) : (
                   <span className="badge badge-warning">Conflicts with other findings</span>
                 )}
-                {finding.staleAt === null ? null : <span className="badge">Stale</span>}
+                {item.staleAt === null ? null : <span className="badge">Stale</span>}
               </li>
             ))}
           </ul>
@@ -113,7 +129,11 @@ export function ResearchView({
         ) : (
           <ul className="list">
             {(library.data ?? []).map((item) => (
-              <li key={`${item.kind}-${item.id}`} className="list-row">
+              <li
+                key={`${item.kind}-${item.id}`}
+                ref={finding === item.id ? focused : undefined}
+                className={finding === item.id ? 'list-row finding-target' : 'list-row'}
+              >
                 <div>
                   <p className="text-sm">{item.title}</p>
                   <p className="muted">{item.detail}</p>

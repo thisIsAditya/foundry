@@ -200,4 +200,61 @@ describe('evidence procedures', () => {
     const library = await caller.evidence.listLibrary({ projectId: project.id, filter: 'sources' });
     expect(library.some((entry) => entry.id === item.id)).toBe(true);
   });
+
+  it('uploads against a workspace inbox that project.list hides', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `inbox-${randomUUID()}@example.com`,
+    });
+    const workspace = await appRouter
+      .createCaller(await createTestContext(sql, user))
+      .workspace.create({ name: 'Acme', idempotencyKey: randomUUID() });
+    const ctx = await createTestContext(sql, user);
+    const caller = appRouter.createCaller(ctx);
+
+    const intent = await caller.evidence.createUploadIntent({
+      workspaceId: workspace.id,
+      filename: 'brief.txt',
+      mimeType: 'text/plain',
+      sizeBytes: 12,
+      idempotencyKey: randomUUID(),
+    });
+    expect(intent.projectId).toBeTruthy();
+    expect(intent.uploadUrl).toContain('memory://');
+
+    const listed = await caller.project.list({ workspaceId: workspace.id });
+    expect(listed.map((project) => project.id)).not.toContain(intent.projectId);
+
+    const pending = await caller.evidence.list({ projectId: intent.projectId });
+    const source = pending[0];
+    if (source === undefined || source.s3Key === null) {
+      throw new Error('expected a pending inbox source');
+    }
+    await ctx.objectStore.put(source.s3Key, Buffer.from('hello inbox'), 'text/plain');
+    await caller.evidence.confirmUpload({
+      sourceId: intent.sourceId,
+      idempotencyKey: randomUUID(),
+    });
+    const evidence = await caller.evidence.recordObservation({
+      projectId: intent.projectId,
+      summary: 'brief.txt',
+      idempotencyKey: randomUUID(),
+    });
+
+    const created = await caller.project.create({
+      workspaceId: workspace.id,
+      name: 'Cafe books',
+      founderPitch: 'Cafe owners lose two hours every night closing the books by hand.',
+      attachmentIds: [evidence.id],
+      idempotencyKey: randomUUID(),
+    });
+    const library = await caller.evidence.listLibrary({
+      projectId: created.id,
+      filter: 'sources',
+    });
+    expect(library.some((entry) => entry.id === evidence.id)).toBe(true);
+    expect(
+      (await caller.project.list({ workspaceId: workspace.id })).map((project) => project.name),
+    ).toEqual(['Cafe books']);
+  });
 });

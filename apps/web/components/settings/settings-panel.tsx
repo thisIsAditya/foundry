@@ -63,6 +63,15 @@ export function SettingsPanel({ projectId }: { projectId: string }) {
       ) : (
         <>
           <section className="card stack">
+            <h2 className="card-title">Venture name</h2>
+            {desk.isLoading ? <p className="muted">Loading the name…</p> : null}
+            {desk.isError ? <p className="alert">{desk.error.message}</p> : null}
+            {desk.data === undefined ? null : <p className="text-sm">{desk.data.project.name}</p>}
+            <p className="hint">
+              Taken from the first line of your pitch. Ask the co-founder if you want it changed.
+            </p>
+          </section>
+          <section className="card stack">
             <h2 className="card-title">Members</h2>
             {members.isLoading ? <p className="muted">Loading members…</p> : null}
             {members.isError ? <p className="alert">{members.error.message}</p> : null}

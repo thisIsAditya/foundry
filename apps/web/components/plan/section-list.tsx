@@ -5,8 +5,8 @@ import Link from 'next/link';
 
 import { projectPanelHref } from '../../lib/project-href';
 import { useTRPC } from '../../lib/trpc/client';
-import { Scorecard } from '../score/scorecard';
 import { EmptyState } from '../ui/empty-state';
+import { PlanScoreHeadline } from './plan-score-headline';
 import { SectionStatusBadge } from './section-status-badge';
 
 export function PlanSectionList({ projectId }: { projectId: string }) {
@@ -23,7 +23,7 @@ export function PlanSectionList({ projectId }: { projectId: string }) {
         </p>
       </header>
       <section className="card">
-        <Scorecard projectId={projectId} />
+        <PlanScoreHeadline projectId={projectId} />
       </section>
       {sections.isLoading ? <p className="muted">Loading sections…</p> : null}
       {sections.isError ? <p className="alert">{sections.error.message}</p> : null}

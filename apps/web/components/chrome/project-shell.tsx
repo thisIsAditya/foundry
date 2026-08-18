@@ -56,6 +56,7 @@ export function ProjectShell({ projectId }: { projectId: string }) {
         <ResearchView
           projectId={projectId}
           {...(drawer.filter === null ? {} : { filter: drawer.filter })}
+          {...(drawer.finding === null ? {} : { finding: drawer.finding })}
         />
       </DrawerShell>
       <DrawerShell title="Decisions" open={drawer.panel === 'decisions'} onClose={drawer.close}>

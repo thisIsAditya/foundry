@@ -8,29 +8,7 @@ import { useTRPC } from '../../lib/trpc/client';
 import { EmptyState } from '../ui/empty-state';
 
 import { ScoreDimensionChip } from './score-dimension-chip';
-
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length === 0) {
-    return <p className="muted">No score history yet.</p>;
-  }
-  const width = 220;
-  const height = 48;
-  const min = Math.min(...values, 0);
-  const max = Math.max(...values, 100);
-  const span = max - min || 1;
-  const points = values
-    .map((value, index) => {
-      const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * width;
-      const y = height - ((value - min) / span) * height;
-      return `${String(x)},${String(y)}`;
-    })
-    .join(' ');
-  return (
-    <svg width={width} height={height} role="img" aria-label="Score trend across revisions">
-      <polyline fill="none" stroke="currentColor" strokeWidth="2" points={points} />
-    </svg>
-  );
-}
+import { ScoreSparkline } from './score-sparkline';
 
 export function Scorecard({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
@@ -77,7 +55,7 @@ export function Scorecard({ projectId }: { projectId: string }) {
       </div>
       <div>
         <p className="hint">Trend across revisions</p>
-        <Sparkline values={(history.data ?? []).map((item) => item.overall).reverse()} />
+        <ScoreSparkline values={(history.data ?? []).map((item) => item.overall).reverse()} />
       </div>
       <ScoreReasons score={score} />
     </div>

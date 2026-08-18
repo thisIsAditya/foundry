@@ -12,6 +12,7 @@ export type DrawerState = {
   task: string | null;
   view: string | null;
   filter: string | null;
+  finding: string | null;
 };
 
 export type DrawerControls = DrawerState & {
@@ -33,6 +34,7 @@ export function useDrawerState(): DrawerControls {
       task: searchParams.get('task'),
       view: searchParams.get('view'),
       filter: searchParams.get('filter'),
+      finding: searchParams.get('finding'),
     };
   }, [searchParams]);
 
@@ -45,6 +47,7 @@ export function useDrawerState(): DrawerControls {
       if (next.task !== null) params.set('task', next.task);
       if (next.view !== null) params.set('view', next.view);
       if (next.filter !== null) params.set('filter', next.filter);
+      if (next.finding !== null) params.set('finding', next.finding);
       const qs = params.toString();
       router.replace(qs.length === 0 ? pathname : `${pathname}?${qs}`, { scroll: false });
     },
@@ -60,6 +63,7 @@ export function useDrawerState(): DrawerControls {
         task: extras.task ?? null,
         view: extras.view ?? null,
         filter: extras.filter ?? null,
+        finding: extras.finding ?? null,
       });
     },
     [apply],
@@ -73,6 +77,7 @@ export function useDrawerState(): DrawerControls {
       task: null,
       view: null,
       filter: null,
+      finding: null,
     });
   }, [apply]);
 
