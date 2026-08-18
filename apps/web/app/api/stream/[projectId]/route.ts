@@ -46,8 +46,45 @@ export async function GET(
   const lastEventId = Number(request.headers.get('last-event-id') ?? '0');
   const encoder = new TextEncoder();
 
+  let dispose: (() => void) | undefined;
+
   const stream = new ReadableStream({
     async start(controller) {
+      let closed = false;
+      const lifetime: {
+        unsubscribe?: () => Promise<void>;
+        ping?: ReturnType<typeof setInterval>;
+      } = {};
+
+      const close = () => {
+        if (closed) {
+          return;
+        }
+        closed = true;
+        if (lifetime.ping !== undefined) {
+          clearInterval(lifetime.ping);
+        }
+        request.signal.removeEventListener('abort', close);
+        void lifetime.unsubscribe?.();
+        try {
+          controller.close();
+        } catch {
+          // The client already cancelled the stream (navigation / EventSource close).
+        }
+      };
+      dispose = close;
+
+      const enqueue = (chunk: Uint8Array) => {
+        if (closed) {
+          return;
+        }
+        try {
+          controller.enqueue(chunk);
+        } catch {
+          close();
+        }
+      };
+
       const replay = await ctx.streamBus.replayAfter(
         project.id,
         Number.isFinite(lastEventId) ? lastEventId : 0,
@@ -55,26 +92,28 @@ export async function GET(
       for (const entry of replay) {
         const parsed = StreamEventSchema.safeParse(entry.event);
         if (parsed.success) {
-          controller.enqueue(encoder.encode(sseChunk(entry.seq, parsed.data)));
+          enqueue(encoder.encode(sseChunk(entry.seq, parsed.data)));
         }
       }
 
-      const unsubscribe = await ctx.streamBus.subscribe(project.id, (entry) => {
+      lifetime.unsubscribe = await ctx.streamBus.subscribe(project.id, (entry) => {
         const parsed = StreamEventSchema.safeParse(entry.event);
         if (parsed.success) {
-          controller.enqueue(encoder.encode(sseChunk(entry.seq, parsed.data)));
+          enqueue(encoder.encode(sseChunk(entry.seq, parsed.data)));
         }
       });
 
-      const ping = setInterval(() => {
-        controller.enqueue(encoder.encode(': ping\n\n'));
+      lifetime.ping = setInterval(() => {
+        enqueue(encoder.encode(': ping\n\n'));
       }, limits.stream.keepaliveMs);
 
-      const abort = () => {
-        clearInterval(ping);
-        void unsubscribe().then(() => controller.close());
-      };
-      request.signal.addEventListener('abort', abort);
+      request.signal.addEventListener('abort', close);
+      if (request.signal.aborted) {
+        close();
+      }
+    },
+    cancel() {
+      dispose?.();
     },
   });
 

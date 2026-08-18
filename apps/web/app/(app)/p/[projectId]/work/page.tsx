@@ -22,7 +22,7 @@ export default async function WorkPage({
           approval.
         </p>
       </header>
-      <WorkViewTabs current={view} hrefFor={(next) => `/p/${projectId}/work?view=${next}`} />
+      <WorkViewTabs projectId={projectId} current={view} />
       <WorkBoard
         projectId={projectId}
         view={view}

@@ -234,20 +234,14 @@ function CostView({ jobs }: { jobs: AiJobSummary[] }) {
   );
 }
 
-export function WorkViewTabs({
-  current,
-  hrefFor,
-}: {
-  current: JobBoardView;
-  hrefFor: (view: JobBoardView) => string;
-}) {
+export function WorkViewTabs({ projectId, current }: { projectId: string; current: JobBoardView }) {
   const views: JobBoardView[] = ['kanban', 'mine', 'timeline', 'cost', 'completed', 'blocked'];
   return (
     <nav className="flex flex-wrap gap-2" aria-label="Board views">
       {views.map((view) => (
         <a
           key={view}
-          href={hrefFor(view)}
+          href={`/p/${projectId}/work?view=${view}`}
           className={view === current ? 'badge badge-info no-underline' : 'badge no-underline'}
           aria-current={view === current ? 'page' : undefined}
         >

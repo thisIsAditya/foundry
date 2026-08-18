@@ -18,6 +18,8 @@
     "format:check": "prettier --check .",
     "db:up": "docker compose up -d postgres valkey minio minio-init",
     "db:migrate": "pnpm --filter @foundry/db migrate up",
+    "dev:up": "node ./scripts/dev-up.mjs",
+    "dev:reset": "node ./scripts/dev-up.mjs --reset",
     "dev:web": "pnpm --filter @foundry/web dev",
     "dev:worker": "pnpm --filter @foundry/worker dev",
     "dev:mobile": "pnpm --filter @foundry/mobile dev",
