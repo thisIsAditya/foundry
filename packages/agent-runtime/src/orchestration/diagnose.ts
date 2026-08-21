@@ -2,6 +2,7 @@ import { limits } from '@foundry/config/limits';
 import type { StreamEvent } from '@foundry/api-contracts';
 import type { LanguageModel } from 'ai';
 import { streamText } from 'ai';
+import { getLogger } from '@foundry/observability';
 
 import { ORCHESTRATOR_INSTRUCTIONS_V1 } from '../agents/instructions.js';
 import type { PackSnapshot } from '../contracts/pack-snapshot.js';
@@ -19,6 +20,16 @@ export type DiagnoseInput = {
 };
 
 export async function diagnoseClarification(input: DiagnoseInput): Promise<{ text: string }> {
+  getLogger().info(
+    {
+      event: 'diagnose_clarification_started',
+      runId: input.runId,
+      questionId: input.questionId,
+      phase: input.snapshot.phase,
+      clarificationCount: input.snapshot.clarifications.length,
+    },
+    'Fallback diagnosis started',
+  );
   await input.publish({ type: 'message_started', runId: input.runId });
   const timeoutMs = input.timeoutMs ?? limits.interactive.diagnoseTimeoutMs;
   const result = streamText({

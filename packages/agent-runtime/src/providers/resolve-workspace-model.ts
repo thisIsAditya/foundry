@@ -25,7 +25,12 @@ export async function resolveWorkspaceModel(input: {
   secretBox: SecretBox;
 }): Promise<ResolvedWorkspaceModel> {
   const connection =
-    input.connections.find((item) => item.healthStatus === 'ok') ?? input.connections[0];
+    input.connections.find(
+      (item) => item.healthStatus === 'ok' && item.providerFamily === 'bedrock',
+    ) ??
+    input.connections.find((item) => item.healthStatus === 'ok') ??
+    input.connections.find((item) => item.providerFamily === 'bedrock') ??
+    input.connections[0];
   if (connection === undefined) {
     throw new AppError({
       code: 'provider_unavailable',
@@ -37,7 +42,9 @@ export async function resolveWorkspaceModel(input: {
   const modelId =
     Array.isArray(allowed) && typeof allowed[0] === 'string'
       ? allowed[0]
-      : limits.provider.defaultAnthropicModel;
+      : connection.providerFamily === 'bedrock'
+        ? limits.provider.defaultBedrockModel
+        : limits.provider.defaultAnthropicModel;
   const built = await buildModel(connection, modelId, input.secrets, input.secretBox);
   return { model: built.model, capabilities: built.capabilities, connection, modelId };
 }

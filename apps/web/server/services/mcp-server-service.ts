@@ -14,6 +14,7 @@ import {
   listUserMcpServersByUserId,
   updateUserMcpServerEnabled,
   updateUserMcpServerHealth,
+  updateUserMcpServerReadOnly,
   withUserScope,
   type PoolSql,
 } from '@foundry/db';
@@ -29,6 +30,7 @@ export type McpServerSummary = {
   transport: UserMcpServer['transport'];
   url: string;
   enabled: boolean;
+  readOnly: boolean;
   healthStatus: UserMcpServer['healthStatus'];
   lastToolCount: number | null;
   lastValidatedAt: Date | null;
@@ -43,6 +45,7 @@ function toSummary(row: UserMcpServer, tools?: McpToolMeta[]): McpServerSummary 
     transport: row.transport,
     url: row.url,
     enabled: row.enabled,
+    readOnly: row.readOnly,
     healthStatus: row.healthStatus,
     lastToolCount: row.lastToolCount,
     lastValidatedAt: row.lastValidatedAt,
@@ -94,6 +97,7 @@ export class McpServerService {
             transport: input.transport,
             url: input.url,
             headersEncrypted,
+            readOnly: input.readOnly,
           },
           {
             box: this.secretBox,
@@ -117,6 +121,7 @@ export class McpServerService {
               transport: input.transport,
               url: input.url,
               headersEncrypted,
+              readOnly: input.readOnly,
               healthStatus: 'ok',
               lastToolCount: Object.keys(probe.tools).length,
               lastValidatedAt: new Date(),
@@ -188,6 +193,34 @@ export class McpServerService {
             });
           }
           return toSummary(await updateUserMcpServerEnabled(tx, mcpServerId, enabled));
+        }),
+    );
+  }
+
+  async setReadOnly(
+    userId: UserId,
+    mcpServerId: UserMcpServer['id'],
+    readOnly: boolean,
+    idempotencyKey: string,
+  ): Promise<McpServerSummary> {
+    const key = `idem:${userId}:mcpServer.setReadOnly:${readOnly}:${idempotencyKey}`;
+    return withIdempotency(
+      this.coordination,
+      key,
+      limits.idempotencyKeyTtlSeconds,
+      (raw) => superjson.parse(raw) as McpServerSummary,
+      (value) => superjson.stringify(value),
+      async () =>
+        withUserScope(this.sql, userId, async (tx) => {
+          const existing = await getUserMcpServerById(tx, mcpServerId);
+          if (existing === null || existing.userId !== userId) {
+            throw new AppError({
+              code: 'not_found',
+              explanation: 'MCP server not found.',
+              nextAction: 'Refresh the list and retry.',
+            });
+          }
+          return toSummary(await updateUserMcpServerReadOnly(tx, mcpServerId, readOnly));
         }),
     );
   }

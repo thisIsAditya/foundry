@@ -14,6 +14,7 @@ function server(overrides: Partial<UserMcpServer>): UserMcpServer {
     url: 'http://127.0.0.1:9/mcp',
     headersEncrypted: null,
     enabled: true,
+    readOnly: false,
     healthStatus: 'ok',
     lastToolCount: null,
     lastValidatedAt: null,
@@ -40,6 +41,22 @@ describe('loadUserMcpTools', () => {
     });
     expect(Object.keys(loaded.tools)).toEqual(['mcp_fixture_search']);
     expect(loaded.riskClasses.mcp_fixture_search).toBe('side_effect');
+  });
+
+  it('tags tools read for a server the founder has opted in as readOnly', async () => {
+    const loaded = await loadUserMcpTools([server({ readOnly: true })], {
+      box,
+      allowLoopback: true,
+      factory: async () => ({
+        async tools() {
+          return { search: { description: 'Find docs' } as never };
+        },
+        async close() {
+          return;
+        },
+      }),
+    });
+    expect(loaded.riskClasses.mcp_fixture_search).toBe('read');
   });
 
   it('skips disabled servers without opening a client', async () => {

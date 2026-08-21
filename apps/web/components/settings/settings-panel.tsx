@@ -3,10 +3,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { McpServersPanel } from './mcp-servers-panel';
 import { ModelProviderPanel } from './model-provider-panel';
 import { useTRPC } from '../../lib/trpc/client';
 
-type SettingsTab = 'project' | 'provider';
+type SettingsTab = 'project' | 'provider' | 'mcp';
 
 export function SettingsPanel({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
@@ -53,6 +54,14 @@ export function SettingsPanel({ projectId }: { projectId: string }) {
         >
           Provider & budget
         </button>
+        <button
+          type="button"
+          className={tab === 'mcp' ? 'badge badge-info' : 'badge'}
+          aria-pressed={tab === 'mcp'}
+          onClick={() => setTab('mcp')}
+        >
+          MCP tools
+        </button>
       </nav>
       {tab === 'provider' ? (
         workspaceId === undefined ? (
@@ -60,6 +69,8 @@ export function SettingsPanel({ projectId }: { projectId: string }) {
         ) : (
           <ModelProviderPanel workspaceId={workspaceId} />
         )
+      ) : tab === 'mcp' ? (
+        <McpServersPanel />
       ) : (
         <>
           <section className="card stack">

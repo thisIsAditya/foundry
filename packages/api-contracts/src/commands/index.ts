@@ -41,6 +41,7 @@ export {
   McpServerIdInputSchema,
   PreviewSprintInputSchema,
   ProviderConnectionSummarySchema,
+  SetMcpServerReadOnlyInputSchema,
   ToggleMcpServerInputSchema,
   type AddMcpServerInput,
   type AnswerClarificationInput,
@@ -53,6 +54,7 @@ export {
   type McpServerIdInput,
   type PreviewSprintInput,
   type ProviderConnectionSummary,
+  type SetMcpServerReadOnlyInput,
   type ToggleMcpServerInput,
 } from './runtime.js';
 export {

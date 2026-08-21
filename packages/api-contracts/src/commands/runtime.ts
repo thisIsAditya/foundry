@@ -54,6 +54,9 @@ export const AddMcpServerInputSchema = z.object({
   transport: McpTransportSchema,
   url: z.url(),
   headerSecret: z.string().min(1).optional(),
+  /** Founder's opt-in promise that this server only performs read-only lookups — see
+   * `applyMcpRiskPolicy`. Defaults to false (untrusted / side_effect) like every other server. */
+  readOnly: z.boolean().optional().default(false),
   idempotencyKey: IdempotencyKeySchema,
 });
 export type AddMcpServerInput = z.infer<typeof AddMcpServerInputSchema>;
@@ -70,6 +73,13 @@ export const ToggleMcpServerInputSchema = z.object({
   idempotencyKey: IdempotencyKeySchema,
 });
 export type ToggleMcpServerInput = z.infer<typeof ToggleMcpServerInputSchema>;
+
+export const SetMcpServerReadOnlyInputSchema = z.object({
+  mcpServerId: UserMcpServerIdSchema,
+  readOnly: z.boolean(),
+  idempotencyKey: IdempotencyKeySchema,
+});
+export type SetMcpServerReadOnlyInput = z.infer<typeof SetMcpServerReadOnlyInputSchema>;
 
 export const PreviewSprintInputSchema = z.object({
   projectId: ProjectIdSchema,

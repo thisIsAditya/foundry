@@ -124,6 +124,36 @@ export async function listPackRevisionsByProjectId(
   return rows.map(parsePackRevision);
 }
 
+/**
+ * The newest not-yet-accepted revision proposed on top of `parentRevisionId`, if any (agent
+ * drafts from `proposePackRevisionFromSynthesis` never mutate the founder's current revision).
+ * Used to surface "there's a pending draft" to the co-founder context assembler.
+ */
+export async function getPendingDraftRevisionByParentId(
+  sql: Sql,
+  parentRevisionId: PackRevisionId,
+): Promise<PackRevision | null> {
+  const rows = await sql<PackRevisionRow[]>`
+    select * from pack_revisions
+    where parent_revision_id = ${parentRevisionId} and status = 'draft'
+    order by revision_number desc
+    limit 1
+  `;
+  const row = rows[0];
+  return row === undefined ? null : parsePackRevision(row);
+}
+
+export async function getPackRevisionBySourceSprintId(
+  sql: Sql,
+  sourceSprintId: SprintId,
+): Promise<PackRevision | null> {
+  const rows = await sql<PackRevisionRow[]>`
+    select * from pack_revisions where source_sprint_id = ${sourceSprintId} limit 1
+  `;
+  const row = rows[0];
+  return row === undefined ? null : parsePackRevision(row);
+}
+
 export async function updatePackRevisionStatus(
   sql: Sql,
   id: PackRevisionId,

@@ -6,6 +6,7 @@ import {
   getWorkspaceById,
   insertWorkspace,
   insertWorkspaceMembership,
+  listProviderConnectionsByWorkspaceId,
   listWorkspaceMembershipsByUserId,
   listWorkspaces,
   withWorkspaceScope,
@@ -61,7 +62,7 @@ export class WorkspaceService {
         });
       },
     );
-    this.scheduleDefaultOllama(userId, workspace);
+    this.scheduleDefaultBedrock(userId, workspace);
     return workspace;
   }
 
@@ -70,7 +71,10 @@ export class WorkspaceService {
     const membership = existing[0];
     if (membership !== undefined) {
       const workspace = await this.getById(membership.workspaceId);
-      if (workspace !== null) return workspace;
+      if (workspace !== null) {
+        this.scheduleDefaultBedrock(userId, workspace);
+        return workspace;
+      }
     }
     return this.create(userId, {
       name: 'Your workspace',
@@ -86,13 +90,13 @@ export class WorkspaceService {
     return withWorkspaceScope(this.sql, ids, async (tx) => listWorkspaces(tx));
   }
 
-  private scheduleDefaultOllama(userId: UserId, workspace: Workspace): void {
+  private scheduleDefaultBedrock(userId: UserId, workspace: Workspace): void {
     const env = getEnv();
-    const ollamaBaseUrl = env.OLLAMA_BASE_URL;
-    if (env.NODE_ENV === 'test' || ollamaBaseUrl === undefined) {
+    if (env.NODE_ENV === 'test' || env.BEDROCK_AUTO_CONNECT === 'false') {
       return;
     }
-    const modelId = env.OLLAMA_MODEL ?? 'gemma4:e4b';
+    const modelId = env.BEDROCK_MODEL_ID ?? limits.provider.defaultBedrockModel;
+    const region = env.AWS_REGION ?? limits.provider.defaultBedrockRegion;
     after(() =>
       listWorkspaceMembershipsByUserId(this.sql, userId)
         .then((memberships) => {
@@ -100,17 +104,23 @@ export class WorkspaceService {
           if (membership === undefined) {
             return undefined;
           }
-          return this.providerService.connect(
-            { userId, membership },
-            {
-              workspaceId: workspace.id,
-              family: 'ollama',
-              authMode: 'none',
-              endpointOrRegion: ollamaBaseUrl,
-              modelId,
-              idempotencyKey: randomUUID(),
-            },
-          );
+          return withWorkspaceScope(this.sql, [workspace.id], async (tx) => {
+            const connections = await listProviderConnectionsByWorkspaceId(tx, workspace.id);
+            if (connections.some((connection) => connection.providerFamily === 'bedrock')) {
+              return undefined;
+            }
+            return this.providerService.connect(
+              { userId, membership },
+              {
+                workspaceId: workspace.id,
+                family: 'bedrock',
+                authMode: 'aws_iam_role',
+                endpointOrRegion: region,
+                modelId,
+                idempotencyKey: randomUUID(),
+              },
+            );
+          });
         })
         .catch(() => undefined),
     );

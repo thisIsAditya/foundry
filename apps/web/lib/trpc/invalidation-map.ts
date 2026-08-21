@@ -88,6 +88,7 @@ export const mutationInvalidations = {
   'mcpServer.add': ['mcpServer.list'],
   'mcpServer.remove': ['mcpServer.list'],
   'mcpServer.toggle': ['mcpServer.list'],
+  'mcpServer.setReadOnly': ['mcpServer.list'],
   'mcpServer.testConnection': ['mcpServer.list'],
   'integration.connect': ['integration.list'],
   'integration.revoke': ['integration.list'],

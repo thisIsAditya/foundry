@@ -1,9 +1,11 @@
 import {
   extractPreferences,
+  loadUserMcpTools,
   resolveWorkspaceModel,
   runCofounderTurn,
   shouldSummarizeConversation,
   summarizeConversation,
+  type ContextJobSummary,
   type ProviderSecrets,
   type SecretBox,
   type StreamBus,
@@ -17,32 +19,38 @@ import {
   getFounderPreferenceById,
   getLatestConversationSummaryByProjectId,
   getLatestPlanScoreByPackRevisionId,
+  getPackRevisionBySourceSprintId,
   insertConversationMessage,
   insertConversationSummary,
   listConversationMessagesByProjectId,
   listConversationMessagesPage,
+  listEnabledUserMcpServersByUserId,
   listFounderPreferencesByProjectId,
   listEvidenceItemsByIds,
   listFounderTasksByProjectId,
   listProviderConnectionsByWorkspaceId,
+  listResearchFindingsByJobId,
   listSprintsByProjectId,
   upsertFounderPreference,
   withWorkspaceScope,
   type PoolSql,
+  type Sql,
 } from '@foundry/db';
-import type {
-  ConversationMessage,
-  ConversationSummary,
-  EvidenceItemId,
-  FounderPreference,
-  FounderPreferenceId,
-  Project,
-  UserId,
-  WorkspaceId,
-  WorkspaceMembership,
+import {
+  deriveJourneyPhase,
+  type ConversationMessage,
+  type ConversationSummary,
+  type EvidenceItemId,
+  type FounderPreference,
+  type FounderPreferenceId,
+  type Project,
+  type UserId,
+  type WorkspaceId,
+  type WorkspaceMembership,
 } from '@foundry/domain';
 import { AppError } from '@foundry/observability';
-import { PolicyService } from '@foundry/policy';
+import { getLogger } from '@foundry/observability';
+import { evaluateGateA, PolicyService } from '@foundry/policy';
 import type { LanguageModel } from 'ai';
 import { randomUUID } from 'node:crypto';
 import superjson from 'superjson';
@@ -50,8 +58,12 @@ import superjson from 'superjson';
 import { withIdempotency, type CoordinationStore } from '../coordination';
 import { ensurePackRevision, loadPackSnapshot } from './pack-snapshot';
 import type { FounderTaskService } from './founder-task-service';
+import type { PlanSectionAggregatorService } from './plan-section-aggregator';
 import type { ScoringService } from './scoring-service';
 import type { SprintService } from './sprint-service';
+
+const SYNTHESIS_EXCERPT_MAX_CHARS = 500;
+const logger = getLogger();
 
 export type ConversationSendResult = {
   runId: string;
@@ -65,6 +77,7 @@ export type ConversationRuntimeDeps = {
   secretBox: SecretBox;
   secrets: ProviderSecrets;
   languageModel?: LanguageModel;
+  allowMcpLoopback?: boolean;
 };
 
 export class ConversationService {
@@ -76,6 +89,7 @@ export class ConversationService {
     private readonly sprintService: SprintService,
     private readonly founderTaskService: FounderTaskService,
     private readonly scoringService: ScoringService,
+    private readonly planSectionAggregator: PlanSectionAggregatorService,
   ) {}
 
   async list(
@@ -213,6 +227,20 @@ export class ConversationService {
       resolved.providerFamily === 'ollama'
         ? limits.interactive.diagnoseTimeoutMsLocal
         : limits.interactive.diagnoseTimeoutMs;
+    const readOnlyMcpTools = await this.loadReadOnlyMcpTools(actor.userId, [
+      actor.project.workspaceId,
+    ]);
+    logger.info(
+      {
+        event: 'cofounder_runtime_ready',
+        runId,
+        providerFamily: resolved.providerFamily,
+        modelId: resolved.modelId,
+        effort: input.effort ?? 'standard',
+        readOnlyMcpToolNames: Object.keys(readOnlyMcpTools?.tools ?? {}),
+      },
+      'Cofounder runtime ready',
+    );
     const turn = await runCofounderTurn({
       runId,
       founderText: input.text,
@@ -220,6 +248,7 @@ export class ConversationService {
       model: resolved.model,
       timeoutMs,
       effort: input.effort,
+      ...(readOnlyMcpTools === undefined ? {} : { readOnlyMcpTools }),
       publish: async (event) => {
         if (
           event.type === 'text_delta' ||
@@ -312,8 +341,18 @@ export class ConversationService {
     return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
       const pack = await ensurePackRevision(tx, actor.project, actor.userId);
       const project = { ...actor.project, currentPackRevisionId: pack.id };
-      const packSnapshot = await loadPackSnapshot(tx, project);
-      const [messages, summary, preferences, tasks, sprints, score, attached] = await Promise.all([
+      const [
+        packSnapshot,
+        messages,
+        summary,
+        preferences,
+        tasks,
+        sprints,
+        score,
+        attached,
+        sectionCards,
+      ] = await Promise.all([
+        loadPackSnapshot(tx, project),
         listConversationMessagesByProjectId(tx, actor.project.id),
         getLatestConversationSummaryByProjectId(tx, actor.project.id),
         listFounderPreferencesByProjectId(tx, actor.project.id),
@@ -321,9 +360,24 @@ export class ConversationService {
         listSprintsByProjectId(tx, actor.project.id),
         getLatestPlanScoreByPackRevisionId(tx, pack.id),
         listEvidenceItemsByIds(tx, attachmentIds),
+        this.planSectionAggregator.listAll(actor),
       ]);
+      const gateAEvaluation = evaluateGateA({
+        interviews: packSnapshot.interviews,
+        quotes: packSnapshot.quotes,
+        beachheads: packSnapshot.beachheads,
+        dmus: packSnapshot.dmus,
+      });
+      const derivedPhase = deriveJourneyPhase({
+        sections: sectionCards.map((card) => ({ key: card.key, status: card.status })),
+        score: score?.dimensions ?? null,
+        gateA: { passed: gateAEvaluation.result === 'passed' },
+        wtpEventCount: packSnapshot.wtpEvents.length,
+      });
+      const recentJobs = await this.enrichRecentJobs(tx, sprints.slice(0, 10));
       return {
         ...packSnapshot,
+        derivedPhase,
         recentMessages: messages,
         conversationSummary: summary,
         confirmedPreferences: preferences.filter((item) => item.founderConfirmed),
@@ -331,12 +385,45 @@ export class ConversationService {
         openFounderTasks: tasks.filter(
           (item) => item.status === 'proposed' || item.status === 'active',
         ),
-        recentJobs: sprints.slice(0, 10).map((sprint) => toAiJobSummary({ sprint })),
+        recentJobs,
         attachedEvidence: attached
           .filter((item) => item.projectId === actor.project.id)
           .map((item) => ({ id: item.id, summary: item.summary })),
       };
     });
+  }
+
+  /**
+   * Attaches a short excerpt of what each job actually produced — the research finding claim
+   * for research jobs, or the draft pack revision's synthesis result for jobs that proposed
+   * plan changes — so the co-founder can reason about *what was learned*, not just job status
+   * (plan §ContextAssembler "recent jobs... with synthesis text").
+   */
+  private async enrichRecentJobs(
+    tx: Sql,
+    sprints: Parameters<typeof toAiJobSummary>[0]['sprint'][],
+  ): Promise<ContextJobSummary[]> {
+    return Promise.all(
+      sprints.map(async (sprint) => {
+        const summary = toAiJobSummary({ sprint });
+        if (sprint.jobKind === 'research') {
+          const findings = await listResearchFindingsByJobId(tx, sprint.id);
+          const latest = findings[0];
+          return latest === undefined
+            ? summary
+            : { ...summary, synthesisSummary: latest.claim.slice(0, SYNTHESIS_EXCERPT_MAX_CHARS) };
+        }
+        const draftRevision = await getPackRevisionBySourceSprintId(tx, sprint.id);
+        const result = draftRevision?.proposedChanges;
+        const synthesisResult =
+          typeof result === 'object' && result !== null && 'result' in result
+            ? (result as { result: unknown }).result
+            : undefined;
+        return typeof synthesisResult === 'string'
+          ? { ...summary, synthesisSummary: synthesisResult.slice(0, SYNTHESIS_EXCERPT_MAX_CHARS) }
+          : summary;
+      }),
+    );
   }
 
   private async persistExtractedPreferences(
@@ -388,7 +475,12 @@ export class ConversationService {
         return;
       }
       try {
-        const summarized = await summarizeConversation({ messages: uncovered, model, timeoutMs });
+        const summarized = await summarizeConversation({
+          messages: uncovered,
+          model,
+          timeoutMs,
+          previousSummaryText: latest?.summaryText ?? null,
+        });
         await insertConversationSummary(tx, {
           projectId: actor.project.id,
           summaryText: summarized.summaryText,
@@ -431,9 +523,9 @@ export class ConversationService {
 
   private async resolveModel(
     workspaceId: WorkspaceId,
-  ): Promise<{ model: LanguageModel; providerFamily: string | null }> {
+  ): Promise<{ model: LanguageModel; providerFamily: string | null; modelId: string | null }> {
     if (this.runtime.languageModel !== undefined) {
-      return { model: this.runtime.languageModel, providerFamily: null };
+      return { model: this.runtime.languageModel, providerFamily: null, modelId: null };
     }
     const connections = await withWorkspaceScope(this.sql, [workspaceId], async (tx) =>
       listProviderConnectionsByWorkspaceId(tx, workspaceId),
@@ -443,6 +535,47 @@ export class ConversationService {
       secrets: this.runtime.secrets,
       secretBox: this.runtime.secretBox,
     });
-    return { model: resolved.model, providerFamily: resolved.connection.providerFamily };
+    return {
+      model: resolved.model,
+      providerFamily: resolved.connection.providerFamily,
+      modelId: resolved.modelId,
+    };
+  }
+
+  /** Loads tools only from the founder's `readOnly`-opted-in MCP servers, so the interactive
+   * turn can admit them inline (plan §"Closing the loop on the original MCP question") without
+   * touching the `side_effect`-only servers that must stay background-job-only. Failures degrade
+   * to no MCP tools rather than failing the whole turn. */
+  private async loadReadOnlyMcpTools(
+    userId: UserId,
+    workspaceIds: WorkspaceId[],
+  ): Promise<Awaited<ReturnType<typeof loadUserMcpTools>> | undefined> {
+    try {
+      const servers = await withWorkspaceScope(this.sql, workspaceIds, async (tx) =>
+        listEnabledUserMcpServersByUserId(tx, userId),
+      );
+      const readOnlyServers = servers.filter((server) => server.readOnly);
+      if (readOnlyServers.length === 0) {
+        return undefined;
+      }
+      return await loadUserMcpTools(readOnlyServers, {
+        box: this.runtime.secretBox,
+        ...(this.runtime.allowMcpLoopback === undefined
+          ? {}
+          : { allowLoopback: this.runtime.allowMcpLoopback }),
+      });
+    } catch (error) {
+      logger.warn(
+        {
+          event: 'readonly_mcp_load_failed',
+          userId,
+          workspaceIds,
+          errorName: error instanceof Error ? error.name : 'unknown_error',
+          errorMessage: error instanceof Error ? error.message : String(error),
+        },
+        'Read-only MCP loading failed',
+      );
+      return undefined;
+    }
   }
 }

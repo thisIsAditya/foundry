@@ -45,7 +45,9 @@ export const defaultMcpClientFactory: McpClientFactory = async (input) => {
 
 export async function probeMcpServer(
   server: Pick<UserMcpServer, 'name' | 'transport' | 'url' | 'headersEncrypted'> &
-    Partial<Pick<UserMcpServer, 'id' | 'userId' | 'enabled' | 'healthStatus' | 'createdAt'>>,
+    Partial<
+      Pick<UserMcpServer, 'id' | 'userId' | 'enabled' | 'readOnly' | 'healthStatus' | 'createdAt'>
+    >,
   options: {
     box: SecretBox;
     allowLoopback?: boolean;
@@ -68,6 +70,7 @@ export async function probeMcpServer(
     id: server.id,
     userId: server.userId,
     enabled: server.enabled ?? true,
+    readOnly: server.readOnly ?? false,
     healthStatus: server.healthStatus ?? 'unknown',
     lastToolCount: null,
     lastValidatedAt: null,

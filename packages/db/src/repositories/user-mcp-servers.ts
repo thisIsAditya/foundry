@@ -23,6 +23,7 @@ const UserMcpServerRowSchema = z.object({
   url: z.string(),
   headers_encrypted: z.string().nullable(),
   enabled: z.boolean(),
+  read_only: z.boolean(),
   health_status: McpHealthStatusSchema,
   last_tool_count: z.number().int().nullable(),
   last_validated_at: z.coerce.date().nullable(),
@@ -38,6 +39,7 @@ export type InsertUserMcpServer = {
   url: string;
   headersEncrypted?: string | null;
   enabled?: boolean;
+  readOnly?: boolean;
   healthStatus?: McpHealthStatus;
   lastToolCount?: number | null;
   lastValidatedAt?: Date | null;
@@ -52,6 +54,7 @@ export function toUserMcpServer(row: UserMcpServerRow): UserMcpServer {
     url: row.url,
     headersEncrypted: row.headers_encrypted,
     enabled: row.enabled,
+    readOnly: row.read_only,
     healthStatus: row.health_status,
     lastToolCount: row.last_tool_count,
     lastValidatedAt: row.last_validated_at,
@@ -75,6 +78,7 @@ export async function insertUserMcpServer(
       url,
       headers_encrypted,
       enabled,
+      read_only,
       health_status,
       last_tool_count,
       last_validated_at
@@ -86,6 +90,7 @@ export async function insertUserMcpServer(
       ${input.url},
       ${input.headersEncrypted ?? null},
       ${input.enabled ?? true},
+      ${input.readOnly ?? false},
       ${input.healthStatus ?? 'unknown'},
       ${input.lastToolCount ?? null},
       ${input.lastValidatedAt ?? null}
@@ -148,6 +153,17 @@ export async function updateUserMcpServerEnabled(
     update user_mcp_servers set enabled = ${enabled} where id = ${id} returning *
   `;
   return parseUserMcpServer(requireRow(rows, 'updateUserMcpServerEnabled'));
+}
+
+export async function updateUserMcpServerReadOnly(
+  sql: Sql,
+  id: UserMcpServerId,
+  readOnly: boolean,
+): Promise<UserMcpServer> {
+  const rows = await sql<UserMcpServerRow[]>`
+    update user_mcp_servers set read_only = ${readOnly} where id = ${id} returning *
+  `;
+  return parseUserMcpServer(requireRow(rows, 'updateUserMcpServerReadOnly'));
 }
 
 export async function updateUserMcpServerHealth(

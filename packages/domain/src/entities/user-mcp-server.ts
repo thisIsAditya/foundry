@@ -12,6 +12,12 @@ export const UserMcpServerSchema = z.object({
   url: z.url(),
   headersEncrypted: z.string().nullable().default(null),
   enabled: z.boolean(),
+  /** Founder-declared opt-in: "treat this server as read-only search (safe for live chat)".
+   * MCP tool metadata is otherwise untrusted and force-tagged `side_effect`
+   * (`applyMcpRiskPolicy`/`loadUserMcpTools`); setting this lets the founder promise a server
+   * only performs read-only lookups, which retags its tools `read` so the interactive
+   * co-founder turn (capped at `compute`) can actually call them inline. */
+  readOnly: z.boolean().default(false),
   healthStatus: McpHealthStatusSchema,
   lastToolCount: z.number().int().nonnegative().nullable().default(null),
   lastValidatedAt: InstantSchema.nullable().default(null),

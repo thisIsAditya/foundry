@@ -93,9 +93,10 @@ export async function processSprintJob(
             owner.userId,
           );
     const mcpLoaded = await loadUserMcpTools(mcpServers, { box: deps.secretBox });
+    const mergedRiskClasses = { ...TOOL_RISK_CLASSES, ...mcpLoaded.riskClasses };
     const tools = policyService.filterTools(
       { ...ALL_TOOLS, ...mcpLoaded.tools },
-      { ...TOOL_RISK_CLASSES, ...mcpLoaded.riskClasses },
+      mergedRiskClasses,
       {
         allowlist: capabilities.toolAllowlist,
         maxRiskClass: capabilities.maxToolRiskClass,
@@ -113,6 +114,7 @@ export async function processSprintJob(
     const runtime: WorkerRuntime = {
       model: resolved.model,
       tools,
+      toolRiskClasses: mergedRiskClasses,
       instructions: agentDefinition.instructionsText,
       onUsage: async (usage) => {
         const inputTokens = usage.inputTokens ?? null;

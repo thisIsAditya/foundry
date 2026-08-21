@@ -1,6 +1,7 @@
 import {
   AddMcpServerInputSchema,
   McpServerIdInputSchema,
+  SetMcpServerReadOnlyInputSchema,
   ToggleMcpServerInputSchema,
 } from '@foundry/api-contracts';
 
@@ -47,6 +48,20 @@ export const mcpServerRouter = router({
         ctx.actor.userId,
         input.mcpServerId,
         input.enabled,
+        input.idempotencyKey,
+      );
+    }),
+  setReadOnly: protectedProcedure
+    .meta({ invalidates: mutationInvalidations['mcpServer.setReadOnly'] })
+    .input(SetMcpServerReadOnlyInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.actor.type !== 'user') {
+        throw new Error('protectedProcedure requires a user actor');
+      }
+      return ctx.services.mcpServerService.setReadOnly(
+        ctx.actor.userId,
+        input.mcpServerId,
+        input.readOnly,
         input.idempotencyKey,
       );
     }),

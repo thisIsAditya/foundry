@@ -10,6 +10,8 @@ import type { Env } from '../../lib/env';
 import type { ObjectStore } from './object-store';
 
 function createClient(env: Env): S3Client {
+  const accessKeyId = env.AWS_S3_ACCESS_KEY_ID ?? env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = env.AWS_S3_SECRET_ACCESS_KEY ?? env.AWS_SECRET_ACCESS_KEY;
   return new S3Client({
     region: env.AWS_REGION,
     ...(env.AWS_S3_ENDPOINT === undefined
@@ -18,12 +20,12 @@ function createClient(env: Env): S3Client {
           endpoint: env.AWS_S3_ENDPOINT,
           forcePathStyle: env.AWS_S3_FORCE_PATH_STYLE !== 'false',
         }),
-    ...(env.AWS_ACCESS_KEY_ID === undefined || env.AWS_SECRET_ACCESS_KEY === undefined
+    ...(accessKeyId === undefined || secretAccessKey === undefined
       ? {}
       : {
           credentials: {
-            accessKeyId: env.AWS_ACCESS_KEY_ID,
-            secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+            accessKeyId,
+            secretAccessKey,
           },
         }),
   });

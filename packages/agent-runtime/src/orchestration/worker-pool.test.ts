@@ -11,6 +11,7 @@ import {
   type SprintContract,
 } from '@foundry/domain';
 
+import { SUBMIT_DECISION_TOOL_NAME } from './foundry-agent.js';
 import { runWorkerPool, type WorkerRuntime } from './worker-pool.js';
 import type { PackSnapshot } from '../contracts/pack-snapshot.js';
 
@@ -19,7 +20,29 @@ const usage = {
   outputTokens: { total: 20, text: 20, reasoning: undefined },
 };
 
-function textModel(text: string): LanguageModel {
+/** Mocks a model that calls `submit_decision` with `decision` on its first step, mirroring how
+ * a real worker ends a `FoundryAgent` run. */
+function submitDecisionModel(decision: unknown): LanguageModel {
+  return new MockLanguageModelV3({
+    doGenerate: async () => ({
+      content: [
+        {
+          type: 'tool-call',
+          toolCallId: 'call_1',
+          toolName: SUBMIT_DECISION_TOOL_NAME,
+          input: JSON.stringify(decision),
+        },
+      ],
+      finishReason: { unified: 'tool-calls' as const, raw: undefined },
+      usage,
+      warnings: [],
+    }),
+  });
+}
+
+/** Mocks a model that never calls `submit_decision`, only emits text — exercises the
+ * `FoundryAgentNoDecisionError` fallback path. */
+function textOnlyModel(text: string): LanguageModel {
   return new MockLanguageModelV3({
     doGenerate: async () => ({
       content: [{ type: 'text', text }],
@@ -84,22 +107,29 @@ function snapshot(): PackSnapshot {
       createdAt: new Date('2026-04-01T00:00:00.000Z'),
       acceptedAt: null,
     },
+    pendingDraftRevision: null,
     phase: 'diagnose',
+    derivedPhase: null,
     interviews: [],
     quotes: [],
     beachheads: [],
     dmus: [],
+    personas: [],
+    problems: [],
     moneyRules: null,
     marketModels: [],
     unitEconomics: [],
     wtpEvents: [],
+    assumptions: [],
+    decisions: [],
+    packSections: [],
     clarifications: [],
   };
 }
 
 describe('runWorkerPool with a model runtime', () => {
-  it('parses structured JSON into a proposed pack change', async () => {
-    const text = JSON.stringify({
+  it('accepts a structured decision submitted via the submit_decision tool', async () => {
+    const decision = {
       result: 'Two qualifying interviews point at the same nightly-close pain.',
       proposedPackChanges: [
         { targetSection: 'mvbp', body: { hypothesis: 'Automate the nightly close' } },
@@ -109,8 +139,12 @@ describe('runWorkerPool with a model runtime', () => {
       unresolvedConflicts: [],
       confidence: 'medium',
       recommendedNextAction: 'Capture one more interview.',
-    });
-    const runtime: WorkerRuntime = { model: textModel(text), tools: {}, instructions: 'test' };
+    };
+    const runtime: WorkerRuntime = {
+      model: submitDecisionModel(decision),
+      tools: {},
+      instructions: 'test',
+    };
     const results = await runWorkerPool(contract('orchestrator'), snapshot(), async () => runtime);
     expect(results).toHaveLength(1);
     expect(results[0]?.output.proposedPackChanges).toEqual([
@@ -119,9 +153,9 @@ describe('runWorkerPool with a model runtime', () => {
     expect(results[0]?.output.confidence).toBe('medium');
   });
 
-  it('falls back to a low-confidence summary when the model returns unstructured text', async () => {
+  it('falls back to a low-confidence summary when the model never submits a decision', async () => {
     const runtime: WorkerRuntime = {
-      model: textModel('Sorry, I cannot help with that.'),
+      model: textOnlyModel('Sorry, I cannot help with that.'),
       tools: {},
       instructions: 'test',
     };
@@ -129,14 +163,22 @@ describe('runWorkerPool with a model runtime', () => {
     expect(results[0]?.output.confidence).toBe('low');
     expect(results[0]?.output.proposedPackChanges).toEqual([]);
     expect(results[0]?.output.unresolvedConflicts).toContain(
-      'Model response was not valid structured JSON.',
+      'Model ran out of budget before calling submit_decision.',
     );
   });
 
   it('records usage once the model call completes', async () => {
     const seen: number[] = [];
     const runtime: WorkerRuntime = {
-      model: textModel(JSON.stringify({ result: 'ok', proposedPackChanges: [] })),
+      model: submitDecisionModel({
+        result: 'ok',
+        proposedPackChanges: [],
+        evidenceRefs: [],
+        assumptionsChanged: [],
+        unresolvedConflicts: [],
+        confidence: 'low',
+        recommendedNextAction: 'Review manually.',
+      }),
       tools: {},
       instructions: 'test',
       onUsage: (workerUsage) => {
@@ -148,7 +190,7 @@ describe('runWorkerPool with a model runtime', () => {
   });
 
   it('still uses the mock worker when the contract names it explicitly', async () => {
-    const runtime: WorkerRuntime = { model: textModel('{}'), tools: {}, instructions: 'test' };
+    const runtime: WorkerRuntime = { model: textOnlyModel('{}'), tools: {}, instructions: 'test' };
     const results = await runWorkerPool(contract('mock_worker'), snapshot(), async () => runtime);
     expect(results[0]?.output.result).toContain('Mock worker');
   });

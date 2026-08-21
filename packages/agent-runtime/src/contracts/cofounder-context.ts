@@ -1,6 +1,5 @@
 import type {
   ConversationMessage,
-  ConversationReference,
   ConversationSummary,
   FounderPreference,
   FounderTask,
@@ -10,6 +9,12 @@ import type { AiJobSummary } from '@foundry/api-contracts';
 
 import type { PackSnapshot } from './pack-snapshot.js';
 
+/**
+ * Raw, flattened input shape callers (`ConversationService.assembleSnapshot`) build today:
+ * a `PackSnapshot` plus the conversation/preference/task/job facts that live outside the pack.
+ * `runCofounderTurn` feeds this straight into `ContextAssembler.assemble()` — kept as its own
+ * type (rather than inlined) so call sites don't need to import from `context/types.js`.
+ */
 export type CofounderContextSnapshot = PackSnapshot & {
   recentMessages: ConversationMessage[];
   conversationSummary: ConversationSummary | null;
@@ -19,61 +24,3 @@ export type CofounderContextSnapshot = PackSnapshot & {
   recentJobs: AiJobSummary[];
   attachedEvidence: { id: string; summary: string }[];
 };
-
-export type CofounderContext = CofounderContextSnapshot & {
-  contextItemsUsed: ConversationReference[];
-};
-
-const DEFAULT_MESSAGE_WINDOW = 20;
-
-export function assembleCofounderContext(
-  snapshot: CofounderContextSnapshot,
-  messageWindow = DEFAULT_MESSAGE_WINDOW,
-): CofounderContext {
-  const recentMessages = snapshot.recentMessages.slice(-messageWindow);
-  const contextItemsUsed: ConversationReference[] = [];
-  if (snapshot.conversationSummary !== null) {
-    contextItemsUsed.push({ kind: 'revision', id: snapshot.pack.id });
-  }
-  for (const message of recentMessages) {
-    contextItemsUsed.push(...message.references);
-  }
-  for (const task of snapshot.openFounderTasks) {
-    contextItemsUsed.push({ kind: 'founder_task', id: task.id });
-  }
-  for (const job of snapshot.recentJobs) {
-    contextItemsUsed.push({ kind: 'job', id: job.id });
-  }
-  for (const evidence of snapshot.attachedEvidence) {
-    contextItemsUsed.push({ kind: 'evidence', id: evidence.id });
-  }
-  return {
-    ...snapshot,
-    recentMessages,
-    contextItemsUsed,
-  };
-}
-
-export function formatCofounderContext(context: CofounderContext): string {
-  return JSON.stringify({
-    phase: context.phase,
-    packRevision: context.pack.revisionNumber,
-    summary: context.conversationSummary?.summaryText ?? null,
-    recentMessages: context.recentMessages.map((item) => ({
-      actor: item.actor,
-      text: item.text,
-    })),
-    preferences: context.confirmedPreferences.map((item) => ({
-      key: item.key,
-      value: item.value,
-    })),
-    score: context.planScore === null ? null : { overall: context.planScore.overall },
-    openFounderTasks: context.openFounderTasks.map((item) => item.title),
-    recentJobs: context.recentJobs.map((item) => ({
-      objective: item.objective,
-      status: item.status,
-    })),
-    clarifications: context.clarifications,
-    attachedEvidence: context.attachedEvidence,
-  });
-}

@@ -30,6 +30,40 @@ export const limits = {
     diagnoseTimeoutMsLocal: 120_000,
     maxToolRiskClass: 'compute',
   },
+  // Default `RunBudget`s for `BudgetAllocator` (plan §Reusable Foundry Agent Loop). Effort
+  // tiers map to `ConversationEffort` for the interactive co-founder; `sprintWorker` covers
+  // sprint specialists. Founders can override per-workspace via `WorkspacePolicy.tool`
+  // (`readWorkspaceBudgetOverrides`) — these are just the defaults when nothing is set.
+  agent: {
+    quick: {
+      maxSteps: 1,
+      maxDurationMs: 15_000,
+      maxUsd: 0.05,
+      maxToolRiskClass: 'compute',
+      contextTokenCeiling: 8_000,
+    },
+    standard: {
+      maxSteps: 6,
+      maxDurationMs: 60_000,
+      maxUsd: 0.5,
+      maxToolRiskClass: 'compute',
+      contextTokenCeiling: 16_000,
+    },
+    thorough: {
+      maxSteps: 16,
+      maxDurationMs: 5 * 60_000,
+      maxUsd: 2,
+      maxToolRiskClass: 'draft',
+      contextTokenCeiling: 32_000,
+    },
+    sprintWorker: {
+      maxSteps: 12,
+      maxDurationMs: 10 * 60_000,
+      maxUsd: 2,
+      maxToolRiskClass: 'draft',
+      contextTokenCeiling: 32_000,
+    },
+  },
   stream: {
     replayMaxEvents: 500,
     replayMaxAgeMs: 30 * 60 * 1000,
@@ -41,6 +75,8 @@ export const limits = {
     capabilityCacheTtlSeconds: 6 * 60 * 60,
     defaultAnthropicModel: 'claude-sonnet-4-20250514',
     defaultAnthropicProbeModel: 'claude-3-5-haiku-20241022',
+    defaultBedrockModel: 'moonshotai.kimi-k2.5',
+    defaultBedrockRegion: 'us-east-1',
   },
   gateA: {
     ruleVersion: 1,

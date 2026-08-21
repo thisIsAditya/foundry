@@ -8,20 +8,29 @@ import { useRef, useState, type FormEvent } from 'react';
 import { errorMessageOf } from '../../lib/error-message';
 import { useTRPC } from '../../lib/trpc/client';
 
-type ProviderPreset = 'ollama' | 'anthropic' | 'openai';
+type ProviderPreset = 'bedrock' | 'ollama' | 'anthropic' | 'openai';
 
 const PRESETS: Record<
   ProviderPreset,
   {
     label: string;
     family: ProviderFamily;
-    authMode: 'none' | 'api_key';
+    authMode: 'none' | 'api_key' | 'aws_iam_role';
     needsEndpoint: boolean;
     needsModelId: boolean;
     endpointPlaceholder?: string;
     modelPlaceholder: string;
   }
 > = {
+  bedrock: {
+    label: 'AWS Bedrock (Kimi K2.5)',
+    family: 'bedrock',
+    authMode: 'aws_iam_role',
+    needsEndpoint: true,
+    needsModelId: true,
+    endpointPlaceholder: 'us-east-1',
+    modelPlaceholder: 'moonshotai.kimi-k2.5',
+  },
   ollama: {
     label: 'Ollama, running on this computer',
     family: 'ollama',
@@ -54,9 +63,9 @@ export function ModelProviderPanel({ workspaceId }: { workspaceId: string }) {
   const queryClient = useQueryClient();
   const connections = useQuery(trpc.provider.listConnections.queryOptions({ workspaceId }));
   const idempotencyKey = useRef(crypto.randomUUID());
-  const [preset, setPreset] = useState<ProviderPreset>('ollama');
-  const [endpoint, setEndpoint] = useState('http://localhost:11434/v1');
-  const [modelId, setModelId] = useState('');
+  const [preset, setPreset] = useState<ProviderPreset>('bedrock');
+  const [endpoint, setEndpoint] = useState('us-east-1');
+  const [modelId, setModelId] = useState('moonshotai.kimi-k2.5');
   const [credential, setCredential] = useState('');
 
   const connect = useMutation(
@@ -119,8 +128,8 @@ export function ModelProviderPanel({ workspaceId }: { workspaceId: string }) {
       <p className="callout-eyebrow">Setup needed</p>
       <p className="callout-title">Connect a model so your AI co-founder can think</p>
       <p className="text-sm text-text-muted">
-        Nothing below generates until a model is connected. If Ollama is already running on this
-        computer, this takes about 30 seconds — just tell us which model you&apos;ve pulled.
+        Nothing below generates until a model is connected. Bedrock uses the AWS credentials
+        configured on the server or its IAM role; credentials are never sent through this form.
       </p>
       <form className="stack" onSubmit={(event) => void onSubmit(event)}>
         <label className="field">
@@ -128,7 +137,16 @@ export function ModelProviderPanel({ workspaceId }: { workspaceId: string }) {
           <select
             className="input"
             value={preset}
-            onChange={(event) => setPreset(event.target.value as ProviderPreset)}
+            onChange={(event) => {
+              const nextPreset = event.target.value as ProviderPreset;
+              const nextConfig = PRESETS[nextPreset];
+              setPreset(nextPreset);
+              setEndpoint(
+                nextConfig.family === 'bedrock' ? 'us-east-1' : 'http://localhost:11434/v1',
+              );
+              setModelId(nextConfig.family === 'bedrock' ? 'moonshotai.kimi-k2.5' : '');
+              setCredential('');
+            }}
           >
             {Object.entries(PRESETS).map(([key, value]) => (
               <option key={key} value={key}>
@@ -139,7 +157,7 @@ export function ModelProviderPanel({ workspaceId }: { workspaceId: string }) {
         </label>
         {config.needsEndpoint ? (
           <label className="field">
-            <span>Server address</span>
+            <span>{preset === 'bedrock' ? 'AWS region' : 'Server address'}</span>
             <input
               className="input"
               value={endpoint}

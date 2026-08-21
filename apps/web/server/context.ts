@@ -149,10 +149,12 @@ export function createServices(
       secretBox: extras.secretBox,
       secrets: extras.secrets,
       ...(extras.languageModel === undefined ? {} : { languageModel: extras.languageModel }),
+      allowMcpLoopback: extras.allowMcpLoopback === true,
     },
     sprintService,
     founderTaskService,
     scoringService,
+    planSectionAggregatorService,
   );
   const initialDraftService = new InitialDraftService(
     sql,

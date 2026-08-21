@@ -2,10 +2,16 @@ import type { PackSnapshot } from '@foundry/agent-runtime';
 import {
   getCurrentMoneyRules,
   getPackRevisionById,
+  getPendingDraftRevisionByParentId,
+  listAssumptionsByProjectId,
   listBeachheadsByPackRevisionId,
+  listDecisionsByProjectId,
   listDmusByPackRevisionId,
   listInterviewsByProjectId,
   listMarketModelsByPackRevisionId,
+  listPackSections,
+  listPersonasByPackRevisionId,
+  listProblemsByPackRevisionId,
   listQuotesByInterviewIds,
   listUnitEconomicsByPackRevisionId,
   listWtpEventsByProjectId,
@@ -29,6 +35,8 @@ function readClarifications(proposedChanges: unknown): z.infer<typeof Clarificat
   return parsed.success ? parsed.data.clarifications : [];
 }
 
+/** Worker-side mirror of `apps/web/server/services/pack-snapshot.ts` — kept in sync manually
+ * since the worker doesn't depend on the web app's server services. */
 export async function loadPackSnapshot(sql: Sql, project: Project): Promise<PackSnapshot> {
   const packId = project.currentPackRevisionId;
   if (packId === null) {
@@ -38,28 +46,57 @@ export async function loadPackSnapshot(sql: Sql, project: Project): Promise<Pack
   if (pack === null || pack.projectId !== project.id) {
     throw new Error('pack revision not found');
   }
-  const interviews = await listInterviewsByProjectId(sql, project.id);
-  const quotes = await listQuotesByInterviewIds(
-    sql,
-    interviews.map((item) => item.id),
-  );
-  const beachheads = await listBeachheadsByPackRevisionId(sql, pack.id);
-  const dmus = await listDmusByPackRevisionId(sql, pack.id);
-  const moneyRules = await getCurrentMoneyRules(sql, project.id);
-  const marketModels = await listMarketModelsByPackRevisionId(sql, pack.id);
-  const unitEconomics = await listUnitEconomicsByPackRevisionId(sql, pack.id);
-  const wtpEvents = await listWtpEventsByProjectId(sql, project.id);
-  return {
-    pack,
-    phase: project.currentPhase,
+  const [
     interviews,
-    quotes,
     beachheads,
     dmus,
+    personas,
+    problems,
     moneyRules,
     marketModels,
     unitEconomics,
     wtpEvents,
+    assumptions,
+    decisions,
+    packSections,
+    pendingDraftRevision,
+  ] = await Promise.all([
+    listInterviewsByProjectId(sql, project.id),
+    listBeachheadsByPackRevisionId(sql, pack.id),
+    listDmusByPackRevisionId(sql, pack.id),
+    listPersonasByPackRevisionId(sql, pack.id),
+    listProblemsByPackRevisionId(sql, pack.id),
+    getCurrentMoneyRules(sql, project.id),
+    listMarketModelsByPackRevisionId(sql, pack.id),
+    listUnitEconomicsByPackRevisionId(sql, pack.id),
+    listWtpEventsByProjectId(sql, project.id),
+    listAssumptionsByProjectId(sql, project.id),
+    listDecisionsByProjectId(sql, project.id),
+    listPackSections(sql, pack.id),
+    getPendingDraftRevisionByParentId(sql, pack.id),
+  ]);
+  const quotes = await listQuotesByInterviewIds(
+    sql,
+    interviews.map((item) => item.id),
+  );
+  return {
+    pack,
+    pendingDraftRevision,
+    phase: project.currentPhase,
+    derivedPhase: null,
+    interviews,
+    quotes,
+    beachheads,
+    dmus,
+    personas,
+    problems,
+    moneyRules,
+    marketModels,
+    unitEconomics,
+    wtpEvents,
+    assumptions,
+    decisions,
+    packSections,
     clarifications: readClarifications(pack.proposedChanges),
   };
 }

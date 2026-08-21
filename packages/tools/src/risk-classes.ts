@@ -22,4 +22,5 @@ export const TOOL_RISK_CLASSES: Record<string, RiskClass> = {
   'side_effect.request': 'side_effect',
   academic_search: 'read',
   market_report_search: 'read',
+  'code.execute': 'compute',
 };

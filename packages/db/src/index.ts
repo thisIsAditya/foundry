@@ -88,6 +88,8 @@ export { appRlsRole, toPgTextArray, withUserScope, withWorkspaceScope } from './
 export { truncateAppTables } from './truncate.js';
 export {
   getPackRevisionById,
+  getPackRevisionBySourceSprintId,
+  getPendingDraftRevisionByParentId,
   insertPackRevision,
   listPackRevisionsByProjectId,
   toPackRevision,
@@ -172,6 +174,7 @@ export {
   toUserMcpServer,
   updateUserMcpServerEnabled,
   updateUserMcpServerHealth,
+  updateUserMcpServerReadOnly,
   type InsertUserMcpServer,
 } from './repositories/user-mcp-servers.js';
 export {

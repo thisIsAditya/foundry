@@ -392,6 +392,14 @@
     @apply text-sm text-text-muted;
   }
 
+  .field-inline {
+    @apply flex items-start gap-2 text-sm text-text-muted;
+  }
+
+  .field-inline input[type='checkbox'] {
+    @apply mt-0.5;
+  }
+
   .input,
   .textarea {
     @apply w-full rounded-sm border border-border bg-surface-raised px-3 text-sm text-text;

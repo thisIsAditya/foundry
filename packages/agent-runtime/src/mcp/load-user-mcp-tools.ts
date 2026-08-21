@@ -1,6 +1,7 @@
 import { createMCPClient } from '@ai-sdk/mcp';
 import { limits } from '@foundry/config/limits';
 import type { RiskClass, UserMcpServer } from '@foundry/domain';
+import { getLogger } from '@foundry/observability';
 import type { Tool } from 'ai';
 
 import { assertPublicHttpUrl } from './ssrf.js';
@@ -47,16 +48,19 @@ function slugify(name: string): string {
 }
 
 /**
- * Loads AI SDK tools from a user's enabled MCP servers so a run can offer them to a
- * model (08 §11). Every MCP tool is tagged side_effect risk since its schema and
- * behavior are untrusted; PolicyService.filterTools still decides whether a given
- * run's risk ceiling admits it. Servers that are unreachable, blocked by the SSRF
- * guard, or misconfigured are skipped rather than failing the run.
+ * Loads AI SDK tools from a user's enabled MCP servers so a run can offer them to a model (08
+ * §11). Every MCP tool is tagged `side_effect` risk since its schema and behavior are untrusted
+ * — unless the founder opted the whole server in as `readOnly` ("safe for live chat"), in which
+ * case its tools are tagged `read` instead (matching `applyMcpRiskPolicy`'s probe-time
+ * classification). `PolicyService.filterTools` still decides whether a given run's risk ceiling
+ * admits it. Servers that are unreachable, blocked by the SSRF guard, or misconfigured are
+ * skipped rather than failing the run.
  */
 export async function loadUserMcpTools(
   servers: readonly UserMcpServer[],
   options: { box: SecretBox; factory?: McpToolClientFactory; allowLoopback?: boolean },
 ): Promise<LoadedMcpTools> {
+  const logger = getLogger();
   const tools: Record<string, Tool> = {};
   const riskClasses: Record<string, RiskClass> = {};
   const factory = options.factory ?? defaultMcpToolClientFactory;
@@ -82,13 +86,35 @@ export async function loadUserMcpTools(
       });
       const raw = await client.tools();
       const slug = slugify(server.name);
+      const riskClass: RiskClass = server.readOnly ? 'read' : 'side_effect';
       for (const [name, tool] of Object.entries(raw)) {
         const prefixedName = `mcp_${slug}_${name}`;
         tools[prefixedName] = tool;
-        riskClasses[prefixedName] = 'side_effect';
+        riskClasses[prefixedName] = riskClass;
       }
-    } catch {
+      logger.info(
+        {
+          event: 'mcp_tools_loaded',
+          serverName: server.name,
+          transport: server.transport,
+          readOnly: server.readOnly,
+          toolCount: Object.keys(raw).length,
+        },
+        'MCP tools loaded',
+      );
+    } catch (error) {
       // Unreachable, blocked, or misconfigured servers are skipped; the run continues without them.
+      logger.warn(
+        {
+          event: 'mcp_tools_load_failed',
+          serverName: server.name,
+          transport: server.transport,
+          readOnly: server.readOnly,
+          errorName: error instanceof Error ? error.name : 'unknown_error',
+          errorMessage: error instanceof Error ? error.message : String(error),
+        },
+        'MCP tools could not be loaded',
+      );
     } finally {
       await client?.close();
     }

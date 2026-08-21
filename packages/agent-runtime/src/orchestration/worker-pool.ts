@@ -1,27 +1,43 @@
 import { limits } from '@foundry/config/limits';
-import type { SprintContract, SprintWorkerSpec } from '@foundry/domain';
+import type { RiskClass, SprintContract, SprintWorkerSpec } from '@foundry/domain';
 import { AppError } from '@foundry/observability';
-import type { LanguageModel, LanguageModelUsage, Tool } from 'ai';
-import { generateText } from 'ai';
-import { z } from 'zod';
+import type { LanguageModel, Tool } from 'ai';
 
-import {
-  AgentRunOutputSchema,
-  ProposedPackChangeSchema,
-  type AgentRunOutput,
-} from '../contracts/output-schema.js';
+import { AgentRunOutputSchema, type AgentRunOutput } from '../contracts/output-schema.js';
 import type { PackSnapshot } from '../contracts/pack-snapshot.js';
+import type { RunBudget } from '../budget/types.js';
+import { FoundryAgent, FoundryAgentNoDecisionError } from './foundry-agent.js';
 
 export type WorkerResult = {
   workerName: string;
   output: AgentRunOutput;
 };
 
+/** Narrowed to just the fields callers (`process.ts`'s `onUsage`) actually read — a full AI SDK
+ * `LanguageModelUsage` needs per-provider cache/reasoning breakdowns this run's cumulative spend
+ * doesn't have. */
+export type WorkerUsage = {
+  inputTokens: number | undefined;
+  outputTokens: number | undefined;
+};
+
 export type WorkerRuntime = {
   model: LanguageModel;
   tools: Record<string, Tool>;
+  /** Risk class per tool name, for `FoundryAgent`'s per-step degrade-as-spend-rises narrowing.
+   * Defaults to `compute` for every tool in `tools` when omitted (the tools were already
+   * filtered to the worker's max risk class by the caller, so `compute` is a safe, conservative
+   * placeholder for callers that haven't threaded classification through yet). */
+  toolRiskClasses?: Record<string, RiskClass>;
   instructions: string;
-  onUsage?: (usage: LanguageModelUsage, workerName: string) => Promise<void> | void;
+  /** Defaults to `limits.agent.sprintWorker`. */
+  budget?: RunBudget;
+  onUsage?: (usage: WorkerUsage, workerName: string) => Promise<void> | void;
+  onToolCall?: (call: {
+    toolName: string;
+    input: unknown;
+    output: unknown;
+  }) => Promise<void> | void;
 };
 
 export type ResolveWorkerRuntime = (worker: SprintWorkerSpec) => Promise<WorkerRuntime | null>;
@@ -66,123 +82,83 @@ export function runMockWorker(contract: SprintContract, snapshot: PackSnapshot):
   };
 }
 
-const WorkerJsonSchema = z.object({
-  result: z.string().min(1),
-  proposedPackChanges: z.array(ProposedPackChangeSchema).default([]),
-  evidenceRefs: z.array(z.string()).default([]),
-  assumptionsChanged: z.array(z.string()).default([]),
-  unresolvedConflicts: z.array(z.string()).default([]),
-  confidence: z.enum(['low', 'medium', 'high']).default('low'),
-  recommendedNextAction: z.string().min(1).default('Review the synthesis and Gate A outcome.'),
-});
+const foundryAgent = new FoundryAgent<AgentRunOutput>();
 
-function buildWorkerPrompt(contract: SprintContract, snapshot: PackSnapshot): string {
-  const qualifyingQuotes = snapshot.quotes.map((quote) => ({
-    id: quote.id,
-    interviewId: quote.interviewId,
-    text: quote.textContent,
-  }));
+function buildWorkerUserPrompt(contract: SprintContract): string {
   return [
     `Sprint objective: ${contract.objective}`,
     `Why now: ${contract.whyNow ?? 'Not specified'}`,
     `Phase: ${contract.phase}`,
-    `Interviews on file: ${snapshot.interviews.length} (non-friend: ${
-      snapshot.interviews.filter((interview) => interview.participantType === 'non_friend').length
-    })`,
-    `Quotes: ${JSON.stringify(qualifyingQuotes)}`,
-    `Beachheads: ${JSON.stringify(snapshot.beachheads)}`,
-    `DMUs: ${JSON.stringify(snapshot.dmus)}`,
-    `Clarifications so far: ${JSON.stringify(snapshot.clarifications)}`,
     '',
-    'Respond with ONLY a single JSON object (no markdown fences, no prose outside the object) shaped like:',
-    JSON.stringify(
-      {
-        result: 'one paragraph synthesis of what you learned',
-        proposedPackChanges: [
-          { targetSection: 'mvbp | gtm | org_cost | legal | launch', body: { '...': '...' } },
-        ],
-        evidenceRefs: ['quote-id-you-were-given-above'],
-        assumptionsChanged: ['...'],
-        unresolvedConflicts: ['...'],
-        confidence: 'low | medium | high',
-        recommendedNextAction: '...',
-      },
-      null,
-      2,
-    ),
-    '',
-    'Only cite evidenceRefs that are quote ids from the list above. Never invent interviews, quotes, or numbers.',
-    'Leave proposedPackChanges empty if no pack section should change yet.',
+    'Use the plan context above — do not ask for it again. Only cite evidenceRefs that are quote ids that actually appear there; never invent interviews, quotes, or numbers. Leave proposedPackChanges empty if no pack section should change yet.',
   ].join('\n');
 }
 
-function extractJsonObject(text: string): string | null {
-  const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(text);
-  const candidate = fenced?.[1] ?? text;
-  const start = candidate.indexOf('{');
-  const end = candidate.lastIndexOf('}');
-  if (start === -1 || end === -1 || end < start) {
-    return null;
-  }
-  return candidate.slice(start, end + 1);
+function defaultToolRiskClasses(tools: Record<string, Tool>): Record<string, RiskClass> {
+  return Object.fromEntries(Object.keys(tools).map((name) => [name, 'compute' as const]));
 }
 
-function parseWorkerOutput(text: string, snapshot: PackSnapshot): AgentRunOutput {
-  const jsonText = extractJsonObject(text);
-  if (jsonText !== null) {
-    try {
-      return AgentRunOutputSchema.parse(WorkerJsonSchema.parse(JSON.parse(jsonText)));
-    } catch {
-      // Fall through to the unstructured fallback below.
-    }
-  }
-  const trimmed = text.trim();
+function budgetExhaustedFallback(snapshot: PackSnapshot): AgentRunOutput {
   return {
-    result: trimmed.length > 0 ? trimmed : 'The model did not return a synthesis.',
+    result: 'The model did not submit a synthesis before the run budget was exhausted.',
     proposedPackChanges: [],
     evidenceRefs: snapshot.quotes.map((quote) => quote.id),
     assumptionsChanged: [],
-    unresolvedConflicts: ['Model response was not valid structured JSON.'],
+    unresolvedConflicts: ['Model ran out of budget before calling submit_decision.'],
     confidence: 'low',
     recommendedNextAction: 'Retry the sprint or review the model transcript.',
   };
 }
 
+/**
+ * Runs one sprint specialist through the shared `FoundryAgent` multi-step loop instead of a
+ * single blind `generateText` call — the worker can now call a calculator or a read-only
+ * research tool, inspect the result, and only then call `submit_decision`, rather than emitting
+ * one unverified completion and hoping it parses as JSON.
+ */
 export async function runModelWorker(
   contract: SprintContract,
   snapshot: PackSnapshot,
   worker: SprintWorkerSpec,
   runtime: WorkerRuntime,
 ): Promise<AgentRunOutput> {
-  const prompt = buildWorkerPrompt(contract, snapshot);
-  const hasTools = Object.keys(runtime.tools).length > 0;
-  let text: string;
-  let usage: LanguageModelUsage;
+  const budget = runtime.budget ?? limits.agent.sprintWorker;
   try {
-    const result = await generateText({
+    const result = await foundryAgent.run({
+      agentName: `sprint_worker:${worker.name}`,
       model: runtime.model,
       instructions: runtime.instructions,
-      prompt,
-      ...(hasTools ? { tools: runtime.tools } : {}),
+      userPrompt: buildWorkerUserPrompt(contract),
+      contextInput: {
+        projectId: snapshot.pack.projectId,
+        snapshot,
+        planScore: null,
+        recentMessages: [],
+        conversationSummary: null,
+        confirmedPreferences: [],
+        openFounderTasks: [],
+        recentJobs: [],
+        attachedEvidence: [],
+      },
+      tools: runtime.tools,
+      toolRiskClasses: runtime.toolRiskClasses ?? defaultToolRiskClasses(runtime.tools),
+      decisionSchema: AgentRunOutputSchema,
+      submitToolDescription:
+        'Call this once you are ready to submit your synthesis and any proposed pack changes, ending the run.',
+      budget,
+      ports: { onToolCall: runtime.onToolCall },
     });
-    text = result.text;
-    usage = result.usage;
+    await runtime.onUsage?.(
+      { inputTokens: result.spend.inputTokens, outputTokens: result.spend.outputTokens },
+      worker.name,
+    );
+    return result.decision;
   } catch (error) {
-    // Local/Ollama models advertise no tool support (08 §9); retry once without tools
-    // rather than fail the sprint (plan §Slice 2 "Ollama tools").
-    if (!hasTools) {
-      throw error;
+    if (error instanceof FoundryAgentNoDecisionError) {
+      return budgetExhaustedFallback(snapshot);
     }
-    const fallback = await generateText({
-      model: runtime.model,
-      instructions: runtime.instructions,
-      prompt,
-    });
-    text = fallback.text;
-    usage = fallback.usage;
+    throw error;
   }
-  await runtime.onUsage?.(usage, worker.name);
-  return parseWorkerOutput(text, snapshot);
 }
 
 export async function runWorkerPool(
