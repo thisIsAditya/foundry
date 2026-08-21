@@ -1,17 +1,27 @@
 # Implementation plan v2 — Co-founder redesign
 
-**Status:** implementation baseline
+**Status:** historical implementation baseline
 **Date:** 18 August 2026
 **Scope:** the concrete build specification for implementing `docs/02-product-requirements/` on top of the existing `Foundry` codebase, superseding the parts of `docs/plan/` and `docs/plan/implementation/` that the new product requirements make obsolete.
 **Codename:** unchanged — `Foundry`. No package, table, or resource rename is introduced by this plan beyond what is listed in `01-gap-analysis-and-decisions.md`.
 
-## Why this folder exists and how it relates to the other three
+> **Do not implement from this folder.** It preserves the intermediate
+> co-founder redesign that retained Magentic sprints, worker pools, critic
+> logic, a 17-section instant draft, and the scorecard. Use the
+> [current plan index](../README.md) and
+> [implementation contracts and cleanup runbook](../18-implementation-contracts-and-cleanup.md)
+> instead.
 
-There are now three layers of planning documents. Read them in this order:
+## Historical relationship to the other planning layers
 
-1. `docs/plan/` (`00`–`13`) — the **original** product and system design. Still authoritative for anything this folder does not explicitly change (tenant model, evidence/document pipeline, provider/BYOK model, artifact rendering, security/governance, MCP trust boundary).
-2. `docs/plan/implementation/` (`00`–`14`) — the **original** build specification (exact stack, monorepo layout, DB schema, API catalogue, agent runtime, AWS deployment, testing, coding standards). Still authoritative for anything this folder does not explicitly change.
-3. `docs/02-product-requirements/` — the **new, superseding** product direction. Where it conflicts with (1) or (2), the product requirements win, and this folder (`docs/plan/implementation-v2/`) is the build specification for the conflict.
+This folder records an intermediate planning era:
+
+1. `docs/plan/` (`00`–`13`) — original product and system design.
+2. `docs/plan/implementation/` (`00`–`14`) — original build specification.
+3. This folder — the intermediate co-founder/scoring redesign.
+
+All three are superseded for active product work. The founder-journey
+requirements and plans named by `docs/README.md` are authoritative.
 
 This folder is **additive and corrective**, not a rewrite. It assumes the codebase inventoried in `01-gap-analysis-and-decisions.md` §3 already exists and is largely correct: a working pnpm/Turbo monorepo, Next.js 16 web app, Expo 57 mobile app, a BullMQ worker, a real Postgres schema with 9 migrations, tRPC routers covering workspaces through gates, and an agent runtime with a working orchestrator/sprint/critic loop. **Do not re-scaffold anything that already works.**
 

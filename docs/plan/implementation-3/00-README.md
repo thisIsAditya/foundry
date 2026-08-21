@@ -1,19 +1,27 @@
 # Implementation plan 3 — Chat-first shell and one-step venture onboarding
 
-**Status:** implementation baseline
+**Status:** historical implementation baseline
 **Date:** 18 August 2026
 **Scope:** a redesign of the `apps/web` founder experience around a persistent co-founder chat rail, phase-focused main content, and one-click access to Plan/Work/Research/Decisions — replacing today's top-nav-plus-docked-panel information architecture. Also merges workspace and project creation into one step and turns venture creation into a single elaborative composer that runs the first draft end to end.
 **Codename:** unchanged — `Foundry`.
 **Non-scope:** mobile (`apps/mobile`) is untouched by this plan (decision D8 in `01-decisions-and-scope.md`). Domain model, database schema, scoring rubric, agent runtime, and policy/gates packages are reused as-is; this plan touches them only where §`09-backend-and-trpc-delta.md` says so.
 
-## Why this folder exists and how it relates to the other layers
+> **Do not implement from this folder.** It describes a superseded chat-first
+> shell, score-led navigation, sprint/work drawers, and an instant 17-section
+> draft. Use the [current plan index](../README.md) and
+> [implementation contracts and cleanup runbook](../18-implementation-contracts-and-cleanup.md)
+> for active work.
 
-Four layers of planning documents now exist. Read them in this order:
+## Historical relationship to the other planning layers
 
-1. `docs/plan/` (`00`–`13`) and `docs/plan/implementation/` (`00`–`14`) — original product and system design. Still authoritative for anything not explicitly changed below.
-2. `docs/plan/implementation-v2/` — the co-founder/scoring/domain rebuild. **Still authoritative** for the domain model, database schema, backend services, agent runtime, scoring rubric, and mobile IA. This plan supersedes only `implementation-v2/06-web-frontend-ia-delta.md`'s navigation model (§1 route table, §3 persistent panel, final nav list) — the chat-first shell in this plan replaces the "7-item top nav + docked side panel" IA. Every backend procedure, entity, and status vocabulary `06` and the other v2 documents reference is still reused unchanged.
-3. `docs/02-product-requirements/` — still the product direction; nothing here contradicts it. This plan is a UX-quality pass on top of it, driven by direct founder feedback.
-4. This folder, `docs/plan/implementation-3/` — the build specification for the chat-first web redesign.
+This folder records the third historical planning era:
+
+1. `docs/plan/` (`00`–`13`) and `docs/plan/implementation/` (`00`–`14`) — original product and system design.
+2. `docs/plan/implementation-v2/` — intermediate co-founder/scoring/domain redesign.
+3. This folder — chat-first web redesign built on those prior assumptions.
+
+All three are superseded for active product work. The founder-journey
+requirements and plans named by `docs/README.md` are authoritative.
 
 ## Document map
 

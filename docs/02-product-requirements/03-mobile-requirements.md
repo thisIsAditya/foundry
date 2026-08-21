@@ -1,227 +1,172 @@
-# Mobile application requirements
+# Mobile requirements
 
-The mobile app has the same project state and core capabilities as web. It should be optimized for short sessions, capture in the field, quick decisions, and visible momentum rather than dense side-by-side inspection.
+**Status:** current, phased after the web journey
+**Date:** 22 August 2026
+**Implements:** [Shared founder-journey requirements](./01-shared-product-requirements.md)
 
-## 1. Mobile product role
+## 1. Product role
 
-Mobile is not a reduced read-only companion. A founder must be able to:
+Mobile supports the moments when a founder is away from a desk: resuming a
+short step, capturing learning after a conversation, reviewing a proposal, and
+deciding what to do next.
 
-- talk to the co-founder;
-- see the complete plan and its score;
-- start and control jobs within safe limits;
-- complete founder tasks;
-- capture interviews, quotes, photos, voice notes, and payment signals;
-- review and accept plan sections;
-- inspect sources and evidence;
-- respond to approvals or draft decisions;
-- receive progress and blocker notifications.
+Responsive web is the first mobile surface. A native mobile application follows
+only after the web journey, record, approval, and synchronization contracts are
+proven. It must share the same venture state; it must not introduce a separate
+journey, chat history, or approval path.
 
-The mobile layout may simplify the presentation, but it must not remove a core decision or task.
+## 2. First mobile capability set
 
-## 2. Primary navigation
+The initial responsive/mobile experience must let a founder:
 
-Use five primary destinations:
+- see the current stage, objective, and recommended next step;
+- resume or defer a founder-sized step;
+- add a quick observation, note, link, or assumption;
+- capture an interview note and quoted statement;
+- review a material proposal and accept, modify, or keep the current state;
+- view the accepted business-model summary;
+- open the co-founder for focused help; and
+- see safe recovery states for unsaved or failed work.
 
-1. **Home** — score, next action, current finding, jobs, and founder tasks.
-2. **Co-founder** — persistent project conversation.
-3. **Work** — jobs, founder tasks, progress, blockers, and budget.
-4. **Plan** — complete business model, score, revisions, and section review.
-5. **Evidence** — interviews, quotes, sources, citations, and observations.
+It does not need to reproduce every desktop editing or export surface in the
+first mobile release. Desktop remains the preferred place for deep business
+model review and broad record editing.
 
-Decisions, settings, provider configuration, and draft outputs are available from project menus without hiding their status from Home.
+## 3. Navigation and home
 
-## 3. Mobile Home
+The mobile home screen answers, in this order:
 
-Home should answer four questions immediately:
+1. What venture am I working on?
+2. What is the current objective?
+3. What is the one useful action I can take now?
+4. What changed since I last checked?
+5. What remains uncertain or needs review?
 
-- What is my business idea becoming?
-- How solid is it right now?
-- What is AI doing?
-- What should I do next?
+Use no more than five primary destinations:
 
-The first screen contains:
+1. **Home** — resume state and recommended action.
+2. **Journey** — current step, path, and deferrals.
+3. **Capture** — observation, interview, evidence, and assumption capture.
+4. **Model** — readable business-model summary and proposal review.
+5. **Co-founder** — context-aware conversation and help.
 
-- one-sentence opportunity summary;
-- overall score and score trend;
-- strongest and weakest dimensions;
-- current AI activity;
-- founder task card;
-- research proposal waiting to start;
-- latest plan change;
-- quick actions for chat, capture, review, and work board.
+Evidence detail, decisions, and settings can be linked contextually rather than
+competing for primary navigation. The app must not include a worker board,
+specialist agents, sprint controls, raw integration controls, or technical
+runtime traces.
 
-Do not open with a multi-field intake form.
+## 4. Mobile journey and step flow
 
-## 4. Co-founder experience
+A mobile step view has one dominant action and shows:
 
-The co-founder is a primary mobile destination and keeps the same durable history as web.
+- stage and current objective;
+- why the step matters;
+- expected effort;
+- required input or decision;
+- capture and completion criteria;
+- co-founder help;
+- defer, skip-with-reason, and discuss actions where applicable; and
+- what happens after completion.
 
-It must support:
+The view must preserve context when a founder moves between preparation,
+capture, and review. It should favor short focused flows over dense desktop
+layouts or modal stacks.
 
-- text and voice-note input;
-- suggested prompts;
-- cited findings;
-- plan-change cards;
-- task cards;
-- research-plan cards;
-- draft-help offers;
-- job progress;
-- revision review;
-- retry and offline recovery.
+## 5. Field capture
 
-The co-founder should be able to say:
+### 5.1 Interview and observation capture
 
-> “I have enough to draft the first plan. I am uncertain about the customer and price. I found three alternatives and prepared a five-question interview. You can review the plan now or start the research job.”
+Mobile capture supports:
 
-The founder should never need to open a specialist screen to get help.
+- participant type and optional label;
+- consent status when required;
+- date and time;
+- note text;
+- one quoted statement at a time;
+- link, document, photo, or voice-note attachment where supported;
+- relevant business-model section;
+- provenance selection; and
+- local draft/save state.
 
-## 5. Mobile capture
+The UI must clarify that notes and quotes are founder-recorded observations, not
+independent validation merely because they were captured in the app.
 
-Capture must be optimized for use immediately after a real-world interaction.
+### 5.2 Assumption and evidence capture
 
-### Interview capture
+A founder can quickly add:
 
-Support:
+- an assumption;
+- an observation that supports or challenges an assumption;
+- a source link or document;
+- a decision rationale; or
+- a future experiment result.
 
-- participant type;
-- consent;
-- date/time;
-- optional participant label;
-- text notes;
-- one quote per line;
-- voice note;
-- attachment or photo;
-- offline draft;
-- save and sync later.
+The app should make it easy to link the item to a current step or model section
+without forcing exhaustive classification in the moment.
 
-The app should remind the founder that friends and family do not count as independent validation, without shaming the user.
+## 6. Proposal review and business model
 
-### Payment and WTP capture
+Mobile proposal review must show:
 
-Support:
+- what changes;
+- why it is proposed;
+- evidence and uncertainty;
+- affected sections;
+- concise before/after values; and
+- accept, modify, and keep-current actions.
 
-- prospect type;
-- offer;
-- amount and currency;
-- payment or commitment instrument;
-- date;
-- evidence attachment;
-- result;
-- notes;
-- whether the signal was independent.
+The Model destination begins with a readable outline of the accepted record,
+current stage, key readiness signals, and current uncertainty. Long evidence or
+version histories use progressive disclosure; the app must not render tiny,
+unreadable desktop documents.
 
-### Quick observation
+## 7. Co-founder on mobile
 
-Allow the founder to record an observation or assumption from the field and link it to a plan section.
+The co-founder can:
 
-## 6. Mobile Work
+- explain the current step;
+- request founder-only context;
+- help prepare a draft or script;
+- summarize captured notes;
+- explain a proposal; and
+- direct the founder to the next relevant action.
 
-The Work destination uses focused lists instead of a wide Kanban by default:
+It must use the same application-assembled context and proposal rules as web.
+Voice input or attachment-assisted prompting may be added after the core
+recording and approval flow works, but neither may bypass review or provenance.
 
-- Needs me;
-- Running now;
-- Waiting for research;
-- Needs review;
-- Completed;
-- Blocked.
+## 8. Offline, synchronization, and notifications
 
-Each job opens to:
+Mobile capture may be saved locally as a draft. The app must:
 
-- objective and why;
-- current progress;
-- role label;
-- owner;
-- estimated and actual budget;
-- source scope;
-- outputs;
-- citations;
-- proposed changes;
-- safe controls.
+- make saved, pending-sync, synced, and failed states explicit;
+- use idempotency keys to avoid duplicate submissions;
+- preserve the local draft after a failed sync;
+- prevent a local draft from appearing as accepted server evidence before
+  confirmation; and
+- resolve conflicting edits through an explicit review flow rather than silent
+  last-write-wins behavior.
 
-Advanced job settings are available from a secondary panel. The mobile app must show the same safe limits as web and must not make it easier to accidentally exceed a budget.
+Notifications are limited to meaningful events:
 
-## 7. Founder task flow
+- a proposal needs founder review;
+- a current step is blocked or ready to resume;
+- an optional reminder for a deferred or scheduled experiment; and
+- a recoverable synchronization failure.
 
-The task screen must have one dominant action. It includes:
+Notifications deep-link to the relevant venture and do not expose sensitive
+business content in the lock-screen preview by default.
 
-- task title;
-- why it matters;
-- estimated time;
-- preparation;
-- script/template;
-- capture action;
-- completion criteria;
-- score dimensions affected;
-- Help me;
-- complete, defer, skip, or discuss.
+## 9. Mobile acceptance criteria
 
-The founder can start an interview task, conduct the conversation, capture notes, and submit evidence without losing the task context.
+The mobile phase is complete when a founder can:
 
-## 8. Mobile Plan
+1. return after time away and understand the next action;
+2. capture an observation or interview note in a short session;
+3. save work safely through poor connectivity;
+4. review a material proposal without a desktop;
+5. use the same co-founder context as web; and
+6. see the same accepted venture state after sync.
 
-The Plan destination starts with:
-
-- complete plan outline;
-- overall and dimension scores;
-- section status;
-- largest assumptions;
-- score-improvement actions.
-
-A section detail view shows:
-
-- summary;
-- claims and values;
-- evidence and citations;
-- assumptions;
-- score contribution;
-- revision diff;
-- accept/reject controls.
-
-For long sections, use progressive disclosure. Do not show tiny document previews that are impossible to read on a phone.
-
-## 9. Evidence library
-
-Evidence should be filterable by:
-
-- interviews;
-- quotes;
-- sources;
-- findings;
-- assumptions;
-- payment signals;
-- stale or conflicting items.
-
-Opening a citation must show enough context to understand what the source supports. The mobile app should allow quick tagging and linking without requiring a desktop.
-
-## 10. Notifications
-
-Notify only for useful events:
-
-- research completed;
-- job needs founder input;
-- plan revision ready;
-- a job failed or is blocked;
-- a founder task is due or suggested;
-- score changed materially;
-- a budget threshold was reached.
-
-Notifications must deep-link to the relevant project, job, task, or revision and must not expose sensitive project content in the notification preview by default.
-
-## 11. Offline and poor network behavior
-
-- Text, interview notes, quotes, and observations can be captured as local drafts.
-- Sync status is visible.
-- Duplicate submissions are prevented with idempotency keys.
-- A failed sync explains what is pending and allows retry.
-- The mobile app must not show a captured note as accepted evidence until the server confirms it.
-
-## 12. Mobile acceptance criteria
-
-- A founder can see the complete plan and score on a phone without opening the web app.
-- A founder can continue the same co-founder conversation from web or mobile.
-- A founder can start/review safe jobs and see their outputs.
-- A founder can complete an interview task from preparation through evidence submission.
-- A founder can review and accept a single plan section.
-- A founder can capture notes offline and later sync them without duplication.
-- Notifications lead to the exact work item that needs attention.
-- Mobile never executes external actions in the first product version.
+Native mobile work must not delay the web-first journey release or preserve
+legacy sprint and worker UI merely for feature parity.

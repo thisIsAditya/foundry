@@ -1,13 +1,23 @@
 # Implementation plan — Foundry
 
-**Status:** implementation baseline
+**Status:** historical implementation baseline
 **Date:** 17 August 2026
 **Scope:** the concrete build specification for the system designed in `plan/00`–`plan/13` — libraries and exact versions, monorepo layout, web and mobile architecture, API and database design, caching/queues/streaming, agent runtime wiring, authentication and security, AWS ECS deployment, testing, observability/cost, coding standards, and build sequencing.
 **Codename:** every package scope, database name, and AWS resource name in this folder uses the placeholder `Foundry` (no product name has been decided — see `00-tech-stack-and-versions.md` §1 and `01-monorepo-and-project-structure.md` §10 for the exact rename surface).
 
-## How this folder relates to `plan/`
+> **Do not implement from this folder.** It describes the superseded
+> multi-agent, sprint, critic, and company-operations direction. Use the
+> [current plan index](../README.md) and
+> [implementation contracts and cleanup runbook](../18-implementation-contracts-and-cleanup.md)
+> for active work. Retain this material only as an inventory of platform
+> constraints and legacy code.
 
-`plan/00` through `plan/13` are the **product and system design** — what the app must do and why. This folder is the **build specification** — exactly how to build it, in enough detail that an implementing engineer or coding agent should not need to make an unrecorded architectural judgment call. Every document below cites the specific `plan/` section it implements; when in doubt about product behavior, the parent `plan/` documents are authoritative, and this folder should be updated to match rather than silently diverging.
+## Historical relationship to `plan/`
+
+`plan/00` through `plan/13` and this folder describe a historical product and
+system design. They are not authoritative for product behavior. Where they
+preserve platform/security facts or identify existing code, reconcile those
+facts with the current reset before using them.
 
 ## Document map
 

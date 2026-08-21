@@ -1,294 +1,299 @@
 # Web application requirements
 
-The web app is the founder's command center. It should be dense enough to show the state of the venture, but simple enough that a first-time founder always knows what to do next.
+**Status:** current
+**Date:** 22 August 2026
+**Implements:** [Shared founder-journey requirements](./01-shared-product-requirements.md)
 
-## 1. Primary information architecture
+## 1. Role of the web experience
 
-The project experience should have these persistent destinations:
+The web app is the founder's primary place to understand, shape, and resume a
+venture. It should feel like a living business-model workspace guided by a
+co-founder—not a chatbot, project-management board, questionnaire, or
+multi-agent control room.
 
-1. **Overview** — score, current finding, next action, plan health, and recent changes.
-2. **Co-founder** — durable conversation with the only founder-facing AI identity.
-3. **Business model** — complete plan, section statuses, evidence, assumptions, and revisions.
-4. **Work board** — AI jobs, founder tasks, approvals, blockers, and outputs.
-5. **Research and evidence** — sources, citations, interviews, quotes, findings, and conflicts.
-6. **Decisions** — decisions, alternatives, rationale, and GO/PIVOT/KILL outcomes.
-7. **Settings** — providers, workspace members, project preferences, budgets, and draft-only integrations.
+At every location, the interface must make these questions easy to answer:
 
-The founder should not have to navigate through a specialist directory to get work done.
+1. Where am I?
+2. What are we trying to achieve now?
+3. What do we know, assume, or need to learn?
+4. What decision or action is mine?
+5. What changes if I act?
+6. What should happen next?
 
-## 2. Overview screen
+## 2. Information architecture
 
-The project overview must show, above the fold:
+The project shell exposes these founder-facing destinations:
 
-- venture name and one-sentence opportunity summary;
-- overall business-model score;
-- dimension score chips or cards;
-- what is known, assumed, and missing;
-- the highest-impact current finding;
-- one recommended next action;
-- AI work currently running;
-- founder tasks waiting for the founder;
-- plan revision waiting for review;
-- research plan waiting to be started;
-- provider and privacy mode;
-- estimated current and next-job cost.
+1. **Overview** — current position, changes, readiness, and one recommended
+   continuation.
+2. **Journey** — stages, recommended steps, active/deferred/blocked work, and
+   transition history.
+3. **Business model** — the presentable record and its version history.
+4. **Evidence** — sources, notes, interviews, observations, and assumptions.
+5. **Decisions** — accepted choices, proposals awaiting review, and consequences.
+6. **Co-founder** — the persistent conversation and contextual help surface.
 
-The overview must not open with a blank form or a mandatory questionnaire.
+Settings, membership, and later integration preferences live outside the
+progression flow. The shell must not expose a specialist-agent directory, a
+sprint board, worker controls, agent traces, model tuning, raw MCP tools, or
+cost controls as primary founder navigation.
 
-## 3. First idea flow
+The co-founder may be available as a persistent, collapsible side surface on
+wide screens, but it must not obscure the current journey objective or replace
+the dedicated Co-founder destination.
 
-When creating a project, the founder should be asked for only:
+## 3. First-session experience
 
-- idea in their own words;
+### 3.1 Idea capture
+
+Creating a venture asks only for information that changes the first
+recommendation:
+
+- idea in the founder's own words;
+- desired outcome or reason to explore it;
 - optional target customer;
 - optional geography;
-- optional founder objective;
-- optional constraints.
+- optional constraints, available time, or relevant experience.
 
-After submit:
+The flow must show clear labels, useful examples, and progressive disclosure.
+It must not require an interview, pricing, market-size estimate, provider
+configuration, workspace setup, or a multi-page intake.
 
-1. Create a project and initial pack revision.
-2. Generate the complete tracer-bullet draft using the input and explicitly labeled assumptions.
-3. Generate the initial scorecard.
-4. Generate a proposed baseline research job.
-5. Create a first founder task only if it is genuinely required; do not block the draft on it.
-6. Show a co-founder explanation and progress state.
+### 3.2 Initial result
 
-The founder can browse the plan while the baseline proposal is being prepared.
+After saving an idea, the app creates:
 
-## 4. Persistent co-founder surface
+- the `Idea` stage and initial objective;
+- a business-record skeleton containing the founder's actual input;
+- explicitly labelled hypotheses only where they help begin the next step;
+- a first recommended founder-sized step with alternatives to defer or choose
+  another appropriate action; and
+- a co-founder explanation of what is recorded, uncertain, and next.
 
-### Desktop
+The initial result must not generate an apparently complete business plan,
+silently start research, classify an idea as validated, or imply that missing
+sections contain facts.
 
-The co-founder should be available as a persistent panel or expandable side surface from all project destinations. The panel must preserve scroll position and unread state when the founder navigates to inspect a plan section or job.
+## 4. Overview
 
-The conversation surface must support:
+### 4.1 Purpose
 
-- free-text messages;
-- suggested questions;
-- references to plan sections, jobs, evidence, and tasks;
-- action cards;
-- research-plan review;
-- plan-diff explanation;
-- founder-task completion;
-- draft generation offers;
-- retry and provider error recovery.
+Overview is the default project screen and the primary “eagle's-eye” view. It
+is a navigable summary of business state, not a dashboard of equal-weight cards.
 
-### Conversation response types
+### 4.2 Required content
 
-The co-founder response may contain:
+Above the fold, the overview shows:
 
-- concise answer;
-- cited finding;
-- assumption card;
-- proposed plan change;
-- research plan;
-- founder task;
-- job creation request;
-- draft action;
-- decision card;
-- blocker and recovery action.
+- venture name and founder-authored opportunity summary;
+- current journey stage and plain-language objective;
+- one recommended next step with its effort, why it matters, and primary action;
+- active, waiting-for-founder, deferred, and blocked steps;
+- major readiness signals with concise explanations;
+- accepted decisions and high-impact assumptions;
+- changes since the founder's last visit;
+- proposals that need review; and
+- a link to the current business-model version.
 
-Plain chat text alone is insufficient for material work.
+The page may offer a small number of relevant alternate steps. It must not
+overwhelm the founder with every possible action, metrics, arbitrary cards, or
+technical runtime activity.
 
-## 5. Business model view
+### 4.3 Resume state
 
-The business model page must show all 17 logical sections from the shared requirements document in a readable overview. Each section card shows:
+When the founder returns after time away, Overview starts with a short change
+summary:
 
-- section name and plain-language explanation;
-- status (`draft`, `assumption-heavy`, `researching`, `needs founder`, `supported`, `stale`, `blocked`, or `accepted`);
-- score contribution;
-- known facts;
-- assumptions;
-- citations and evidence count;
-- last update;
-- next improvement action;
-- open draft changes.
+> What changed → why it matters → the recommended continuation.
 
-The founder can open a section to see:
+It must retain the last relevant location where practical, but the summary and
+next action remain visible. A user must never need to infer the current state
+from a chat transcript or a list of technical events.
 
-- human-readable content;
-- structured values and calculations;
-- evidence side panel;
-- assumption side panel;
-- source citations;
-- revision history;
-- diff against the accepted revision;
-- accept/reject controls.
+## 5. Journey experience
 
-The page must make it obvious that a complete low-confidence section is more useful than an empty section, while never presenting assumptions as facts.
+### 5.1 Journey map
 
-## 6. Work board
+The journey view displays the stages in order and makes non-linear work clear.
+For each stage it shows:
 
-The work board is the control panel for the venture.
+- plain-language purpose;
+- status;
+- accepted outcome or missing outcome;
+- key evidence and assumptions;
+- active or suggested steps;
+- deferred, blocked, or stale conditions; and
+- the effect of revisiting it.
 
-### Board views
+The founder can open a stage to understand it, not merely mark it complete.
+Stages are recommendations, never a locked wizard.
 
-Provide:
+### 5.2 Step detail
 
-- Kanban view by job state;
-- “assigned to me” founder-task view;
-- timeline/activity view;
-- cost and budget view;
-- completed output view;
-- blocked and needs-founder view.
+Every step detail view includes:
 
-### Job card
+- stage and objective;
+- what the founder is trying to achieve;
+- why it is useful now;
+- expected effort and what to prepare;
+- input form, capture action, or decision controls;
+- the evidence or completion criteria;
+- co-founder help that can prepare a script, draft, explanation, or comparison;
+- preview of record items affected;
+- defer, skip-with-reason, and discuss actions where appropriate; and
+- the expected next step after completion.
 
-Each job card shows:
+The primary action must be obvious. Important changes receive an explicit
+confirmation view before an accepted record version is created.
 
-- plain-language objective;
-- work role;
-- owner;
-- status and current stage;
-- why it matters;
-- source and plan scope;
-- expected output;
-- estimated cost/time;
-- actual cost/time when complete;
-- citations and changed sections;
-- founder action if waiting.
+### 5.3 Progress and activity
 
-The founder can open a job to inspect progress and output, but does not enter a specialist conversation.
+The activity presentation describes meaningful founder outcomes, such as
+“Problem hypothesis revised,” “Interview observation added,” or “Offer
+proposal ready for review.” It must not expose simulated typing, worker
+identities, private model reasoning, or a sub-agent topology.
 
-### Job controls
+If a future bounded co-founder operation is still running, show the founder its
+plain-language objective, safe cancellation state, current outcome, and any
+action required. Do not call it a sprint or show parallel worker counts.
 
-The default card exposes:
+## 6. Business-model experience
 
-- start;
-- pause;
-- cancel;
-- retry;
-- review output;
-- review proposed plan changes.
+### 6.1 Model overview
 
-An advanced settings panel exposes, within policy limits:
+The Business model destination renders the twelve sections defined in the
+shared requirements. For every section, show:
 
-- provider/model;
-- reasoning effort;
-- context-window setting;
-- permitted tools and source types;
-- maximum spend;
-- maximum duration;
-- worker count where safe;
-- whether the output can create a draft pack revision.
+- plain-language section purpose;
+- concise current summary;
+- status and readiness explanation;
+- material provenance labels;
+- linked evidence, assumptions, and decisions;
+- last changed actor and time;
+- stale or contradictory information; and
+- smallest action that would improve it.
 
-The co-founder remains responsible for the job objective and recommended role. The founder may safely override execution settings but cannot bypass policy, evidence rules, approval rules, or budget ceilings.
+Sections that are unknown must say so directly. A completed-looking template
+must never obscure missing information.
 
-## 7. Founder task experience
+### 6.2 Section detail
 
-Founder tasks must never appear as unexplained chores. A task page/card includes:
+Opening a section provides a document-like reading and editing experience with:
 
-- “Why this matters”;
-- the expected time;
-- preparation from the co-founder;
-- step-by-step instructions;
-- a script, questionnaire, or template;
-- what to record;
-- how completion affects the score;
-- a “Help me” action;
-- complete, defer, skip, and discuss actions.
+- structured values when useful;
+- evidence and assumptions in context;
+- linked decisions and downstream effects;
+- accessible version history;
+- current versus proposed changes; and
+- a clear action to revise, add evidence, or continue the journey.
 
-Examples:
+The section detail must use progressive disclosure. It should not force a
+founder to read every citation or system field before understanding the current
+model.
 
-- Conduct three non-friend interviews.
-- Ask a prospect about their current workaround.
-- Offer a paid pilot.
-- Confirm who approves the purchase.
-- Review a legal checklist with a professional.
-- Select one MVBP capability.
+### 6.3 Export
 
-When the founder selects “Help me,” the co-founder should prepare the relevant draft or explain the task without opening a new persona.
+The founder can export a presentable view of the accepted business model. The
+export identifies the record version and generation date, preserves uncertainty
+and evidence labels where material, and never labels the model “validated”
+unless the underlying record provides genuine evidence for that statement.
 
-## 8. Research review
+## 7. Evidence and decisions
 
-Before starting a research job, the web app must show:
+### 7.1 Evidence capture and review
 
-- research question;
-- why it matters;
-- source categories;
-- geography and date range;
-- expected findings;
-- estimated time;
-- estimated cost;
-- tools and provider;
-- limitations;
-- whether it will create a draft revision.
+The Evidence destination supports:
 
-After completion, show:
+- founder observations and notes;
+- interview notes and quoted statements;
+- attached documents and links;
+- source citations and retrieved findings when later research is enabled;
+- assumption creation and linking;
+- filtering by section, provenance, freshness, conflict, and status; and
+- safe editing or correction with history.
 
-- source list and citations;
-- key findings;
-- agreement and conflict between sources;
-- claims added to the plan;
-- assumptions that remain;
-- score changes;
-- proposed revision diff.
+Capture is optimized for speed: meaningful labels, minimal required fields, and
+the ability to add context later. Evidence capture must make it clear whether
+the entry is a founder observation, an external source, or an unverified
+assumption.
 
-## 9. Scorecard experience
+### 7.2 Decisions and proposal review
 
-The scorecard must not be a decorative badge. It must show:
+The Decisions destination presents:
 
-- overall score;
-- seven dimension scores;
-- score trend across revisions;
-- strongest evidence;
-- weakest dimensions;
-- top three actions likely to improve the score;
-- confidence and data freshness;
-- why a score changed.
+- accepted decisions and rationale;
+- current proposals awaiting founder review;
+- options considered and impacts;
+- stale downstream content; and
+- transition and acceptance history.
 
-Use plain-language labels first. For example, “Will people pay?” may be the heading, with “willingness to pay” as supporting terminology.
+A material proposal must show a before/after comparison, source and evidence,
+uncertainty, and affected areas before the founder can accept it. The interface
+must offer **Accept**, **Modify**, and **Keep current** rather than treating an
+AI recommendation as final.
 
-## 10. Plan revision review
+## 8. Co-founder experience
 
-The review page must support:
+### 8.1 Conversation
 
-- section-level diff;
-- field-level before/after values;
-- provenance badges;
-- citations next to claims;
-- assumptions added or removed;
-- score before/after;
-- unresolved conflicts;
-- accept this section;
-- accept all safe sections;
-- reject;
-- ask co-founder to explain.
+The co-founder is a single persistent identity across all project views. The
+conversation supports:
 
-The UI must warn when accepting a change makes dependent artifacts stale or changes canonical price, unit, currency, or cost logic.
+- free text;
+- contextual suggested prompts;
+- references to stages, steps, evidence, decisions, and model sections;
+- explicit Ask, Inform, Recommend, Generate, Review, and Change response
+  states;
+- proposal review cards;
+- focused help for the current step; and
+- recovery from a failed response without losing the founder's work.
 
-## 11. Draft actions and integrations
+The co-founder response must place explanation before action and make the
+expected state change clear. Plain chat text is insufficient for a material
+proposal or decision.
 
-The web app may let the co-founder create:
+### 8.2 Contextual help
 
-- email draft;
-- interview or survey draft;
-- meeting agenda and Google Meet details as text;
-- payment-link setup instructions;
-- landing-page draft;
-- calendar event draft;
-- invoice draft;
-- legal or compliance checklist.
+From a journey step, the founder can ask the co-founder to:
 
-The first product version must not connect or execute these actions. If a future integration is connected, its write path must be a separate approval-gated requirement.
+- explain why the step matters;
+- prepare an interview guide or note template;
+- draft an outreach or experiment outline;
+- compare plausible customer or offer choices;
+- summarize supplied notes; or
+- explain a proposed record change.
 
-## 12. Responsive and accessibility requirements
+The help remains clearly draft-only. It does not create an external action,
+silently change the model, or navigate the founder into a new agent persona.
 
-- The project overview, co-founder, business model, work board, evidence capture, and plan review must work at desktop, tablet, and narrow mobile widths.
-- Keyboard users can move between chat, board cards, task actions, and revision controls.
-- Status must not rely on color alone.
-- Long-running work has visible loading, paused, failed, and retry states.
-- Errors explain what happened and what the founder can do next.
-- The UI uses plain language and explains jargon inline.
+## 9. Accessibility, responsiveness, and trust
 
-## 13. Web acceptance criteria
+- The core experience works at desktop, tablet, and narrow mobile widths.
+- All functionality is keyboard accessible, with visible focus and logical
+  navigation order.
+- Color alone never communicates status, evidence strength, or approval state.
+- Touch targets are at least 44 by 44 CSS pixels where practical.
+- Forms use visible labels, near-field errors, and inline explanation.
+- Loading, paused, failed, and saved states are explicit and recoverable.
+- Motion is brief, meaningful, and respects reduced-motion preferences.
+- The interface favors readable 16px-or-larger body text, sufficient contrast,
+  and a responsive layout without horizontal scrolling.
 
-- A new founder can enter only an idea and see a complete plan draft, score, research proposal, and work board without filling an interview form.
-- The founder can start a research job after reviewing its scope.
-- A research result displays source citations and a proposed revision.
-- The founder can accept one section without accepting unrelated sections.
-- The founder can inspect all AI jobs without talking to separate agent personas.
-- The founder can see their own tasks with guidance and request help from the co-founder.
-- The co-founder conversation remains available while browsing the plan and work board.
-- No web control can send, publish, charge, schedule, or file in the first product version.
+## 10. Web acceptance criteria
+
+The web experience is complete for the initial journey release when a founder
+can:
+
+1. create a venture from a short idea;
+2. understand the current objective and one recommended next step;
+3. capture evidence or make a decision in a focused short session;
+4. defer or revisit work with visible consequences;
+5. see what changed after returning later;
+6. inspect the entire accepted business model and its uncertainty;
+7. review an AI proposal without silently accepting it;
+8. use one co-founder throughout the journey; and
+9. complete or defer a validation experiment plan.
+
+It is not complete if the primary experience still centers on a work board,
+sprint controls, specialist identities, agent-step traces, model selection, or
+unbounded AI activity.

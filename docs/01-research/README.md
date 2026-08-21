@@ -1,5 +1,16 @@
 # BusinessGenerator market research
 
+> **Status: historical research.** The current product boundary is documented in
+> [the documentation authority map](../README.md). Retain the evidence and
+> framework insights here, but do not use this folder's agent or operations
+> architecture as an implementation specification.
+>
+> **Current interpretation:** retain the research on customer evidence,
+> alternatives, willingness to pay, founder ownership, and an exportable
+> artifact. The current product stops at a presentable business model and the
+> next validation experiment; it does not build an operating system or an agent
+> team.
+
 **Date:** 15–17 August 2026  
 **Question:** Is there already a product that takes a business idea, turns it into a complete take-away business framework, and then helps the founder run operations — and if not, what process and agents should we build?
 
@@ -18,14 +29,16 @@ The real product gap — and the reason this app is worth building — is a **ga
 
 ## How to read this folder
 
-| Folder                                                                                       | What it answers                                                                      |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| [`01-competitive-landscape/`](01-competitive-landscape/00-executive-summary.md)              | Question 1: commercial apps and repositories                                         |
-| [`02-idea-to-business-process/`](02-idea-to-business-process/00-synthesis.md)                | Question 2: the real steps from idea to company                                      |
-| [`03-agent-architecture/`](03-agent-architecture/00-recommended-roster.md)                   | Question 3: which agents to build, and which work must stay human                    |
-| [`03-agent-architecture/01-conference-loop.md`](03-agent-architecture/01-conference-loop.md) | Conference loop: orchestration pattern, must-have agents, tool catalog (17 Aug 2026) |
+| Folder                                                                                       | What it answers                                                               |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [`01-competitive-landscape/`](01-competitive-landscape/00-executive-summary.md)              | Question 1: commercial apps and repositories                                  |
+| [`02-idea-to-business-process/`](02-idea-to-business-process/00-synthesis.md)                | Question 2: the real steps from idea to company                               |
+| [`03-agent-architecture/`](03-agent-architecture/00-recommended-roster.md)                   | Historical analysis of roles and human ownership; do not implement the roster |
+| [`03-agent-architecture/01-conference-loop.md`](03-agent-architecture/01-conference-loop.md) | Historical orchestration decision; use only to identify what is being retired |
 
-Start with the three `00-` files above, then the conference-loop decision log if you are designing the runtime.
+Start with the competitive and process synthesis. Read the agent-architecture
+material only as historical context or retirement evidence, never as a runtime
+specification.
 
 ## What this research is — and is not
 
@@ -34,7 +47,7 @@ Start with the three `00-` files above, then the conference-loop decision log if
 - Vendor marketing is labeled as marketing. Independent tests (where they exist) are labeled as such.
 - This is not legal, tax, or investment advice. India filings change; a chartered accountant / company secretary should review any live product copy.
 
-## Recommended product stance (from the research)
+## Historical recommended product stance
 
 Build a **take-away Business Operating System**, not another AI business-plan writer.
 
@@ -43,4 +56,23 @@ Build a **take-away Business Operating System**, not another AI business-plan wr
 - **Runtime:** after launch, the same agents operate the company (inbox, CRM, cash, compliance calendar) against that pack.
 - **Geography:** India-first legal/compliance agents (SPICe+, GST, Udyam, DPIIT, DPDP), with a pluggable country pack later.
 
-See [`01-competitive-landscape/00-gap-analysis.md`](01-competitive-landscape/00-gap-analysis.md) for the competitive implication of that stance.
+See [`01-competitive-landscape/00-gap-analysis.md`](01-competitive-landscape/00-gap-analysis.md) for the competitive implication of that historical stance.
+
+## Current product stance
+
+Build a **founder journey and business-model record**, not a company operating
+system:
+
+- **Wedge:** help a founder turn an idea into a presentable record while keeping
+  evidence, assumptions, decisions, and uncertainty honest.
+- **Path:** guide the founder through small, revisit-able steps toward one
+  validation experiment instead of a mandatory 26-step or build-and-operate
+  program.
+- **Artifact:** a versioned, exportable business model that the founder can
+  understand without chat history.
+- **Co-founder:** one assistive AI that prepares, explains, and proposes; it
+  does not operate a team of agents, make accepted decisions, or take external
+  actions.
+
+The authoritative expression of this stance is the
+[product reset](../02-product-requirements/00-product-reset.md).

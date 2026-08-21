@@ -1,206 +1,240 @@
 # Delivery slices and acceptance criteria
 
-This roadmap turns the product direction into vertical tracer bullets. Each slice should produce a usable founder experience across web, mobile, and worker/backend rather than building an isolated infrastructure layer.
+**Status:** current
+**Date:** 22 August 2026
+**Implements:** [Product reset](./00-product-reset.md)
 
-## Slice 1 — Instant complete draft
+Each slice delivers an understandable founder outcome across the required
+application layers. Do not build an AI runtime, a native-mobile parity project,
+or an integration platform ahead of the journey and business record.
 
-### Goal
-
-A founder enters an idea and immediately sees a complete, low-confidence business model.
-
-### Requirements
-
-- Create the initial full-pack revision from idea and optional context.
-- Populate all logical sections with assumptions, hypotheses, or not-applicable explanations.
-- Show overall and dimension score.
-- Show top assumptions and score-improvement actions.
-- Show a co-founder summary.
-- Create a proposed baseline research plan.
-- Do not require an interview before showing the plan.
-
-### Acceptance
-
-- A new founder can reach a useful plan without doing work first.
-- Every weak section explains why it is weak.
-- No unsupported customer, price, market, quote, or payment claim appears as fact.
-- The plan can be viewed on web and mobile.
-
-## Slice 2 — Durable co-founder
+## Slice 0 — Freeze the old direction and protect data
 
 ### Goal
 
-The co-founder becomes a continuing project relationship rather than a single echo response.
+Make the founder-journey model the only active product direction and make the
+legacy runtime safe to replace.
 
 ### Requirements
 
-- Persist conversation messages and structured action cards.
-- Build rolling summaries and selective context.
-- Persist founder preferences and confirmed facts.
-- Link conversation responses to plan sections, jobs, evidence, tasks, and decisions.
-- Show conversation on web and mobile.
+- Establish this requirements set and the reset plans as current authority.
+- Identify every active custom-agent, sprint, worker-pool, critic, and
+  specialist-role path.
+- Capture representative migration fixtures from existing projects.
+- Decide retention or conversion for job, usage, proposal, and agent-run data.
+- Prevent new product work from depending on legacy agent contracts.
 
 ### Acceptance
 
-- A founder can leave and return without losing context.
-- The co-founder can refer to a prior decision or preference accurately.
-- Context stays within the selected model window and records what was included.
-- The co-founder creates work items instead of only returning prose.
+- Engineering can identify the old and new call paths.
+- Existing project data has a documented conversion path.
+- No new UI or API requirement introduces a specialist persona, worker count,
+  sprint fan-out, or agent conference.
 
-## Slice 3 — Research tracer bullet
+## Slice 1 — Canonical journey and business record
 
 ### Goal
 
-AI performs useful baseline research after the founder reviews the plan.
+Replace implicit phase and pack-driven progression with an authoritative,
+founder-controlled journey and versioned business record.
 
 ### Requirements
 
-- Research-plan preview and explicit start.
-- Public web search and fetch.
-- Competitor/company research.
-- Academic/report source discovery where available.
-- Source snapshots, citations, findings, conflicts, and stale markers.
-- Research output mapped to plan sections and score dimensions.
+- Persist the journey, stage state, current objective, transitions, and
+  founder-sized steps.
+- Introduce record-item status, provenance, evidence, assumption, decision,
+  experiment, and staleness relationships.
+- Provide proposal and record-version commands with authorization and
+  idempotency.
+- Migrate or project usable pack revisions and retained venture data.
+- Remove the split between stored and derived phase as an active source of
+  truth.
 
 ### Acceptance
 
-- A founder can see exactly what a research job will do before starting it.
-- A completed job produces citations and a draft revision.
-- A research failure is recoverable and does not corrupt the plan.
-- The score explains how research changed it.
+- Every active venture has one readable current journey state.
+- A completed, deferred, or revisited step records its rationale and impact.
+- A material record change creates an auditable accepted version.
+- Existing retained venture data is traceable after migration.
 
-## Slice 4 — Work board and founder tasks
+## Slice 2 — Web journey shell and resume experience
 
 ### Goal
 
-The founder sees all AI and founder work in one motivating control panel.
+Give the founder an immediate, calm view of their path and the next small action.
 
 ### Requirements
 
-- Durable AI job state and progress.
-- Founder task state and completion evidence.
-- Assignments, role labels, outputs, blockers, and cost.
-- Start/pause/cancel/retry controls.
-- Safe advanced settings.
-- Guided founder task cards and Help me actions.
-- Equivalent web and mobile views.
+- Replace the desk/sprint-first default with idea capture and Overview.
+- Implement Journey, step-detail, Business model, Evidence, and Decisions
+  surfaces.
+- Render the twelve business-model sections with status and provenance.
+- Provide return summaries, deferral, revisit, and blocked-state behavior.
+- Meet the web accessibility and responsive requirements.
 
 ### Acceptance
 
-- The founder can understand what AI is doing and what they own.
-- The founder can start a proposed research job.
-- The founder can complete an interview task with prepared help.
-- A blocked job identifies the exact next action.
-- Budget controls are enforced server-side.
+- A founder enters an idea and sees a truthful record skeleton and first step.
+- A founder can make progress without using a chat surface.
+- A returning founder understands what changed and what to do next in one view.
+- No default screen presents a work board, worker count, specialist role, or
+  sprint control.
 
-## Slice 5 — Versioned plan review
+## Slice 3 — Evidence, proposals, and founder review
 
 ### Goal
 
-The plan becomes more robust through reviewable successive revisions.
+Make learning and decisions durable without allowing AI or forms to silently
+rewrite the business model.
 
 ### Requirements
 
-- Immutable plan revisions.
-- Section-level and field-level diff.
-- Provenance and citation labels.
-- Score before/after.
-- Accept/reject at whole-plan and section levels.
-- Stale dependent artifacts.
+- Capture evidence, interviews, observations, assumptions, decisions, and
+  experiments.
+- Link those items to relevant model sections and journey steps.
+- Display readiness explanations instead of a business-success score.
+- Support field-level and section-level proposal review.
+- Mark dependent items stale and explain the consequence of an accepted change.
 
 ### Acceptance
 
-- Accepting one section does not accept unrelated changes.
-- The founder can explain why a plan section improved.
-- Accepted facts and assumptions are available to the co-founder in future jobs.
-- History remains inspectable.
+- A founder can add an observation and see which claim it supports or
+  challenges.
+- A founder can accept, modify, or reject a proposal.
+- A changed customer, problem, or offer visibly identifies affected content.
+- The product does not call a hypothesis or complete document validated.
 
-## Slice 6 — Founder help and draft actions
+## Slice 4 — One co-founder on application contracts
 
 ### Goal
 
-Every founder-owned task comes with useful preparation.
+Add helpful AI without making it the system of record or rebuilding a custom
+agentic harness.
 
 ### Requirements
 
-- Interview scripts and questionnaires.
-- Outreach and follow-up drafts.
-- Pricing and payment-conversation scripts.
-- Survey and landing drafts.
-- Meeting agenda and Google Meet details as text.
-- Legal/compliance handoff checklists.
-- No external execution.
+- Persist conversation messages and bounded summaries.
+- Assemble context from accepted record state, evidence, decisions, steps, and
+  the active objective.
+- Implement the structured `CofounderRuntime` input/output contract.
+- Support Ask, Inform, Recommend, Generate, Review, and Change response
+  states.
+- Route draft and proposal creation through application commands.
+- Use only typed, policy-gated, bounded application capabilities.
 
 ### Acceptance
 
-- A founder can ask for help from the task card or co-founder.
-- The generated draft is linked to the task and plan section.
-- The founder sees that it is a draft and what remains human-owned.
-- No integration credential is needed to create a draft.
+- The co-founder accurately refers to accepted venture context after a return.
+- It creates a reviewable proposal rather than silently changing a record.
+- A failed turn preserves accepted state and provides recovery.
+- There is only one founder-facing identity and no custom specialist selection.
 
-## Slice 7 — Mobile parity and field capture
+## Slice 5 — Responsive and mobile capture
 
 ### Goal
 
-The founder can carry the venture process into real conversations and decisions.
+Let founders capture learning and resume a step from a phone without delaying
+the web-first product.
 
 ### Requirements
 
-- Durable chat and plan state on mobile.
-- Offline interview/quote/observation capture.
-- Payment signal capture.
-- Task preparation and completion.
-- Job/revision review.
-- Notifications and deep links.
+- Make the core web journey usable at narrow widths.
+- Add short-session evidence, interview, and observation capture.
+- Support safe draft synchronization and material-proposal review.
+- Add notifications only for actions requiring founder attention.
 
 ### Acceptance
 
-- A founder can capture evidence immediately after an interview.
-- Offline drafts sync without duplicates.
-- Mobile and web show the same project truth.
-- The founder can review a plan revision without desktop.
+- A founder can capture a note after a real conversation and see it in the web
+  record after synchronization.
+- A mobile user can understand the next action and review a proposal.
+- Offline or failed synchronization does not create duplicate or falsely
+  accepted evidence.
 
-## Slice 8 — Score maturity and operating loop
+## Slice 6 — Remove the legacy custom runtime
 
 ### Goal
 
-The score becomes a motivating feedback loop from idea through operation.
+Delete the custom multi-agent implementation once the replacement paths are
+proven and retained data has been migrated.
 
 ### Requirements
 
-- Historical score trends.
-- Evidence freshness.
-- Gate results as score inputs, not only blocking walls.
-- WTP and operating metrics.
-- GO/PIVOT/KILL decision support.
-- Score-improvement recommendations.
+- Replace `FoundryAgent`, skills, worker-pool, sprint-runner, stall detector,
+  synthesis, critic, and associated worker paths.
+- Remove named agent definitions, agent-run bindings, worker/sprint API
+  contracts, roster UI, specialist prompts, tests, configuration, and
+  dependencies.
+- Retain only application-owned queues that support ingestion, rendering,
+  notifications, bounded retrieval, or one co-founder operation.
+- Add an additive schema cleanup migration after code no longer reads obsolete
+  data.
 
 ### Acceptance
 
-- Adding reliable evidence improves the relevant score dimension.
-- Stale or contradicted evidence lowers confidence visibly.
-- The founder understands what would improve the next score.
-- The system never represents a score as a success guarantee.
+- No active production code imports a custom orchestration, worker-pool,
+  specialist-skill, or critic component.
+- No active UI, API, prompt, test, environment variable, or documentation
+  exposes the retired concepts.
+- Migration, tenant-isolation, state-transition, proposal-approval, and
+  end-to-end journey tests pass.
 
-## Deliberate non-goals for these slices
+## Slice 7 — DeepSeek Harness proof of concept
 
-- Autonomous email, calendar, Google Meet, survey, payment, publishing, or filing.
-- Multiple founder-facing agent personas.
-- Unbounded autonomous research.
-- Hidden model reasoning transcripts.
-- Treating a complete document as validated merely because every section has text.
-- Building a large operations suite before the tracer-bullet plan and work board are useful.
+### Goal
 
-## Definition of done for the product direction
+Test whether DeepSeek Harness can implement the co-founder runtime without
+weakening application control.
 
-The redesign is successful when a new founder can:
+### Requirements
 
-1. Enter an idea.
-2. See a complete but honest business model within five minutes.
-3. Understand its score and weakest assumptions.
-4. Review and start a useful research plan.
-5. Watch AI work on a visible board.
-6. Talk with one co-founder who remembers the project.
-7. Receive concrete help for founder-owned work.
-8. Capture interviews and payment signals from web or mobile.
-9. Review successive plan versions and accept changes section by section.
-10. Understand how each new input improved or weakened the business model.
+- Use an isolated process/service behind `CofounderRuntime`.
+- Start from a minimal custom composition, never its default local coding-agent
+  composition.
+- Disable shell, filesystem, session persistence for business context,
+  subagents, raw MCP, direct database access, and external writes.
+- Provide only one read-only application capability for the first scenario.
+- Test context isolation, cancellation, auditing, resume from application
+  summaries, and failure recovery.
+
+### Acceptance
+
+- The harness cannot access another venture or tenant.
+- It cannot use an unregistered tool or create a child session.
+- It cannot change accepted state except through application proposal and
+  approval commands.
+- Adoption reduces complexity versus the direct runtime; otherwise it is
+  rejected without affecting the product.
+
+## Slice 8 — Bounded integrations and later extensions
+
+### Goal
+
+Make the co-founder useful beyond documentation only after the core journey and
+runtime boundary are stable.
+
+### Requirements
+
+- Add read/draft capabilities through the application gateway.
+- Introduce per-capability consent, preview, audit, timeout, and recovery.
+- Design external writes as a separate approval-gated execution product.
+- Treat build, launch, operation, legal filing, and company operations as
+  later journeys, not forced content in the initial business-model path.
+
+### Acceptance
+
+- Every external capability has an explicit policy and user-visible effect.
+- No integration can bypass founder approval or application-owned audit.
+- The original idea-to-business-model journey remains usable without any
+  external connection.
+
+## Deliberate non-goals
+
+- An autonomous company operator.
+- Agent teams, specialist personas, critic loops, or parallel agent swarms.
+- A required long intake or automatic complete business plan.
+- A numerical success score presented as validation.
+- Unbounded web research or raw MCP execution.
+- Email sending, publishing, charging, scheduling, filing, or other external
+  writes.
+- Native-mobile parity before the web journey succeeds.

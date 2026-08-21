@@ -1,397 +1,340 @@
-# Worker and backend requirements
-
-The worker/backend is the product engine. It turns a founder idea into a complete draft, performs bounded research, stores durable memory, coordinates AI jobs, calculates the score, and proposes versioned plan changes.
-
-## 1. Responsibilities
-
-The backend must provide:
-
-- durable project, pack, evidence, conversation, task, job, score, and preference state;
-- co-founder orchestration;
-- job planning and scheduling;
-- research adapters and citation storage;
-- model/provider selection;
-- tool policy and safe controls;
-- prompt/context assembly;
-- structured outputs and validation;
-- pack revision proposals;
-- score calculation;
-- usage and budget accounting;
-- progress events and notifications;
-- audit history.
-
-The worker must be asynchronous for research, synthesis, scoring, rendering, and any job that can outlive a request.
-
-## 2. Core domain additions
-
-The target model should add or formalize these entities:
-
-### Conversation
-
-- project ID;
-- durable message ID;
-- actor (`founder`, `co-founder`, `system`);
-- text and structured blocks;
-- references to jobs, tasks, evidence, sections, and revisions;
-- timestamp;
-- visibility;
-- summary/index status.
-
-### FounderPreference
-
-- project or workspace scope;
-- preference key;
-- value;
-- source message;
-- confidence;
-- created/updated time;
-- founder confirmation state.
-
-Examples include preferred customer type, risk tolerance, budget, working style, geography, language, communication style, and availability. A preference is not an immutable fact until confirmed where it matters.
-
-### AiJob
-
-- job ID and project ID;
-- objective;
-- why now;
-- role label;
-- owner;
-- job state;
-- parent job;
-- pack revision snapshot;
-- inputs;
-- output contract;
-- source policy;
-- tools;
-- provider/model;
-- reasoning effort;
-- context-window policy;
-- budget and duration limits;
-- actual usage;
-- progress events;
-- outputs;
-- failure/retry details;
-- created/started/completed timestamps.
-
-### FounderTask
-
-- task ID;
-- project ID;
-- title and explanation;
-- owner;
-- linked job;
-- linked plan sections and score dimensions;
-- preparation/draft references;
-- evidence schema;
-- completion state;
-- due/suggested time;
-- defer/skip reason;
-- completion evidence.
-
-### ResearchSource and ResearchFinding
-
-Sources must preserve:
-
-- URL or source identifier;
-- publisher/author;
-- title;
-- publication date;
-- retrieval date;
-- source category;
-- snapshot/hash;
-- fetch status;
-- geographic scope;
-- reliability notes.
-
-Findings must preserve:
-
-- claim;
-- source references;
-- citation locator;
-- confidence;
-- affected plan sections;
-- conflicting findings;
-- stale status;
-- extraction method;
-- originating job.
-
-### PlanScore
-
-- pack revision ID;
-- overall score;
-- dimension scores;
-- inputs/rule version;
-- reasons;
-- top improvement actions;
-- calculation timestamp.
-
-## 3. Co-founder orchestration
-
-The co-founder is the control-plane agent. It should:
-
-1. Load the current plan, score, relevant history, open tasks, active jobs, evidence, assumptions, and founder preferences.
-2. Decide whether to answer, research, create a draft revision, create a founder task, create a job, or ask a targeted question.
-3. Prefer autonomous research and drafting when the missing information can be learned responsibly.
-4. Ask the founder only for private context, judgment, real-world action, or a choice that changes the plan materially.
-5. Explain its decision and create durable work items.
-6. Summarize material results back into the conversation.
-
-The co-founder may delegate to work roles such as:
-
-- problem and customer researcher;
-- evidence librarian;
-- competitor and market researcher;
-- business model analyst;
-- pricing and unit economics analyst;
-- willingness-to-pay and experiment planner;
-- MVBP/product scoper;
-- GTM/first-100 planner;
-- org and cost planner;
-- legal/compliance guide;
-- launch and operations planner;
-- critic/evaluator.
-
-These are internal work roles, not separate founder-facing agents.
-
-## 4. Tracer-bullet generation
-
-### Initial generation
-
-Given an idea and optional founder context, the backend must:
-
-1. Create a complete initial pack revision.
-2. Populate every logical section with one of:
-   - founder input;
-   - cited research;
-   - derived calculation;
-   - explicit assumption;
-   - open question;
-   - not applicable with a reason.
-3. Calculate the initial score.
-4. Identify the top assumptions and score gaps.
-5. Generate a proposed baseline research plan.
-6. Generate the first founder task only where AI cannot provide credible progress.
-
-The initial generation should not invent specific customers, prices, quotes, market sizes, or payment signals. It may propose hypotheses and research questions.
-
-### Continuous improvement
-
-Every completed job or founder submission may produce a draft revision. The proposal pipeline must:
-
-- validate structured section bodies;
-- link claims to evidence or assumptions;
-- preserve parent revision;
-- compute score before and after;
-- mark dependent artifacts stale;
-- identify conflicts;
-- make the draft reviewable by section.
-
-## 5. Research runtime
-
-### Research planner
-
-The planner creates a bounded research contract:
-
-- question;
-- section targets;
-- source categories;
-- geography;
-- date range;
-- search queries;
-- result limit;
-- fetch depth;
-- cross-check requirement;
-- time and spend budget;
-- expected output;
-- stop conditions.
-
-The founder reviews and starts the baseline plan from web or mobile.
-
-### Research workers
-
-Workers should support:
-
-- public web search;
-- page fetch and extraction;
-- competitor/company profiles;
-- academic paper discovery;
-- market/report discovery;
-- source deduplication;
-- citation extraction;
-- comparison tables;
-- contradiction detection.
-
-The runtime must preserve source snapshots and not rely on the model's unsupported memory of a source.
-
-### Research output
-
-Each research job returns:
-
-- concise findings;
-- claims;
-- citations;
-- source quality notes;
-- conflicts;
-- assumptions remaining;
-- affected plan sections;
-- proposed changes;
-- score delta;
-- recommended next action.
-
-## 6. Context and memory
-
-Conversation history is durable, but model context is selective.
-
-Context assembly should include:
-
-- recent conversation messages;
-- a rolling project conversation summary;
-- accepted founder preferences relevant to the task;
-- current accepted pack revision;
-- pending draft revision if relevant;
-- relevant evidence and citations;
-- open assumptions and founder tasks;
-- active jobs and recent outputs;
-- decisions and their rationale;
-- score and score reasons.
-
-The context builder must:
-
-- respect the selected context-window setting within hard provider limits;
-- prioritize accepted and current information over stale drafts;
-- avoid duplicate or contradictory facts;
-- show provenance for injected facts;
-- record which context items were used for reproducibility.
-
-## 7. Job controls and policy
-
-The founder can safely override:
-
-- provider/model;
-- reasoning effort;
-- context-window size;
-- approved tools/source classes;
-- maximum spend;
-- maximum duration;
-- run/pause/cancel.
-
-The backend must enforce:
-
-- workspace and project budget ceilings;
-- provider capability limits;
-- maximum context and output size;
-- tool allowlists;
-- source and data permissions;
-- risk ceilings;
-- concurrency limits;
-- cancellation and timeout;
-- immutable job contract history.
-
-Founder controls must not:
-
-- enable forbidden tools;
-- bypass evidence requirements;
-- expose another workspace's data;
-- silently mutate accepted plan state;
-- cause an external side effect.
-
-## 8. Tool requirements
-
-Tool use should be selected by the job role and contract, not by a global tool bag.
-
-Initial useful tool groups:
-
-- market sizing calculator;
-- unit economics calculator;
-- sensitivity calculator;
-- MoneyRules reconciliation;
-- MVBP scope checker;
-- source search/fetch;
-- citation extraction;
-- draft survey/interview;
-- draft email;
-- draft meeting agenda;
-- draft payment-link instructions;
-- draft landing copy;
-- builder prompt;
-- legal/compliance checklist.
-
-Tool output must be structured, validated, attributable to the job, and included in the job result. A model must not claim to have called a tool if the call was not recorded.
-
-## 9. Scoring service
-
-The scoring service must implement the shared seven-dimension rubric and version it.
-
-It must:
-
-- calculate scores deterministically from stored inputs;
-- distinguish missing data from a zero result;
-- show score reasons;
-- expose score deltas;
-- produce top improvement actions;
-- recalculate on relevant accepted evidence, payment signal, MoneyRules, plan, or metric changes;
-- preserve historical score snapshots.
-
-The score is an aid to prioritization, not a claim that a venture will succeed.
-
-## 10. Draft-only actions
-
-The backend may generate records for:
-
-- email drafts;
-- survey/questionnaire drafts;
-- meeting and Google Meet details as a draft;
-- payment-link instructions;
-- landing-page drafts;
-- calendar-event drafts;
-- invoice drafts;
-- legal/compliance drafts.
-
-The first product version must not call external write APIs. Integration credentials are not required for draft generation. A future execution feature must add explicit approval, payload hashing, idempotency, audit, and execution status.
-
-## 11. Progress and notifications
-
-Every job emits durable progress events:
-
-- proposed;
-- contract reviewed;
-- queued;
-- source search started;
-- source fetched;
-- finding created;
-- synthesis started;
-- draft revision ready;
-- score updated;
-- needs founder;
-- completed;
-- failed;
-- canceled.
-
-Events are projected to web and mobile. Notification workers notify only for meaningful founder actions, failures, material score changes, or completed outputs.
-
-## 12. Usage and budget
-
-Every model and tool call records:
-
-- job ID;
-- provider and model;
-- input/output tokens or equivalent;
-- tool name and duration;
-- estimated and actual cost;
-- budget reservation and release;
-- failure or retry.
-
-The board must show estimated cost before starting and actual cost after completion. A job stops or asks for approval when it reaches its configured budget.
-
-## 13. Backend acceptance criteria
-
-- An idea creates a complete low-confidence plan without requiring interviews first.
-- The co-founder can create a bounded research proposal and explain it.
-- Starting research produces citations and reusable findings.
-- A job can create a draft pack revision with a score delta and section diff.
-- The founder can accept only selected sections.
-- Durable conversation history and preferences are available across sessions and clients.
-- The co-founder can create guided founder tasks and help drafts.
-- Job controls are enforced server-side, not only hidden in UI.
-- No unapproved external write occurs.
-- Missing provider, search failure, timeout, or malformed model output creates a visible recoverable job state.
+# Application and co-founder requirements
+
+**Status:** current
+**Date:** 22 August 2026
+**Implements:** [Shared founder-journey requirements](./01-shared-product-requirements.md)
+
+## 1. Architectural boundary
+
+The application is the product engine. An AI runtime is a replaceable
+implementation detail behind a narrow co-founder contract.
+
+The application owns:
+
+- authentication, workspace membership, and tenant isolation;
+- venture, journey, step, and record persistence;
+- state-machine transitions and next-step selection;
+- evidence, assumptions, decisions, experiments, provenance, and staleness;
+- proposal review and accepted-record versioning;
+- context selection and redaction;
+- authorization, budget, and capability policy;
+- audit and activity history; and
+- all external-system intent, approval, and execution policy.
+
+No model, prompt, harness process, sub-agent, queue worker, or connector may
+write accepted business state directly.
+
+## 2. Core services
+
+### 2.1 Journey service
+
+`JourneyService` manages the explicit state machine. It:
+
+- creates a journey for each venture;
+- stores current stage, objective, stage states, and transition history;
+- creates and prioritizes founder-sized steps;
+- validates transition commands;
+- supports defer, block, resume, and revisit behavior;
+- identifies affected record items after a change; and
+- returns the next recommended step with its explanation.
+
+The journey state is persisted application data. It may not be inferred only
+from chat text, pack-section completion, a model classification, a score, or an
+asynchronous operation status.
+
+### 2.2 Business-record service
+
+`BusinessRecordService` maintains accepted, versioned business state. It:
+
+- stores record sections and typed material items;
+- validates item status and provenance;
+- links items to evidence, assumptions, decisions, and experiments;
+- creates immutable accepted versions;
+- renders founder-readable model sections and exports;
+- detects dependent content that becomes stale; and
+- maintains a compatibility projection for retained legacy pack data during
+  migration.
+
+Generated artifacts are projections of an accepted record version. They are not
+independent truth and cannot overwrite it.
+
+### 2.3 Step, evidence, decision, and experiment services
+
+These services manage the founder's actual work:
+
+- `JourneyStepService` creates, starts, defers, receives, and reviews a
+  founder-sized step.
+- `EvidenceService` stores observations, notes, citations, documents, and
+  source reliability metadata.
+- `AssumptionService` ranks uncertain claims and links them to proposed tests.
+- `DecisionService` records an authorized founder's choice, rationale,
+  alternatives, and downstream effects.
+- `ExperimentService` records a validation plan, success criteria,
+  observations, and outcome.
+
+These services are application APIs, not model tools that mutate the database
+without a command-level authorization check.
+
+### 2.4 Proposal service
+
+`ProposalService` receives founder drafts and AI-generated suggestions. It:
+
+- schema-validates proposed changes;
+- records input context, evidence references, uncertainty, and source;
+- produces section and field-level before/after comparisons;
+- determines stale downstream items;
+- supports accept-all-safe only when each material change is independently
+  represented and explainable;
+- creates the next accepted record version only after an authorized action; and
+- preserves rejected and expired proposals for audit without treating them as
+  accepted facts.
+
+### 2.5 Context service
+
+`ContextService` builds bounded co-founder context from application state. Its
+default packet includes only what is relevant to the current interaction:
+
+- venture identity, current stage, and objective;
+- current accepted record items and their provenance;
+- open assumptions, active steps, recent evidence, and decisions;
+- relevant pending proposals;
+- a bounded conversation summary and relevant recent messages;
+- the current readiness explanations; and
+- allowed capabilities and limits.
+
+It must prioritize accepted, current, and authorized data over stale drafts. It
+records the material context references used by a co-founder turn for audit and
+reproducibility. It must not send an unbounded transcript, another tenant's
+data, plaintext secrets, or a private hidden-reasoning trace.
+
+### 2.6 Co-founder service and runtime interface
+
+`CofounderService` orchestrates one founder-facing interaction. It calls a
+replaceable `CofounderRuntime` with an application-built context packet and
+returns a validated response.
+
+The runtime interface receives:
+
+- a correlation and operation identifier;
+- a bounded context packet;
+- the founder message or requested action;
+- a schema version;
+- an allowlisted capability manifest; and
+- cancellation and duration limits.
+
+The runtime returns:
+
+- user-facing explanation;
+- interaction type: `ask`, `inform`, `recommend`, `generate`, `review`, or
+  `change`;
+- references to application record items or evidence;
+- optional draft content;
+- optional proposed record changes;
+- optional suggested journey steps;
+- uncertainty and blocked conditions; and
+- safe, user-visible activity events.
+
+The application validates this response before storing it. It stores proposal
+data separately from accepted record data.
+
+### 2.7 Capability gateway
+
+`CapabilityGateway` is the only path from the co-founder runtime to application
+or external capabilities. Each capability has:
+
+- a stable name and input/output schema;
+- tenant and venture authorization;
+- an explicit risk class;
+- bounded inputs, time, and spend;
+- an idempotency policy where relevant;
+- an audit record; and
+- a user-visible explanation of its outcome.
+
+Initial capabilities are application-owned and limited to:
+
+- read current venture state;
+- search or retrieve approved public evidence through a bounded, citation-preserving adapter only after that adapter returns real results;
+- create evidence drafts with citations;
+- perform deterministic business calculations;
+- generate a draft artifact;
+- create a proposal; and
+- prepare founder-owned materials.
+
+The capability gateway must not expose a general shell, filesystem, raw
+database, unrestricted browser, arbitrary user MCP server, credential store,
+or unscoped connector API to the co-founder.
+
+## 3. Core domain model
+
+The target model is composed of the following aggregates. Existing compatible
+tables and repositories may be migrated incrementally, but their semantic
+contracts must converge on these responsibilities.
+
+| Aggregate                     | Responsibility                                                              |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| Venture                       | Ownership, founder intent, geography, constraints, and settings             |
+| Journey                       | Current stage/objective, status, transitions, recommendations, and blockers |
+| JourneyStep                   | One bounded action, effort, inputs, completion evidence, and outcome        |
+| BusinessRecordVersion         | Immutable accepted snapshot of the founder-readable model                   |
+| RecordItem                    | Typed material content with status, provenance, and links                   |
+| Evidence                      | Observation, source, document, interview note, or experiment result         |
+| Assumption                    | Testable uncertain claim and current support                                |
+| Decision                      | Founder-approved choice, rationale, alternatives, and impact                |
+| Experiment                    | Validation plan, criteria, observation, and result                          |
+| Proposal                      | Reviewable founder or AI change before acceptance                           |
+| ConversationMessage / Summary | Supporting history, never the canonical record                              |
+| CofounderOperation            | A bounded, auditable runtime invocation when asynchronous work is necessary |
+| ActivityEvent                 | User-readable record of a meaningful state or operation event               |
+
+The following legacy concepts are not target aggregates: `Sprint`,
+`SprintWorkerSpec`, `AgentDefinition`, `AgentRun`, `TaskLedger`,
+`ProgressLedger`, a custom worker pool, a critic runtime, or a specialist skill
+registry.
+
+## 4. Persistence and migration requirements
+
+### 4.1 Additive migration first
+
+The migration must preserve tenant scope, accepted record history, and audit
+links. It may add new tables or reinterpret retained pack tables through
+compatibility projections, but it must not modify historical database
+migrations or delete data before conversion checks pass.
+
+The migration creates or formalizes:
+
+- one authoritative journey state per venture;
+- persisted journey transitions and step lifecycle;
+- record-item provenance and status;
+- proposal-level change sets and review outcome;
+- explicit links between evidence, assumptions, decisions, experiments, and
+  record items;
+- staleness relationships;
+- conversation summaries linked to the venture; and
+- application-owned co-founder operation and capability audit records.
+
+### 4.2 Legacy-data mapping
+
+Existing projects, accepted pack revisions, evidence, assumptions, decisions,
+experiments, conversation messages, founder tasks, and artifacts are migration
+sources. The migration must:
+
+1. create a journey with an explicit migration reason;
+2. map retained pack content to the twelve founder-readable sections;
+3. mark unmapped, unsupported, or legacy operational content as retired or
+   deferred rather than silently deleting it;
+4. preserve old revision identifiers and source references where possible;
+5. mark uncertain migrated content with honest provenance; and
+6. test representative projects before destructive schema cleanup.
+
+`projects.current_phase` must be replaced with, or made a projection of, a
+single authoritative journey-state representation. The system must not retain
+two independently meaningful phase fields.
+
+## 5. Co-founder execution
+
+### 5.1 Initial implementation
+
+The initial co-founder may use a single direct provider call with structured
+output and application-owned capabilities. This is not a new agentic harness:
+the loop, state, approvals, and policy remain in application services.
+
+A failed or canceled turn must:
+
+- leave accepted state unchanged;
+- preserve the founder's message or draft;
+- emit a recoverable activity event;
+- provide a retry or continuation path; and
+- avoid duplicating a proposal or side effect.
+
+### 5.2 Later DeepSeek Harness integration
+
+DeepSeek Harness may be evaluated only as an implementation of
+`CofounderRuntime`. It is not a drop-in dependency or an authority for founder
+state.
+
+The integration must run as an isolated process or service with:
+
+- a custom, version-pinned Cordis composition;
+- one root co-founder session per authorized venture interaction;
+- no registered subagent provider or subagent tool;
+- no Bash, PowerShell, PTY, local filesystem, workspace instruction loading,
+  browser, or default JSONL business-context persistence;
+- no direct database, object-store, or secret-store access;
+- only typed application-gateway capabilities;
+- a session mapping owned by the application;
+- application-controlled cancellation, timeout, usage attribution, and audit;
+- schema validation before the application stores a result; and
+- no descendant sessions or autonomous background work.
+
+The harness's session history may be an ephemeral execution aid. The
+application's business record, summaries, and audit data remain the durable
+source of truth.
+
+Harness adoption is conditional on a proof of concept demonstrating that this
+boundary is simpler and no less safe than the direct runtime. The detailed
+evaluation plan is in
+[DeepSeek Harness evaluation](../plan/16-deepseek-harness-evaluation.md).
+
+## 6. Background work and integrations
+
+The worker remains useful for application-owned, bounded background operations:
+
+- document ingestion and extraction;
+- artifact rendering;
+- notification delivery;
+- source retrieval where the founder explicitly starts a bounded operation;
+- deterministic recalculation; and
+- a single co-founder operation when it cannot safely finish in a request.
+
+It must not run an app-defined orchestration loop, fan out specialist workers,
+select agent roles, synthesize worker opinions, invoke a critic agent, or
+change accepted business state.
+
+Future connectors follow this sequence:
+
+1. application-owned read/draft capability;
+2. clear proposed payload and impact;
+3. durable founder approval;
+4. separate, idempotent execution command;
+5. auditable result and recovery state.
+
+No future connector may use a harness-provided shell, raw MCP connection, or
+direct user credential as a shortcut around that sequence.
+
+## 7. Security, policy, and reliability
+
+- Every command and capability enforces workspace and venture authorization on
+  the server.
+- Row-level security remains enforced for all tenant-scoped persistence.
+- All material state changes are idempotent and auditable.
+- Context and logs redact secrets and avoid exposing hidden model reasoning.
+- Runtime event streams are reduced to user-safe activity and audit fields before
+  entering application observability; raw model chunks, attachments, and harness
+  session logs are not forwarded.
+- User-provided documents and web content are untrusted input, not
+  instructions.
+- Provider and runtime failures degrade to a recoverable application state.
+- Bounded operations have cancellation, timeout, retry, and duplicate-prevention
+  behavior.
+- Cost, provider use, and capability invocation are attributable to a venture
+  operation, not a named agent.
+- External writes are disabled until a separately approved execution policy
+  exists.
+
+## 8. Application acceptance criteria
+
+The backend and worker implementation meets this specification when:
+
+1. one authoritative journey state is available for every active venture;
+2. an authorized founder action is required to accept material record changes;
+3. evidence, assumptions, decisions, and experiments link to record items with
+   provenance;
+4. the co-founder receives bounded application context and returns
+   schema-validated results;
+5. a runtime cannot directly change a record, exceed a capability policy, or
+   read another tenant's data;
+6. a failed co-founder operation leaves accepted state intact and recoverable;
+7. the worker executes no specialist roster, fan-out, critic, or agent
+   conference; and
+8. a DeepSeek Harness proof of concept, if enabled, cannot reach shell,
+   filesystem, subagent, raw MCP, database, or external write capabilities.

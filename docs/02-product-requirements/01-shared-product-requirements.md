@@ -1,344 +1,346 @@
-# Shared product requirements
+# Shared founder-journey requirements
 
-This document defines the behavior shared by web, mobile, and worker/backend. Platform-specific requirements are in the following documents.
+**Status:** current
+**Date:** 22 August 2026
+**Implements:** [Product reset](./00-product-reset.md)
 
-## 1. Product promise
+## 1. Product outcome
 
-BusinessGenerator helps a founder move from:
+BusinessGenerator helps a time-constrained, early-stage founder make an idea
+clearer, more testable, and more presentable over many short sessions.
 
-> “I have an idea”
+The first product ends when the founder has:
 
-to:
+1. a readable, evidence-aware business model;
+2. a traceable record of assumptions, evidence, decisions, and uncertainty;
+3. one founder-controlled validation experiment with success criteria; and
+4. a clear next action when they return.
 
-> “I understand the customer, problem, alternatives, evidence, business model, price, risks, next experiment, and the decision I should make next.”
+It does not promise a validated company, build or launch a product, run company
+operations, or replace the founder's judgment and real customer contact.
 
-The product earns trust by showing useful progress before demanding founder effort. It builds a complete first version, labels what is weak, researches what it can, and asks the founder to supply only what cannot be responsibly automated.
+## 2. Product principles
 
-The product is not an automated business-success machine. It must make uncertainty visible and help the founder reduce it.
+### 2.1 The record is more important than the conversation
 
-## 2. Experience principles
+Conversation helps the founder make progress. The business record holds the
+accepted result of that progress. A founder must be able to understand the
+venture without replaying chat history.
 
-### 2.1 Complete before perfect
+The application is the only authority for:
 
-Every project should have an end-to-end business model draft shortly after the founder enters an idea. The first draft may score poorly. A blank or blocked plan is not an acceptable first outcome.
+- venture ownership and access;
+- the journey state machine;
+- record versions and material record items;
+- provenance, evidence links, decisions, and staleness;
+- approval, policy, budget, and external-action controls.
 
-### 2.2 Research before interrogation
+### 2.2 Progress must fit a busy life
 
-The system should search and synthesize what can be learned from public sources before asking the founder for information that is already available elsewhere. It may still ask for founder-specific context, private constraints, and real-world validation.
+The default action is one small, meaningful step—not a long questionnaire,
+full-plan review, or opaque background operation. Every step must say:
 
-### 2.3 The founder and AI share the work
+- where it sits in the journey;
+- the current objective;
+- why it matters now;
+- what the founder needs to do or decide;
+- expected effort or elapsed time;
+- what the co-founder can prepare or explain;
+- what record item, evidence, or decision will result; and
+- the likely next step.
 
-AI owns research, synthesis, calculations, drafts, comparisons, and preparation. The founder owns lived context, relationships, interviews, real commitments, judgment, and external approvals.
+The founder may pause, defer, skip with a reason, revisit earlier work, or
+choose another relevant recommended step. Those choices are recorded and their
+impact is visible.
 
-### 2.4 One co-founder, many workers
+### 2.3 Honest uncertainty creates trust
 
-The founder communicates with one co-founder. The co-founder may delegate to research, economics, product, legal-guide, or launch work roles. The founder sees the work and results but does not need to manage a group conversation.
+The product must distinguish founder input, evidence, calculation, AI
+interpretation, and accepted decisions. It must never represent a generated
+hypothesis, source summary, or formatting completeness as real-world
+validation.
 
-### 2.5 Evidence is stronger than confidence
+The system must not invent named customers, interviews, quotes, payments,
+market values, legal conclusions, or external actions.
 
-The app must distinguish:
+### 2.4 The co-founder supports decisions; it does not make them
 
-- `known`: directly supplied or directly observed;
-- `cited`: supported by a traceable source;
-- `derived`: calculated from known inputs;
-- `assumption`: plausible but unverified;
-- `needs_founder`: requires a founder action or private fact;
-- `stale`: previously supported but affected by changed inputs;
-- `blocked`: cannot proceed under policy or missing required input.
+There is one founder-facing co-founder. It may prepare material, organize
+information, calculate from approved inputs, retrieve bounded evidence, and
+propose changes. It must obtain an explicit founder action before material
+business state becomes accepted.
 
-The co-founder must not upgrade an assumption to a fact merely because the model sounds confident.
+There are no specialist personas, app-defined sub-agents, agent conference
+loops, critic agents, or user-managed worker pools.
 
-### 2.6 Visible work creates momentum
+## 3. Canonical journey
 
-The founder should be able to see what AI is doing, what the founder owns, what is waiting, what changed, and what the next useful action is. Progress should be expressed as findings, citations, plan changes, and decisions, not artificial typing or agent theatrics.
+The journey is a flexible state machine. A stage is a meaningful business
+question, not a hard gate or linear form sequence.
 
-### 2.7 Safe by default
+| Stage                | Founder question                                         | Required outcome before it can be described as complete            |
+| -------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
+| Idea                 | What opportunity do I want to explore?                   | Founder-authored idea, intent, constraints, and starting context   |
+| Problem              | What recurring problem may matter?                       | Testable problem hypothesis and material open questions            |
+| Customer             | Whose problem should we focus on first?                  | Beachhead hypothesis and customer context                          |
+| Evidence             | What supports, weakens, or contradicts this belief?      | Evidence and assumptions are visibly separated                     |
+| Opportunity          | Is there a focused and differentiated opportunity?       | Alternatives, risks, opportunity framing, and initial wedge        |
+| Offer                | What value might be offered, to whom, and on what terms? | Value proposition, candidate offer, and coherent model assumptions |
+| Validation next step | What is the smallest credible way to learn more?         | One experiment, success criteria, and founder-sized next action    |
 
-The first product version drafts external actions but never sends, publishes, charges, schedules, or files. Any future execution path must remain approval-gated and auditable.
+### 3.1 Stage state
 
-## 3. Tracer-bullet journey
+Each stage has a status independent of the content inside it:
 
-The journey remains a useful organizing model, but it is no longer a hard waterfall. All nine phases should have a visible draft from the beginning, and research or founder work can improve any section without forcing the founder through a locked sequence.
+`not_started`, `draft`, `in_progress`, `awaiting_founder`,
+`ready_for_review`, `complete`, `deferred`, `blocked`, or `revisited`.
 
-| Phase                  | Question                                                   | AI contribution                                                     | Founder contribution                                       | Main improvement        |
-| ---------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------- |
-| Diagnose               | What are we trying to learn first?                         | Interpret the idea, identify unknowns, start a baseline plan        | Provide intent, constraints, and personal context          | Clear starting point    |
-| Problem                | Who has which recurring problem?                           | Frame problem candidates and customer segments from research        | Correct the lived context and choose a plausible beachhead | Better customer clarity |
-| Evidence               | Do real people experience it?                              | Prepare interview scripts, analyze quotes, detect patterns          | Conduct and record real conversations                      | Evidence strength       |
-| Market and competition | What alternatives already win?                             | Research alternatives, competitors, market boundaries, and sources  | Correct hidden alternatives and relationships              | Market support          |
-| Model and pricing      | Who pays whom, for what unit, at what price?               | Compare models and calculate scenarios                              | Choose constraints and business intent                     | Economics               |
-| Willingness to pay     | Will someone exchange money or make a credible commitment? | Prepare offers, outreach, and experiment drafts                     | Make the offer and record the real signal                  | WTP score               |
-| Product                | What is the smallest valuable experiment?                  | Scope an MVBP, metric, payment path, and kill line                  | Confirm what they can build or deliver                     | Execution readiness     |
-| Build and launch       | Can the offer create value in reality?                     | Prepare build prompts, launch checklist, first-100 plan, and drafts | Build, deliver, contact, and approve actions               | Launch readiness        |
-| Operate                | What should be repeated, corrected, or stopped?            | Analyze actual metrics and recommend GO/PIVOT/KILL                  | Record reality and make the decision                       | Operating evidence      |
+The venture also records:
 
-The system may recommend a founder task in one phase while continuing research or drafting in other phases.
+- its current stage and current objective;
+- recommended and active journey steps;
+- completed, deferred, and blocked steps;
+- explicit transition history;
+- the current accepted business-record version; and
+- reasons for deferral, revisit, or blocked state.
 
-## 4. Complete business model
+Readiness signals may recommend a transition but never silently move the
+founder to another stage. A completed form, AI response, or research result
+does not itself complete a stage.
 
-The first tracer bullet must cover these logical sections:
+### 3.2 State transitions
 
-1. Context, founder objective, constraints, geography, and jurisdiction.
-2. Problem statement and why it matters.
-3. Beachhead customer segment.
-4. Persona and decision-making unit.
-5. Existing alternatives, substitutes, and competitors.
-6. Evidence ledger, interviews, quotes, and sources.
-7. Assumptions, experiments, and open questions.
-8. Market model and sizing method.
-9. Business model and canonical MoneyRules.
-10. Pricing, packaging, and unit economics.
-11. Willingness-to-pay events and offer tests.
-12. MVBP, out-of-scope list, success metrics, and kill lines.
-13. Go-to-market and first-100 customer plan.
-14. Team, skills, technology, operating costs, and runway.
-15. Legal, privacy, and compliance checklist.
-16. Launch and operating playbooks.
-17. Gates, decisions, risks, waivers, and artifact references.
+Every material journey transition must be a command owned by the application.
+It records the actor, time, reason, prior state, resulting state, and affected
+record items.
 
-Each section must have:
+The minimum transition commands are:
 
-- a human-readable summary;
-- structured fields where calculations or validations depend on them;
-- a status;
-- provenance for important claims;
-- linked evidence and assumptions;
-- last updated revision;
-- the next action that would improve it.
+- `set_current_objective`
+- `start_step`
+- `submit_step_evidence`
+- `mark_step_ready_for_review`
+- `complete_step`
+- `defer_step`
+- `skip_step_with_reason`
+- `block_step`
+- `unblock_step`
+- `revisit_stage`
+- `accept_proposal`
+- `reject_proposal`
 
-The current five pack sections may remain useful as storage or navigation groupings during migration, but they must not hide the complete business model from the founder.
+When a change invalidates dependent work, the application marks the relevant
+record items as `stale` and explains why. It does not delete the older decision
+or evidence.
 
-## 5. First-session experience
+### 3.3 Founder-sized steps
 
-Within five minutes of entering an idea, the founder should be able to see:
+The following are the default recommendation sequence. It is a guide, not a
+locked checklist.
 
-1. A plain-language one-page opportunity summary.
-2. A complete business model draft with weak sections visibly marked.
-3. The overall score and dimension scores.
-4. The assumptions that most affect the score.
-5. A proposed baseline research plan with expected outputs, sources, estimated time, and estimated cost.
-6. A work board showing AI jobs and founder tasks.
-7. A co-founder message explaining what was generated, what is uncertain, and what can happen next.
+1. Capture the idea in the founder's own words.
+2. State the desired outcome, constraints, geography, and available time.
+3. Frame one or more testable problem hypotheses.
+4. Choose an initial beachhead customer.
+5. Record known alternatives and current workarounds.
+6. Separate evidence from assumptions and add observations.
+7. Prioritize the assumption that most needs learning.
+8. Shape a value proposition and differentiation hypothesis.
+9. Describe a candidate offer, pricing hypothesis, and constraints.
+10. Review contradictions and complete the presentable model.
+11. Choose one validation experiment and its success criteria.
+12. Review the model and choose the next continuation.
 
-The baseline research plan is shown before it runs. The founder starts it from the board or co-founder message.
+A step may request founder input, collect evidence, ask for a decision, review a
+proposal, or capture a result. It may not require a founder to claim evidence
+they do not have.
+
+## 4. Business record
+
+### 4.1 Record structure
+
+The accepted business record contains founder-readable sections:
+
+1. Idea and founder context
+2. Problem
+3. Beachhead customer
+4. Current alternatives
+5. Evidence and learning
+6. Assumptions and open questions
+7. Opportunity and differentiation
+8. Value proposition
+9. Offer, pricing, and business model
+10. Economics and constraints
+11. Decisions and changes
+12. Next validation experiment
+
+Each section contains a human-readable summary plus structured values where
+comparison, calculation, traceability, or downstream impact requires them.
+Sections may be sparse. A blank or explicitly unknown section is preferable to
+invented content.
+
+### 4.2 Record-item metadata
+
+Material record items must carry:
+
+- identifier, type, and record section;
+- value or content;
+- status;
+- provenance;
+- linked evidence, assumptions, decisions, and related items;
+- author or originating system action;
+- created and last-changed timestamps;
+- accepted-record version; and
+- stale or downstream-impact references where applicable.
+
+Record-item status is one of:
+
+`empty`, `draft`, `needs_evidence`, `review`, `accepted`, `stale`, `deferred`,
+or `blocked`.
+
+Provenance is one of:
+
+`founder_input`, `cited_evidence`, `derived`, `ai_proposal`,
+`founder_approved`, `unverified`, or `contradicted`.
+
+Status and provenance answer different questions. For example, a founder may
+accept an `unverified` pricing hypothesis as the current working choice without
+representing it as cited evidence.
+
+### 4.3 Versioning and proposals
+
+Accepted record state is immutable by version. A material edit creates a
+proposal or founder-authored draft, then an accepted next version when the
+founder confirms it.
+
+For every material proposal, the review experience must show:
+
+1. current value;
+2. proposed value;
+3. reason, uncertainty, and supporting evidence;
+4. affected sections or assumptions;
+5. the actor and source of the proposal; and
+6. explicit actions to accept, modify, or keep the current value.
+
+The founder may accept only selected changes. Accepting one change must not
+silently accept unrelated proposed changes.
+
+### 4.4 Evidence, assumptions, and decisions
+
+An **evidence** item is a founder observation, interview note, source,
+document, citation, or experiment result. It records its origin, date,
+reliability notes, and the claims it supports or challenges.
+
+An **assumption** is a testable uncertain claim. It records its impact, current
+support, conflicts, and the smallest useful test.
+
+A **decision** is a founder-approved choice. It records the selected option,
+alternatives considered, rationale, supporting evidence, uncertainty, and
+downstream consequences.
+
+An **experiment** records the question, method, owner, success and failure
+criteria, dates, observations, and conclusion. A proposed experiment is not an
+executed experiment, and a generated outreach draft is not a customer signal.
+
+## 5. Readiness and overview
+
+The product provides explanatory readiness signals for:
+
+- problem clarity;
+- customer focus;
+- evidence strength;
+- opportunity understanding;
+- offer clarity;
+- economics coherence; and
+- validation preparedness.
+
+A signal must explain its evidence, assumptions, contradictions, freshness, and
+the smallest action likely to improve it. It is not a 0–100 business-success
+score, a gate that prevents documentation, or a claim that demand exists.
+
+At any point, the overview must answer:
+
+1. Where am I in the journey?
+2. What are we trying to accomplish now?
+3. What have I accepted or learned?
+4. What remains uncertain, stale, deferred, or blocked?
+5. What changed since my last visit?
+6. What is the next smallest useful action?
 
 ## 6. Co-founder behavior
 
-### 6.1 Conversation
+### 6.1 Interaction types
 
-The co-founder must:
+Every co-founder response has one primary interaction type:
 
-- maintain a durable project conversation history;
-- remember accepted facts, decisions, assumptions, constraints, and founder preferences;
-- retrieve relevant history instead of sending an unbounded transcript to the model;
-- explain why it is asking a question;
-- state what it can do without the founder;
-- offer concrete help instead of merely repeating the founder's answer;
-- summarize changes into the plan, work board, or founder task list.
+- **Ask:** request founder-only context or a decision.
+- **Inform:** explain current state, an event, or an evidence-backed fact.
+- **Recommend:** propose a direction and ask for a decision.
+- **Generate:** create a clearly labelled draft artifact or proposal.
+- **Review:** help the founder inspect a record item, evidence item, or step.
+- **Change:** propose a before-and-after change to accepted state.
 
-The co-founder must not:
+Responses must identify the current objective, relevant context, uncertainty,
+and next action. They must distinguish facts from interpretations and
+recommendations without exposing hidden chain-of-thought.
 
-- pretend that research was performed when no source was retrieved;
-- claim that a draft is validated;
-- invent interviews, quotes, payments, customers, competitors, or market numbers;
-- force a phase transition simply because a form is complete;
-- expose private chain-of-thought;
-- create separate founder-facing personas for each worker.
+### 6.2 Permitted initial capabilities
 
-### 6.2 Proactive help
+The co-founder may:
 
-When a founder task is created, the co-founder should offer relevant help such as:
+- explain the journey and current record;
+- ask focused questions that materially affect the next step;
+- summarize founder-provided notes and documents;
+- prepare interview guides, outreach drafts, experiments, and model drafts;
+- perform deterministic calculations through application services;
+- retrieve information only through bounded, approved application capabilities;
+- identify conflicts, stale content, and missing evidence; and
+- create reviewable proposals and suggested steps.
 
-- interview questionnaire and conversation opener;
-- target-person description and outreach message;
-- interview note template and quote extraction;
-- survey or landing-page draft;
-- offer and payment-conversation script;
-- meeting agenda and follow-up email draft;
-- competitor-research questions;
-- pricing interview script;
-- experiment design and pass/fail threshold;
-- MVBP scoping worksheet;
-- launch checklist and first-100 outreach draft;
-- review questions for a CA, CS, lawyer, or other professional.
+It may not:
 
-These are offers and drafts. They do not create a hidden obligation or perform an external action.
+- create or accept a material business-record version by itself;
+- claim a real-world action or validation it did not observe;
+- use unrestricted filesystem, shell, browser, MCP, database, or connector
+  access;
+- create descendant agents or long-running autonomous work; or
+- send, publish, charge, schedule, file, or modify an external system.
 
-## 7. Scorecard
+## 7. Return, export, and collaboration
 
-### 7.1 Score model
+When a founder returns after time away, the default view must provide:
 
-The product shows a 0–100 overall score plus seven dimension scores. Each dimension is scored from 0 to 5 and converted using the weight.
+- a concise change summary;
+- current stage and objective;
+- the active, deferred, or blocked step;
+- major readiness signals and uncertainty;
+- the current business-model record; and
+- one recommended continuation action.
 
-| Dimension           | Weight | What earns a high score                                                              |
-| ------------------- | -----: | ------------------------------------------------------------------------------------ |
-| Customer clarity    |     15 | Specific beachhead, clear problem, persona, and buyer roles                          |
-| Evidence strength   |     20 | Independent interviews, linked quotes, repeated pain, source quality                 |
-| Market support      |     15 | Named alternatives, credible competitors, cited market boundaries, clear wedge       |
-| Business economics  |     15 | Canonical price/unit/cost, coherent model, calculated unit economics                 |
-| Willingness to pay  |     15 | Independent payment, paid pilot, credible commitment, or strong offer result         |
-| Execution readiness |     10 | Focused MVBP, payment path, metric, team/cost/launch plan                            |
-| Risk control        |     10 | Important assumptions tested, legal/operational risks identified, kill lines defined |
+The founder can export a presentable business-model view with evidence and
+uncertainty labels. Exported artifacts are projections of an accepted record
+version and must state the version and generation date.
 
-Initial default score:
+Venture collaborators may contribute evidence, drafts, or comments according to
+their permission. Only an authorized founder action may accept a material
+business decision.
 
-- unsupported assumptions score low;
-- a complete section can still score low;
-- citations improve support but do not prove customer demand;
-- founder assertions are visible and do not count as independent evidence;
-- friend/family interest does not satisfy independent validation;
-- missing data is scored as unknown, not as a neutral average.
+## 8. Shared acceptance criteria
 
-The score must show the largest reasons it is low and the smallest set of actions likely to improve it.
+A release satisfies these requirements when a founder can:
 
-### 7.2 Score transparency
+1. create a venture from a short idea without a long questionnaire;
+2. see a truthful empty-or-hypothesis-backed record, rather than an invented
+   complete business plan;
+3. complete one small step and see the resulting evidence, decision, or record
+   change;
+4. defer or revisit work and understand what may be affected;
+5. return later and understand the current path without reading chat history;
+6. distinguish founder input, evidence, assumptions, AI proposals, and accepted
+   decisions;
+7. review a material proposal before it changes accepted state;
+8. choose a single validation experiment with explicit success criteria; and
+9. export or review the current business model independently of the co-founder.
 
-Every score update should explain:
-
-- the input records used;
-- the evidence and assumptions that affected it;
-- the rule or weight applied;
-- what changed since the previous score;
-- the next action that could improve it.
-
-Scores are attached to a pack revision and are recalculated when relevant evidence, assumptions, MoneyRules, or metrics change.
-
-## 8. Plan revisions
-
-AI work produces a draft revision, never a silent mutation of the accepted plan.
-
-A revision must include:
-
-- parent revision;
-- originating job and model profile;
-- changed sections and fields;
-- before/after diff;
-- evidence references;
-- assumptions added or changed;
-- score before and after;
-- unresolved conflicts;
-- confidence and provenance;
-- recommended next action.
-
-The founder may:
-
-- accept the whole revision;
-- accept individual sections;
-- reject the revision;
-- leave it pending;
-- ask the co-founder to explain a change.
-
-Accepting one section must not silently accept unrelated changes.
-
-## 9. Jobs and founder tasks
-
-### 9.1 Job states
-
-Jobs use these states:
-
-`proposed → queued → running → needs_founder → needs_approval → complete`
-
-Terminal alternatives are `blocked`, `failed`, `canceled`, and `expired`.
-
-### 9.2 Job contract
-
-Every job records:
-
-- objective and why it matters now;
-- plain-language work role;
-- assigned owner (`co-founder`, `AI`, or `founder`);
-- source and pack revision snapshot;
-- inputs and expected outputs;
-- tools and source policies;
-- model/provider;
-- reasoning effort;
-- context-window policy;
-- estimated and actual cost;
-- time budget;
-- approval requirements;
-- progress events;
-- findings, citations, proposed changes, and next action.
-
-### 9.3 Founder task contract
-
-Every founder task records:
-
-- the task in plain language;
-- why it matters;
-- expected time and difficulty;
-- preparation materials;
-- script/template/help action;
-- evidence to capture;
-- completion criteria;
-- due date or suggested timing;
-- linked score dimensions and plan sections.
-
-The founder can mark a task complete only by providing the requested result or explicitly marking it skipped/deferred with a reason.
-
-## 10. Research requirements
-
-Baseline research must support:
-
-- general public web search;
-- company and competitor research;
-- academic papers and research repositories;
-- public market and industry data;
-- source fetching and snapshots;
-- citations at claim or finding level;
-- source date, publisher, URL, and retrieval status;
-- conflicting-source detection;
-- stale-source marking;
-- confidence and provenance labels.
-
-Research output must be a reusable evidence bundle, not only chat prose. Claims without a source or founder input must remain assumptions.
-
-Research jobs should be bounded by:
-
-- objective;
-- source types;
-- geography;
-- date range;
-- result count;
-- time budget;
-- model/tool budget;
-- stop condition.
-
-## 11. Human ownership and safety
-
-Founder-owned:
-
-- private context and final interpretation;
-- real conversations and interviews;
-- real payment or commitment tests;
-- acceptance of plan revisions;
-- approval of any future external action;
-- final GO/PIVOT/KILL decision.
-
-AI-owned:
-
-- research and source organization;
-- comparison and synthesis;
-- calculations using approved tools;
-- draft surveys, emails, agendas, payment-link instructions, and launch materials;
-- identifying contradictions, stale sections, and highest-value next actions.
-
-Draft-only first release:
-
-- no email send;
-- no calendar or Google Meet write;
-- no survey publish;
-- no payment-link send or charge;
-- no landing-page publish;
-- no ad spend;
-- no government filing.
-
-## 12. Non-functional requirements
-
-- A founder must be able to understand the plan without knowing the terms “Gate A,” “DMU,” or “MoneyRules”; technical terms require plain-language labels.
-- Long-running research must be asynchronous and resumable.
-- Every important AI result must be reproducible from a job contract, model profile, source snapshot, and pack revision.
-- Every model and tool call must be attributable to a job and usage record.
-- User-controlled budgets must have hard policy ceilings.
-- Web and mobile must use the same project state, revisions, jobs, tasks, score, and conversation history.
-- The system must degrade gracefully when a provider, search source, or worker is unavailable.
-- All output is draft unless explicitly marked accepted, cited, or observed.
+No acceptance path may depend on a specialist agent, a worker-pool run, an
+autonomous research sprint, or an unapproved external side effect.
