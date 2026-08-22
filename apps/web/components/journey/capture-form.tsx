@@ -1,5 +1,6 @@
 'use client';
 
+import { InterviewParticipantTypes, type InterviewParticipantType } from '@foundry/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
@@ -15,6 +16,8 @@ export function CaptureForm({ projectId }: { projectId: string }) {
     'observation',
   );
   const [summary, setSummary] = useState('');
+  const [participantType, setParticipantType] = useState<InterviewParticipantType>('known_contact');
+  const [consentGiven, setConsentGiven] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -27,8 +30,10 @@ export function CaptureForm({ projectId }: { projectId: string }) {
       kind,
       summary: trimmed,
       idempotencyKey: crypto.randomUUID(),
+      ...(kind === 'interview' ? { participantType, consentGiven } : {}),
     });
     setSummary('');
+    setConsentGiven(false);
     router.refresh();
   }
 
@@ -47,6 +52,39 @@ export function CaptureForm({ projectId }: { projectId: string }) {
           <option value="assumption">Assumption</option>
         </select>
       </label>
+      {kind === 'interview' ? (
+        <>
+          <label className="field">
+            <span>Who did you talk to?</span>
+            <select
+              className="input"
+              value={participantType}
+              onChange={(event) =>
+                setParticipantType(event.target.value as InterviewParticipantType)
+              }
+            >
+              {InterviewParticipantTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type.replaceAll('_', ' ')}
+                </option>
+              ))}
+            </select>
+          </label>
+          {participantType === 'non_friend' ? null : (
+            <p className="hint">
+              This interview will be stored, but it will not count as independent proof.
+            </p>
+          )}
+          <label className="field flex-row items-center gap-2">
+            <input
+              type="checkbox"
+              checked={consentGiven}
+              onChange={(event) => setConsentGiven(event.target.checked)}
+            />
+            <span>They agreed to have this conversation recorded</span>
+          </label>
+        </>
+      ) : null}
       <label className="field">
         <span>Note</span>
         <textarea
@@ -57,7 +95,7 @@ export function CaptureForm({ projectId }: { projectId: string }) {
         />
         <p className="hint">
           A note is not proof. Provenance stays founder input or unverified until you accept a
-          proposal.
+          proposal. Consent is never inferred.
         </p>
       </label>
       <button

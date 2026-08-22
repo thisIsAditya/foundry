@@ -1,5 +1,5 @@
 import type { CreateUploadIntentInput } from '@foundry/api-contracts';
-import { EvidenceItemIdSchema, ProjectIdSchema, WorkspaceIdSchema } from '@foundry/domain';
+import { ProjectIdSchema, SourceIdSchema } from '@foundry/domain';
 
 export const MAX_VENTURE_ATTACHMENTS = 10;
 export const MAX_CHAT_ATTACHMENTS = 5;
@@ -12,29 +12,20 @@ export type UploadEvidenceFns = {
     uploadUrl: string;
   }>;
   confirm: (body: { sourceId: string; idempotencyKey: string }) => Promise<unknown>;
-  recordObservation: (body: {
-    projectId: string;
-    summary: string;
-    idempotencyKey: string;
-  }) => Promise<{ id: string }>;
 };
 
 export async function uploadEvidenceAttachment(
   input: UploadEvidenceFns & {
     file: File;
-    projectId?: string;
-    workspaceId?: string;
+    projectId: string;
   },
-): Promise<{ evidenceItemId: string; filename: string }> {
+): Promise<{ sourceId: string; filename: string }> {
   const intent = await input.createIntent({
     filename: input.file.name,
     mimeType: input.file.type || 'text/plain',
     sizeBytes: Math.max(input.file.size, 1),
     idempotencyKey: crypto.randomUUID(),
-    ...(input.projectId === undefined ? {} : { projectId: ProjectIdSchema.parse(input.projectId) }),
-    ...(input.workspaceId === undefined
-      ? {}
-      : { workspaceId: WorkspaceIdSchema.parse(input.workspaceId) }),
+    projectId: ProjectIdSchema.parse(input.projectId),
   });
   if (intent.uploadUrl.startsWith('memory://')) {
     const stored = await fetch(`/api/uploads/${intent.sourceId}`, {
@@ -58,13 +49,8 @@ export async function uploadEvidenceAttachment(
     sourceId: intent.sourceId,
     idempotencyKey: crypto.randomUUID(),
   });
-  const evidence = await input.recordObservation({
-    projectId: intent.projectId,
-    summary: input.file.name,
-    idempotencyKey: crypto.randomUUID(),
-  });
   return {
-    evidenceItemId: EvidenceItemIdSchema.parse(evidence.id),
+    sourceId: SourceIdSchema.parse(intent.sourceId),
     filename: input.file.name,
   };
 }

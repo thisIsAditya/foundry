@@ -27,8 +27,10 @@ const EnvSchema = z.object({
   AWS_S3_SECRET_ACCESS_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   BETTER_AUTH_SECRET: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
   FOUNDRY_SECRETS_KEY: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
-  FOUNDRY_HARNESS_URL: z.url(),
-  FOUNDRY_HARNESS_TOKEN: z.string().min(32),
+  FOUNDRY_AI: z.preprocess(emptyToUndefined, z.enum(['off', 'direct', 'harness']).optional()),
+  FOUNDRY_HARNESS_URL: z.preprocess(emptyToUndefined, z.url().optional()),
+  FOUNDRY_HARNESS_TOKEN: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
+  FOUNDRY_CAPABILITY_INVOKE_URL: z.preprocess(emptyToUndefined, z.url().optional()),
   CLAMD_HOST: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   CLAMD_PORT: z
     .string()

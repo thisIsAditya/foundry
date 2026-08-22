@@ -68,6 +68,7 @@ export {
 } from './repositories/sources.js';
 export {
   insertSourceSnapshot,
+  listSourceSnapshotsBySourceId,
   toSourceSnapshot,
   type InsertSourceSnapshot,
 } from './repositories/source-snapshots.js';
@@ -80,6 +81,8 @@ export {
 } from './repositories/documents.js';
 export {
   insertContentBlock,
+  listContentBlocksBySourceId,
+  listReadyContentBlocksByProjectId,
   searchContentBlocks,
   toContentBlock,
   type ContentBlockSearchHit,
@@ -442,6 +445,48 @@ export {
   toRecordItemStaleness,
   type InsertRecordItemStaleness,
 } from './repositories/record-item-staleness.js';
+export {
+  insertRecordItemRelation,
+  listRecordItemRelationsByProjectId,
+  toRecordItemRelation,
+  type InsertRecordItemRelation,
+} from './repositories/record-item-relations.js';
+export {
+  insertRecordSupportLink,
+  listRecordSupportLinksByItemId,
+  listRecordSupportLinksByProjectId,
+  toRecordSupportLink,
+  type InsertRecordSupportLink,
+} from './repositories/record-support-links.js';
+export {
+  getProjectMemoryEntryById,
+  insertProjectMemoryEntry,
+  listActiveProjectMemoryByProjectId,
+  supersedeProjectMemoryEntry,
+  updateProjectMemoryEntry,
+  type InsertProjectMemoryEntry,
+} from './repositories/project-memory.js';
+export {
+  getInterviewImportBatchById,
+  getInterviewImportCandidateById,
+  insertInterviewImportBatch,
+  insertInterviewImportCandidate,
+  listInterviewImportBatchesByProjectId,
+  listInterviewImportCandidatesByBatchId,
+  updateInterviewImportBatchStatus,
+  updateInterviewImportCandidate,
+  type InsertInterviewImportBatch,
+  type InsertInterviewImportCandidate,
+} from './repositories/interview-imports.js';
+export {
+  cancelCapabilityTokensForOperation,
+  getCapabilityTokenByHash,
+  hashCapabilityToken,
+  incrementCapabilityTokenUse,
+  insertCapabilityToken,
+  newCapabilityTokenSecret,
+  type CapabilityTokenRecord,
+} from './repositories/capability-tokens.js';
 export {
   getProposalV4ById,
   insertProposalV4,

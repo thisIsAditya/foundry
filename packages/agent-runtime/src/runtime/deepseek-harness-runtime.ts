@@ -53,6 +53,13 @@ export class DeepSeekHarnessRuntime implements CofounderRuntime {
           founderRequest: input.founderRequest,
           contextPacket: input.contextPacket,
           timeoutMs: input.timeoutMs,
+          allowedCapabilities: input.capabilityManifest,
+          ...(input.capabilityToken === undefined
+            ? {}
+            : { capabilityToken: input.capabilityToken }),
+          ...(input.capabilityInvokeUrl === undefined
+            ? {}
+            : { capabilityInvokeUrl: input.capabilityInvokeUrl }),
         }),
         signal,
       });

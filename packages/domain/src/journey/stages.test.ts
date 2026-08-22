@@ -69,15 +69,15 @@ describe('first recommended step', () => {
     expect(step.recommended).toBe(true);
   });
 
-  it('does not jump to research when only an idea exists', () => {
+  it('moves from a recorded idea to the founder-written problem, not optional context', () => {
     const step = firstRecommendedStep({
       ideaText: 'Cafe owners lose two hours closing the books.',
     });
-    expect(step.stage).toBe('idea');
+    expect(step.stage).toBe('problem');
     expect(step.objective.toLowerCase()).not.toContain('research');
   });
 
-  it('moves to the problem when geography or an objective would change the path', () => {
+  it('keeps problem as the next stage when optional context is also supplied', () => {
     const step = firstRecommendedStep({
       ideaText: 'Cafe owners lose two hours closing the books.',
       geography: 'IN',

@@ -1,7 +1,7 @@
 import {
   createMemoryStreamBus,
   createRedisStreamBus,
-  DeepSeekHarnessRuntime,
+  createCofounderRuntime,
   type CofounderRuntime,
   type StreamBus,
 } from '@foundry/agent-runtime';
@@ -17,17 +17,18 @@ import { getSql } from '../lib/sql';
 import { getCoordinationStore, type CoordinationStore } from './coordination';
 import { createBullmqJobQueue, createMemoryJobQueue, type JobQueue } from './queue/job-queue';
 import { BusinessRecordService } from './services/business-record-service';
-import { CapabilityGateway } from './services/capability-gateway';
+import { CapabilityGateway } from '@foundry/cofounder-operations';
 import { CofounderService } from './services/cofounder-service';
 import { ContextService } from './services/context-service';
 import { ConversationService } from './services/conversation-service';
 import { DecisionService } from './services/decision-service';
 import { DocumentService } from './services/document-service';
 import { ExperimentService } from './services/experiment-service';
-import { InitialDraftService } from './services/initial-draft-service';
+import { InterviewImportService } from './services/interview-import-service';
 import { InterviewService } from './services/interview-service';
 import { JourneyService } from './services/journey-service';
 import { MemberService } from './services/member-service';
+import { MemoryService } from './services/memory-service';
 import { ProjectService } from './services/project-service';
 import { ProposalService } from './services/proposal-service';
 import { WorkspaceService } from './services/workspace-service';
@@ -47,11 +48,12 @@ export type ServiceContainer = {
   projectService: ProjectService;
   documentService: DocumentService;
   interviewService: InterviewService;
+  interviewImportService: InterviewImportService;
+  memoryService: MemoryService;
   experimentService: ExperimentService;
   decisionService: DecisionService;
   memberService: MemberService;
   conversationService: ConversationService;
-  initialDraftService: InitialDraftService;
   journeyService: JourneyService;
   businessRecordService: BusinessRecordService;
   proposalService: ProposalService;
@@ -78,6 +80,7 @@ export type ServiceExtras = {
   streamBus: StreamBus;
   cofounderRuntime: CofounderRuntime;
   cofounderWorkerEnabled?: boolean;
+  capabilityInvokeUrl?: string;
 };
 
 export function createServices(
@@ -89,23 +92,26 @@ export function createServices(
   const journeyService = new JourneyService(sql, policyService);
   const businessRecordService = new BusinessRecordService(sql, policyService);
   const proposalService = new ProposalService(sql, policyService, businessRecordService);
-  const contextService = new ContextService(sql, policyService, journeyService);
+  const contextService = new ContextService(sql, policyService);
+  const interviewService = new InterviewService(sql, coordination, policyService);
+  const interviewImportService = new InterviewImportService(sql, policyService);
+  const memoryService = new MemoryService(sql, policyService);
   const cofounderService = new CofounderService(
     sql,
     policyService,
     contextService,
-    new CapabilityGateway(sql, policyService, proposalService),
+    new CapabilityGateway(sql, policyService),
     extras.streamBus,
     extras.cofounderRuntime,
     coordination,
     extras.jobQueue,
     extras.cofounderWorkerEnabled !== false,
+    extras.capabilityInvokeUrl,
   );
   return {
     policyService,
     workspaceService: new WorkspaceService(sql, coordination),
     projectService: new ProjectService(sql, coordination, policyService, {
-      initialDraftService: new InitialDraftService(sql, extras.streamBus),
       journeyService,
     }),
     documentService: new DocumentService(
@@ -115,12 +121,13 @@ export function createServices(
       extras.objectStore,
       extras.jobQueue,
     ),
-    interviewService: new InterviewService(sql, coordination, policyService),
+    interviewService,
+    interviewImportService,
+    memoryService,
     experimentService: new ExperimentService(sql, coordination, policyService),
     decisionService: new DecisionService(sql, coordination, policyService),
     memberService: new MemberService(sql, coordination, policyService),
     conversationService: new ConversationService(sql, policyService),
-    initialDraftService: new InitialDraftService(sql, extras.streamBus),
     journeyService,
     businessRecordService,
     proposalService,
@@ -135,6 +142,11 @@ function extrasFromEnv(): ServiceExtras {
   const env = getEnv();
   streamBusSingleton ??=
     env.REDIS_URL === undefined ? createMemoryStreamBus() : createRedisStreamBus(env.REDIS_URL);
+  const selected = createCofounderRuntime({
+    ...(env.FOUNDRY_AI === undefined ? {} : { aiMode: env.FOUNDRY_AI }),
+    ...(env.FOUNDRY_HARNESS_URL === undefined ? {} : { harnessEndpoint: env.FOUNDRY_HARNESS_URL }),
+    ...(env.FOUNDRY_HARNESS_TOKEN === undefined ? {} : { harnessToken: env.FOUNDRY_HARNESS_TOKEN }),
+  });
   return {
     objectStore:
       env.AWS_S3_UPLOADS_BUCKET === undefined
@@ -143,11 +155,11 @@ function extrasFromEnv(): ServiceExtras {
     jobQueue:
       env.REDIS_URL === undefined ? createMemoryJobQueue() : createBullmqJobQueue(env.REDIS_URL),
     streamBus: streamBusSingleton,
-    cofounderRuntime: new DeepSeekHarnessRuntime({
-      endpoint: env.FOUNDRY_HARNESS_URL,
-      token: env.FOUNDRY_HARNESS_TOKEN,
-    }),
+    cofounderRuntime: selected.runtime,
     cofounderWorkerEnabled: env.FOUNDRY_COFOUNDER_WORKER !== 'false',
+    capabilityInvokeUrl:
+      env.FOUNDRY_CAPABILITY_INVOKE_URL ??
+      `${env.BETTER_AUTH_URL}/api/internal/capabilities/invoke`,
   };
 }
 

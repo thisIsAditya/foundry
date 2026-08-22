@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { DeepSeekHarnessRuntime } from './deepseek-harness-runtime.js';
-import type { CofounderRuntimeInput } from './types.js';
+import { CofounderContextPacketSchema, type CofounderRuntimeInput } from './types.js';
 
 const input: CofounderRuntimeInput = {
   operationId: '00000000-0000-4000-8000-000000000001',
@@ -10,7 +10,7 @@ const input: CofounderRuntimeInput = {
     ventureId: '00000000-0000-4000-8000-000000000003',
     userId: '00000000-0000-4000-8000-000000000004',
   },
-  contextPacket: {
+  contextPacket: CofounderContextPacketSchema.parse({
     actor: {
       workspaceId: '00000000-0000-4000-8000-000000000002',
       ventureId: '00000000-0000-4000-8000-000000000003',
@@ -25,8 +25,8 @@ const input: CofounderRuntimeInput = {
     recentMessages: [],
     omitted: ['full_transcript'],
     correlationId: 'corr',
-    allowedCapabilities: ['venture.readCurrentState'],
-  },
+    allowedCapabilities: ['venture.readCurrentState@1'],
+  }),
   founderRequest: 'I want to help cafe owners close the books.',
   schemaVersion: 'v4.5',
   capabilityManifest: ['venture.readCurrentState'],

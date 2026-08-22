@@ -35,11 +35,11 @@ const EnvSchema = z.object({
   OLLAMA_BASE_URL: z.preprocess(emptyToUndefined, z.url().optional()),
   OLLAMA_MODEL: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   ALLOW_MCP_LOOPBACK: z.preprocess(emptyToUndefined, z.enum(['true', 'false']).optional()),
-  FOUNDRY_JOURNEY_CUTOVER: z.preprocess(emptyToUndefined, z.enum(['true', 'false']).optional()),
-  FOUNDRY_ASSISTANT_UI: z.preprocess(emptyToUndefined, z.enum(['true', 'false']).optional()),
   FOUNDRY_COFOUNDER_WORKER: z.preprocess(emptyToUndefined, z.enum(['true', 'false']).optional()),
-  FOUNDRY_HARNESS_URL: z.url(),
-  FOUNDRY_HARNESS_TOKEN: z.string().min(32),
+  FOUNDRY_AI: z.preprocess(emptyToUndefined, z.enum(['off', 'direct', 'harness']).optional()),
+  FOUNDRY_HARNESS_URL: z.preprocess(emptyToUndefined, z.url().optional()),
+  FOUNDRY_HARNESS_TOKEN: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
+  FOUNDRY_CAPABILITY_INVOKE_URL: z.preprocess(emptyToUndefined, z.url().optional()),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -85,12 +85,11 @@ function readProcessEnv(): Record<string, string | undefined> {
       OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
       OLLAMA_MODEL: process.env.OLLAMA_MODEL,
       ALLOW_MCP_LOOPBACK: process.env.ALLOW_MCP_LOOPBACK,
-      FOUNDRY_JOURNEY_CUTOVER: process.env.FOUNDRY_JOURNEY_CUTOVER,
-      FOUNDRY_ASSISTANT_UI: process.env.FOUNDRY_ASSISTANT_UI,
       FOUNDRY_COFOUNDER_WORKER: process.env.FOUNDRY_COFOUNDER_WORKER,
-      FOUNDRY_HARNESS_URL: process.env.FOUNDRY_HARNESS_URL ?? 'http://127.0.0.1:8787',
-      FOUNDRY_HARNESS_TOKEN:
-        process.env.FOUNDRY_HARNESS_TOKEN ?? 'build-harness-token-must-be-at-least-32-bytes',
+      FOUNDRY_AI: process.env.FOUNDRY_AI,
+      FOUNDRY_HARNESS_URL: process.env.FOUNDRY_HARNESS_URL,
+      FOUNDRY_HARNESS_TOKEN: process.env.FOUNDRY_HARNESS_TOKEN,
+      FOUNDRY_CAPABILITY_INVOKE_URL: process.env.FOUNDRY_CAPABILITY_INVOKE_URL,
     };
   }
   return process.env;
@@ -102,12 +101,4 @@ export function getEnv(): Env {
   loadLocalEnvFiles();
   cached ??= EnvSchema.parse(readProcessEnv());
   return cached;
-}
-
-export function isCofounderWorkerEnabled(): boolean {
-  return getEnv().FOUNDRY_COFOUNDER_WORKER === 'true';
-}
-
-export function isAssistantUiEnabled(): boolean {
-  return getEnv().FOUNDRY_ASSISTANT_UI !== 'false';
 }

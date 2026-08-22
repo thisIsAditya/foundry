@@ -26,7 +26,6 @@ export function useCofounderTransport(projectId: string) {
   const history = useQuery(trpc.conversation.list.queryOptions({ projectId, limit: 40 }));
   const createIntent = useMutation(trpc.evidence.createUploadIntent.mutationOptions());
   const confirm = useMutation(trpc.evidence.confirmUpload.mutationOptions());
-  const observe = useMutation(trpc.evidence.recordObservation.mutationOptions());
   const respond = useMutation(trpc.cofounder.respond.mutationOptions());
   const cancel = useMutation(trpc.cofounder.cancel.mutationOptions());
 
@@ -96,7 +95,6 @@ export function useCofounderTransport(projectId: string) {
         projectId,
         createIntent: (body) => createIntent.mutateAsync(body),
         confirm: (body) => confirm.mutateAsync(body),
-        recordObservation: (body) => observe.mutateAsync(body),
       });
     }
     const turn = await respond.mutateAsync({
@@ -128,8 +126,7 @@ export function useCofounderTransport(projectId: string) {
     errorMessageOf(respond.error) ??
     errorMessageOf(cancel.error) ??
     errorMessageOf(createIntent.error) ??
-    errorMessageOf(confirm.error) ??
-    errorMessageOf(observe.error);
+    errorMessageOf(confirm.error);
 
   return {
     history,

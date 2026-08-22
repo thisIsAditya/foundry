@@ -1,39 +1,31 @@
-import { DeepSeekHarnessRuntime, type StreamBus } from '@foundry/agent-runtime';
-import { CreateProposalInputSchema, type CreateProposalInput } from '@foundry/api-contracts';
+import { createCofounderRuntime, type StreamBus } from '@foundry/agent-runtime';
 import {
   CofounderJobDataSchema,
+  CapabilityGateway,
+  buildCofounderContextEnvelope,
+  cancelCapabilityTokensForOperation,
   cofounderCancelKey,
   executeCofounderOperation,
+  issueCapabilityToken,
+  persistSuggestedJourneySteps,
   type CofounderJobData,
   type CofounderOperationPorts,
 } from '@foundry/cofounder-operations';
 import {
   claimQueuedCofounderOperation,
-  getCommandReceipt,
   getCofounderOperationById,
   getConversationMessageById,
-  getJourneyByProjectId,
   getProjectById,
-  getRecordItemBySection,
-  insertCommandReceipt,
   insertConversationMessage,
-  insertProposalChangeV4,
-  insertProposalV4,
-  listRecordItemsByProjectId,
   listWorkspaceMembershipsByUserId,
   updateCofounderOperationState,
   withWorkspaceScope,
   type PoolSql,
   type TransactionSql,
 } from '@foundry/db';
-import {
-  RECORD_SECTION_DEFINITIONS,
-  type CofounderOperationId,
-  type Project,
-  type UserId,
-  type WorkspaceMembership,
-} from '@foundry/domain';
+import type { CofounderOperationId, Project, UserId, WorkspaceMembership } from '@foundry/domain';
 import { AppError } from '@foundry/observability';
+import { PolicyService } from '@foundry/policy';
 import type { Redis } from 'ioredis';
 
 export async function processCofounderJob(
@@ -42,7 +34,9 @@ export async function processCofounderJob(
     sql: PoolSql;
     streamBus: StreamBus;
     redis: Redis;
-    harness: { endpoint: string; token: string };
+    harness?: { endpoint: string; token: string };
+    aiMode?: 'off' | 'direct' | 'harness';
+    capabilityInvokeUrl?: string;
   },
 ): Promise<void> {
   const job = CofounderJobDataSchema.parse(data);
@@ -85,8 +79,12 @@ export async function processCofounderJob(
       sql: deps.sql,
       streamBus: deps.streamBus,
       redis: deps.redis,
-      harness: deps.harness,
       actor: { userId: job.actorUserId, membership, project },
+      ...(deps.harness === undefined ? {} : { harness: deps.harness }),
+      ...(deps.aiMode === undefined ? {} : { aiMode: deps.aiMode }),
+      ...(deps.capabilityInvokeUrl === undefined
+        ? {}
+        : { capabilityInvokeUrl: deps.capabilityInvokeUrl }),
     }),
     {
       operationId: job.operationId,
@@ -103,13 +101,20 @@ function portsFor(input: {
   sql: PoolSql;
   streamBus: StreamBus;
   redis: Redis;
-  harness: { endpoint: string; token: string };
+  harness?: { endpoint: string; token: string };
+  aiMode?: 'off' | 'direct' | 'harness';
+  capabilityInvokeUrl?: string;
   actor: { userId: UserId; membership: WorkspaceMembership; project: Project };
 }): CofounderOperationPorts {
-  const { sql, streamBus, redis, harness, actor } = input;
+  const { sql, streamBus, redis, actor } = input;
   const scope = <T>(work: (tx: TransactionSql) => Promise<T>): Promise<T> =>
     withWorkspaceScope(sql, [actor.project.workspaceId], work);
-  const runtime = new DeepSeekHarnessRuntime(harness);
+  const selected = createCofounderRuntime({
+    ...(input.aiMode === undefined ? {} : { aiMode: input.aiMode }),
+    ...(input.harness === undefined ? {} : { harnessEndpoint: input.harness.endpoint }),
+    ...(input.harness === undefined ? {} : { harnessToken: input.harness.token }),
+  });
+  const gateway = new CapabilityGateway(sql, new PolicyService());
   return {
     operations: {
       getById: (id) => scope((tx) => getCofounderOperationById(tx, id)),
@@ -130,70 +135,57 @@ function portsFor(input: {
       getById: (id) => scope((tx) => getConversationMessageById(tx, id)),
     },
     context: {
-      async buildPacket(correlationId) {
-        return withWorkspaceScope(sql, [actor.project.workspaceId], async (tx) => {
-          const journey = await getJourneyByProjectId(tx, actor.project.id);
-          const items = await listRecordItemsByProjectId(tx, actor.project.id);
-          return {
-            actor: {
-              workspaceId: actor.project.workspaceId,
-              ventureId: actor.project.id,
-              userId: actor.userId,
-            },
-            currentStage: journey?.currentStage ?? 'idea',
-            currentObjective: journey?.currentObjective ?? 'Capture the idea.',
-            acceptedRecord: items.map((item) => ({
-              section: item.section,
-              status: item.status,
-              provenance: item.provenance,
-              summary: item.content.summary,
-            })),
-            pendingProposals: [],
-            activeSteps: [],
-            readiness: [],
-            recentMessages: [],
-            omitted: ['full_transcript', 'raw_documents', 'hidden_reasoning'],
-            correlationId,
-            allowedCapabilities: ['venture.readCurrentState', 'proposal.createDraft'],
-          };
-        });
-      },
+      buildPacket: (correlationId) =>
+        buildCofounderContextEnvelope(sql, { ...actor, correlationId }),
     },
-    runtime,
+    runtime: selected.runtime,
     capabilities: {
-      async invoke(request) {
-        if (request.name === 'venture.readCurrentState') {
-          return {
-            ok: true,
-            summary: 'Current venture state was read.',
-            data: { projectId: actor.project.id },
-          };
-        }
-        if (request.name === 'proposal.createDraft') {
-          const parsed = CreateProposalInputSchema.safeParse({
-            ...(typeof request.input === 'object' && request.input !== null ? request.input : {}),
-            projectId: actor.project.id,
-          });
-          if (!parsed.success) {
-            return {
-              ok: false,
-              summary: 'Proposal draft input was invalid. Accepted record state is unchanged.',
-            };
-          }
-          const proposalId = await createProposalDraft(scope, actor, parsed.data);
-          return {
-            ok: true,
-            summary: 'Created a reviewable proposal. It is not accepted.',
-            data: { proposalId },
-          };
-        }
-        return {
-          ok: false,
-          summary:
-            'This worker capability is draft-only and not yet bound. Accepted record state is unchanged.',
-        };
-      },
+      invoke: (request) =>
+        gateway.invoke(
+          { ...actor, operationId: request.operationId as CofounderOperationId },
+          request.name,
+          request.input,
+        ),
     },
+    suggestions: {
+      persist: ({ steps }) =>
+        scope((tx) =>
+          persistSuggestedJourneySteps(tx, {
+            project: actor.project,
+            actorUserId: actor.userId,
+            steps,
+          }),
+        ),
+    },
+    ...(input.capabilityInvokeUrl === undefined
+      ? {}
+      : {
+          tokens: {
+            issue: async ({
+              operationId,
+              allowedCapabilities,
+              maxInvocations,
+            }: {
+              operationId: CofounderOperationId;
+              allowedCapabilities: readonly string[];
+              maxInvocations: number;
+            }) => {
+              const token = await scope((tx) =>
+                issueCapabilityToken(tx, {
+                  operationId,
+                  projectId: actor.project.id,
+                  workspaceId: actor.project.workspaceId,
+                  actorUserId: actor.userId,
+                  allowedCapabilities,
+                  maxInvocations,
+                }),
+              );
+              return { token, invokeUrl: input.capabilityInvokeUrl as string };
+            },
+            cancel: (operationId: CofounderOperationId) =>
+              scope((tx) => cancelCapabilityTokensForOperation(tx, operationId)),
+          },
+        }),
     events: {
       async publish(event) {
         await streamBus.publish(actor.project.id, event);
@@ -222,76 +214,4 @@ function portsFor(input: {
       },
     },
   };
-}
-
-async function createProposalDraft(
-  scope: <T>(work: (tx: TransactionSql) => Promise<T>) => Promise<T>,
-  actor: { userId: UserId; project: Project },
-  input: CreateProposalInput,
-): Promise<string> {
-  return scope(async (tx) => {
-    const existing = await getCommandReceipt(
-      tx,
-      actor.userId,
-      'proposal.create',
-      input.idempotencyKey,
-    );
-    if (
-      existing !== null &&
-      typeof existing === 'object' &&
-      existing !== null &&
-      'proposal' in existing &&
-      typeof existing.proposal === 'object' &&
-      existing.proposal !== null &&
-      'id' in existing.proposal &&
-      typeof existing.proposal.id === 'string'
-    ) {
-      return existing.proposal.id;
-    }
-    const proposal = await insertProposalV4(tx, {
-      projectId: actor.project.id,
-      workspaceId: actor.project.workspaceId,
-      authorType: 'cofounder',
-      authorId: actor.userId,
-      rationale: input.rationale,
-      uncertainty: input.uncertainty ?? null,
-      interactionType: input.interactionType ?? 'change',
-      correlationId: input.idempotencyKey,
-    });
-    const changes = [];
-    for (const draft of input.changes) {
-      const record = await getRecordItemBySection(
-        tx,
-        actor.project.id,
-        draft.section,
-        draft.itemKey ?? RECORD_SECTION_DEFINITIONS[draft.section].defaultItemKey,
-      );
-      changes.push(
-        await insertProposalChangeV4(tx, {
-          proposalId: proposal.id,
-          projectId: actor.project.id,
-          workspaceId: actor.project.workspaceId,
-          recordItemId: record?.id ?? null,
-          section: draft.section,
-          itemKey: draft.itemKey ?? record?.itemKey ?? null,
-          beforePayload: record?.content ?? null,
-          afterPayload: draft.afterPayload,
-          evidenceRefs: draft.evidenceRefs,
-        }),
-      );
-    }
-    await insertCommandReceipt(tx, {
-      workspaceId: actor.project.workspaceId,
-      projectId: actor.project.id,
-      actorId: actor.userId,
-      command: 'proposal.create',
-      idempotencyKey: input.idempotencyKey,
-      result: {
-        proposal,
-        changes,
-        affectedSections: [...new Set(changes.map((change) => change.section))],
-      },
-    });
-    return proposal.id;
-  });
 }

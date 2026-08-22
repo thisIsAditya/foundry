@@ -54,6 +54,18 @@ export const RecordRelationTypes = [
 export const RecordRelationTypeSchema = z.enum(RecordRelationTypes);
 export type RecordRelationType = z.infer<typeof RecordRelationTypeSchema>;
 
+export const RecordSupportTargetKinds = [
+  'record',
+  'evidence',
+  'interview',
+  'quote',
+  'decision',
+  'proposal',
+  'source',
+] as const;
+export const RecordSupportTargetKindSchema = z.enum(RecordSupportTargetKinds);
+export type RecordSupportTargetKind = z.infer<typeof RecordSupportTargetKindSchema>;
+
 export const RECORD_SECTION_DEFINITIONS: Readonly<
   Record<RecordSectionKey, { label: string; defaultItemKey: string; smallestAction: string }>
 > = {

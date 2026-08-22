@@ -16,6 +16,11 @@ export async function truncateAppTables(sql: PoolSql): Promise<void> {
     await tx`
       truncate table
         capability_invocations,
+        capability_tokens,
+        interview_import_candidates,
+        interview_import_batches,
+        project_memory_entries,
+        record_support_links,
         cofounder_operations,
         proposal_changes_v4,
         proposals_v4,

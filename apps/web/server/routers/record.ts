@@ -7,6 +7,7 @@ import {
   ListRecordSectionsInputSchema,
   RecordAssumptionInputSchema,
   RecordDecisionV4InputSchema,
+  SaveRecordSectionInputSchema,
 } from '@foundry/api-contracts';
 
 import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
@@ -55,6 +56,7 @@ export const recordRouter = router({
       await ctx.services.businessRecordService.recordAssumption(
         { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
         input.statement,
+        input.idempotencyKey,
       );
       return { ok: true as const };
     }),
@@ -67,9 +69,25 @@ export const recordRouter = router({
       }
       await ctx.services.businessRecordService.recordDecision(
         { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
-        { statement: input.statement, rationale: input.rationale },
+        {
+          statement: input.statement,
+          rationale: input.rationale,
+          idempotencyKey: input.idempotencyKey,
+        },
       );
       return { ok: true as const };
+    }),
+  saveSection: recordWriteProcedure
+    .meta({ invalidates: mutationInvalidations['record.saveSection'] })
+    .input(SaveRecordSectionInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.actor.type !== 'user') {
+        throw new Error('record.saveSection requires a user actor');
+      }
+      return ctx.services.businessRecordService.saveSection(
+        { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
+        input,
+      );
     }),
   defineExperiment: recordWriteProcedure
     .meta({ invalidates: mutationInvalidations['record.defineExperiment'] })

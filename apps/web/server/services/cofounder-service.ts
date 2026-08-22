@@ -4,8 +4,12 @@ import {
   cofounderCancelKey,
   executeCofounderOperation,
   inProgressTurn,
+  issueCapabilityToken,
+  cancelCapabilityTokensForOperation,
   parseOperationRecovery,
+  persistSuggestedJourneySteps,
   replayedTurn,
+  type CapabilityGateway,
   type CofounderOperationPorts,
 } from '@foundry/cofounder-operations';
 import {
@@ -35,7 +39,6 @@ import { PolicyService } from '@foundry/policy';
 
 import type { CoordinationStore } from '../coordination';
 import type { JobQueue } from '../queue/job-queue';
-import type { CapabilityGateway } from './capability-gateway';
 import { ContextService } from './context-service';
 
 const inFlightAborts = new Map<string, AbortController>();
@@ -60,6 +63,7 @@ export class CofounderService {
     private readonly coordination: CoordinationStore,
     private readonly jobQueue: JobQueue,
     private readonly workerEnabled: boolean,
+    private readonly capabilityInvokeUrl?: string,
   ) {}
 
   async respond(
@@ -244,6 +248,9 @@ export class CofounderService {
         explanation: 'This turn already completed. Accepted record state is unchanged.',
         interactionType: 'inform',
         references: [],
+        facts: [],
+        interpretation: '',
+        assumptions: [],
         uncertainty: 'Replayed from the original operation.',
         blockedConditions: [],
         activity: 'Returned the original co-founder result.',
@@ -293,6 +300,45 @@ export class CofounderService {
             request.input,
           ),
       },
+      suggestions: {
+        persist: ({ steps }) =>
+          scope((tx) =>
+            persistSuggestedJourneySteps(tx, {
+              project: actor.project,
+              actorUserId: actor.userId,
+              steps,
+            }),
+          ),
+      },
+      ...(this.capabilityInvokeUrl === undefined
+        ? {}
+        : {
+            tokens: {
+              issue: async ({
+                operationId,
+                allowedCapabilities,
+                maxInvocations,
+              }: {
+                operationId: CofounderOperationId;
+                allowedCapabilities: readonly string[];
+                maxInvocations: number;
+              }) => {
+                const token = await scope((tx) =>
+                  issueCapabilityToken(tx, {
+                    operationId,
+                    projectId: actor.project.id,
+                    workspaceId: actor.project.workspaceId,
+                    actorUserId: actor.userId,
+                    allowedCapabilities,
+                    maxInvocations,
+                  }),
+                );
+                return { token, invokeUrl: this.capabilityInvokeUrl as string };
+              },
+              cancel: (operationId: CofounderOperationId) =>
+                scope((tx) => cancelCapabilityTokensForOperation(tx, operationId)),
+            },
+          }),
       events: {
         publish: async (event: StreamEvent) => {
           await this.streamBus.publish(actor.project.id, event);

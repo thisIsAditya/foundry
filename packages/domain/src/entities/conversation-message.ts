@@ -87,6 +87,17 @@ export const ConversationBlockSchema = z.discriminatedUnion('kind', [
     operationId: CofounderOperationIdSchema,
     operationState: CofounderOperationStateSchema.optional(),
     references: z.array(z.object({ kind: z.string().min(1), id: z.string().min(1) })),
+    facts: z
+      .array(
+        z.object({
+          statement: z.string().min(1),
+          references: z.array(z.object({ kind: z.string().min(1), id: z.string().min(1) })),
+        }),
+      )
+      .optional(),
+    interpretation: z.string().optional(),
+    assumptions: z.array(z.string()).optional(),
+    recommendation: z.string().optional(),
   }),
 ]);
 export type ConversationBlock = z.infer<typeof ConversationBlockSchema>;
@@ -103,6 +114,10 @@ export function toCofounderTurnBlock(input: {
   operationId: CofounderTurnBlock['operationId'];
   references: CofounderTurnBlock['references'];
   operationState?: CofounderTurnBlock['operationState'];
+  facts?: CofounderTurnBlock['facts'];
+  interpretation?: string;
+  assumptions?: readonly string[];
+  recommendation?: string;
 }): CofounderTurnBlock {
   return {
     kind: 'cofounder_turn',
@@ -117,6 +132,10 @@ export function toCofounderTurnBlock(input: {
     operationId: input.operationId,
     references: [...input.references],
     ...(input.operationState === undefined ? {} : { operationState: input.operationState }),
+    ...(input.facts === undefined ? {} : { facts: input.facts }),
+    ...(input.interpretation === undefined ? {} : { interpretation: input.interpretation }),
+    ...(input.assumptions === undefined ? {} : { assumptions: [...input.assumptions] }),
+    ...(input.recommendation === undefined ? {} : { recommendation: input.recommendation }),
   };
 }
 

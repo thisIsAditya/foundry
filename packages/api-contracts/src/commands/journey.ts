@@ -3,7 +3,7 @@ import {
   CofounderOperationIdSchema,
   EvidenceItemIdSchema,
   ExperimentIdSchema,
-  FounderObjectiveSchema,
+  InterviewParticipantTypeSchema,
   JourneyIdSchema,
   JourneyMoveModeSchema,
   JourneyStageSchema,
@@ -14,7 +14,6 @@ import {
   ProposalIdSchema,
   RecordItemIdSchema,
   RecordSectionKeySchema,
-  WorkspaceIdSchema,
 } from '@foundry/domain';
 import { z } from 'zod';
 
@@ -24,19 +23,6 @@ export const FounderUrgencySchema = z.enum(['now', 'soon', 'exploring']);
 export type FounderUrgency = z.infer<typeof FounderUrgencySchema>;
 
 const expectedRevision = z.number().int().positive();
-
-export const JourneyCreateInputSchema = z.object({
-  workspaceId: WorkspaceIdSchema,
-  projectId: ProjectIdSchema,
-  ideaText: z.string().default(''),
-  geography: z.string().min(1).optional(),
-  objective: FounderObjectiveSchema.optional(),
-  constraints: z.string().min(1).optional(),
-  urgency: FounderUrgencySchema.optional(),
-  customerHint: z.string().min(1).optional(),
-  idempotencyKey: IdempotencyKeySchema,
-});
-export type JourneyCreateInput = z.infer<typeof JourneyCreateInputSchema>;
 
 export const JourneySetObjectiveInputSchema = z.object({
   projectId: ProjectIdSchema,
@@ -106,6 +92,8 @@ export const CaptureEvidenceInputSchema = z.object({
   section: RecordSectionKeySchema.optional(),
   stepId: JourneyStepIdSchema.optional(),
   evidenceItemId: EvidenceItemIdSchema.optional(),
+  participantType: InterviewParticipantTypeSchema.optional(),
+  consentGiven: z.boolean().optional(),
   idempotencyKey: IdempotencyKeySchema,
 });
 export type CaptureEvidenceInput = z.infer<typeof CaptureEvidenceInputSchema>;
@@ -229,6 +217,16 @@ export const GetReadinessInputSchema = z.object({
   projectId: ProjectIdSchema,
 });
 export type GetReadinessInput = z.infer<typeof GetReadinessInputSchema>;
+
+export const SaveRecordSectionInputSchema = z.object({
+  projectId: ProjectIdSchema,
+  section: RecordSectionKeySchema,
+  expectedRevision: z.number().int().positive(),
+  summary: z.string().min(1),
+  evidenceIds: z.array(z.string().uuid()).default([]),
+  idempotencyKey: IdempotencyKeySchema,
+});
+export type SaveRecordSectionInput = z.infer<typeof SaveRecordSectionInputSchema>;
 
 export const GetJourneyByIdInputSchema = z.object({
   journeyId: JourneyIdSchema,

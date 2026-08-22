@@ -10,13 +10,14 @@ import {
   MAX_VENTURE_ATTACHMENTS,
   uploadEvidenceAttachment,
 } from '../../lib/upload-evidence';
+import { projectCofounderHref } from '../../lib/project-href';
 import { useTRPC } from '../../lib/trpc/client';
 import { ventureNameFromPitch } from '../../lib/venture-name';
 
 const PROGRESS_LINES = [
-  'Saving your idea…',
-  'Opening an Idea-stage record…',
-  'Preparing the first recommended step…',
+  'Creating your venture…',
+  'Uploading your source material…',
+  'Opening the co-founder intake review…',
 ] as const;
 
 export function VentureComposer({
@@ -45,7 +46,6 @@ export function VentureComposer({
   const createProject = useMutation(trpc.project.create.mutationOptions());
   const createIntent = useMutation(trpc.evidence.createUploadIntent.mutationOptions());
   const confirm = useMutation(trpc.evidence.confirmUpload.mutationOptions());
-  const observe = useMutation(trpc.evidence.recordObservation.mutationOptions());
   const pending = progress >= 0;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -56,18 +56,6 @@ export function VentureComposer({
     }
     try {
       setProgress(0);
-      const attachmentIds: string[] = [];
-      for (const file of files) {
-        const uploaded = await uploadEvidenceAttachment({
-          file,
-          workspaceId,
-          createIntent: (body) => createIntent.mutateAsync(body),
-          confirm: (body) => confirm.mutateAsync(body),
-          recordObservation: (body) => observe.mutateAsync(body),
-        });
-        attachmentIds.push(uploaded.evidenceItemId);
-      }
-      setProgress(1);
       const created = await createProject.mutateAsync({
         workspaceId,
         name: ventureNameFromPitch(trimmed),
@@ -77,12 +65,20 @@ export function VentureComposer({
         ...(constraints.trim().length === 0 ? {} : { constraints: constraints.trim() }),
         ...(urgency === '' ? {} : { urgency }),
         ...(customerHint.trim().length === 0 ? {} : { customerHint: customerHint.trim() }),
-        ...(attachmentIds.length === 0 ? {} : { attachmentIds }),
         idempotencyKey: idempotencyKey.current,
       });
+      setProgress(1);
+      for (const file of files) {
+        await uploadEvidenceAttachment({
+          file,
+          projectId: created.id,
+          createIntent: (body) => createIntent.mutateAsync(body),
+          confirm: (body) => confirm.mutateAsync(body),
+        });
+      }
       setProgress(2);
       idempotencyKey.current = crypto.randomUUID();
-      router.push(`/p/${created.id}`);
+      router.push(projectCofounderHref(created.id));
     } catch {
       setProgress(-1);
     }
@@ -91,8 +87,7 @@ export function VentureComposer({
   const errorMessage =
     errorMessageOf(createProject.error) ??
     errorMessageOf(createIntent.error) ??
-    errorMessageOf(confirm.error) ??
-    errorMessageOf(observe.error);
+    errorMessageOf(confirm.error);
 
   return (
     <div className={variant === 'hero' ? 'venture-hero' : 'venture-overlay'}>

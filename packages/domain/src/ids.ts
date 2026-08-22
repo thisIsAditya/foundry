@@ -237,3 +237,18 @@ export type ActivityEventId = z.infer<typeof ActivityEventIdSchema>;
 
 export const CommandReceiptIdSchema = brandedUuid('CommandReceiptId');
 export type CommandReceiptId = z.infer<typeof CommandReceiptIdSchema>;
+
+export const RecordSupportLinkIdSchema = brandedUuid('RecordSupportLinkId');
+export type RecordSupportLinkId = z.infer<typeof RecordSupportLinkIdSchema>;
+
+export const ProjectMemoryEntryIdSchema = brandedUuid('ProjectMemoryEntryId');
+export type ProjectMemoryEntryId = z.infer<typeof ProjectMemoryEntryIdSchema>;
+
+export const InterviewImportBatchIdSchema = brandedUuid('InterviewImportBatchId');
+export type InterviewImportBatchId = z.infer<typeof InterviewImportBatchIdSchema>;
+
+export const InterviewImportCandidateIdSchema = brandedUuid('InterviewImportCandidateId');
+export type InterviewImportCandidateId = z.infer<typeof InterviewImportCandidateIdSchema>;
+
+export const CapabilityTokenIdSchema = brandedUuid('CapabilityTokenId');
+export type CapabilityTokenId = z.infer<typeof CapabilityTokenIdSchema>;

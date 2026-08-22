@@ -1,4 +1,5 @@
 import type { CofounderContextPacket } from '@foundry/agent-runtime';
+import { CofounderContextPacketSchema } from '@foundry/agent-runtime';
 import type { StreamEvent } from '@foundry/api-contracts';
 import {
   CofounderOperationIdSchema,
@@ -22,7 +23,7 @@ const USER_ID = UserIdSchema.parse('10000000-0000-4000-8000-000000000003');
 const OPERATION_ID = CofounderOperationIdSchema.parse('10000000-0000-4000-8000-000000000004');
 
 function packet(): CofounderContextPacket {
-  return {
+  return CofounderContextPacketSchema.parse({
     actor: { workspaceId: WORKSPACE_ID, ventureId: PROJECT_ID, userId: USER_ID },
     currentStage: 'idea',
     currentObjective: 'Capture the idea.',
@@ -33,8 +34,8 @@ function packet(): CofounderContextPacket {
     recentMessages: [],
     omitted: ['full_transcript'],
     correlationId: 'corr',
-    allowedCapabilities: ['venture.readCurrentState', 'proposal.createDraft'],
-  };
+    allowedCapabilities: ['venture.readCurrentState@1', 'proposal.createDraft@1'],
+  });
 }
 
 function result() {
@@ -142,7 +143,10 @@ function createMemoryPorts(options?: { cancelSignaled?: boolean; proposalId?: st
     },
     capabilities: {
       async invoke(request) {
-        if (request.name === 'proposal.createDraft' && options?.proposalId !== undefined) {
+        if (
+          (request.name === 'proposal.createDraft' || request.name === 'proposal.createDraft@1') &&
+          options?.proposalId !== undefined
+        ) {
           return {
             ok: true,
             summary: 'Created a reviewable proposal.',
@@ -164,6 +168,11 @@ function createMemoryPorts(options?: { cancelSignaled?: boolean; proposalId?: st
       },
       async isSignaled() {
         return options?.cancelSignaled === true;
+      },
+    },
+    suggestions: {
+      async persist() {
+        return [];
       },
     },
   };
@@ -265,5 +274,34 @@ describe('executeCofounderOperation', () => {
     });
     expect(replayed.proposalId).toBe(proposalId);
     expect(operations.get(OPERATION_ID)?.state).toBe('awaiting_founder');
+  });
+
+  it('downgrades facts without envelope or capability ids to assumptions', async () => {
+    const { ports } = createMemoryPorts();
+    ports.runtime = {
+      async run() {
+        return {
+          ...result(),
+          facts: [
+            {
+              statement: 'Invented market size is $4B.',
+              references: [{ kind: 'evidence', id: 'not-in-envelope' }],
+            },
+          ],
+          interpretation: '',
+          assumptions: [],
+        };
+      },
+    };
+    const turn = await executeCofounderOperation(ports, {
+      operationId: OPERATION_ID,
+      founderRequest: 'How big is the market?',
+      correlationId: 'corr',
+      executor: 'inline',
+      timeoutMs: 8_000,
+    });
+    expect(turn.facts).toEqual([]);
+    expect(turn.assumptions).toContain('Invented market size is $4B.');
+    expect(turn.interpretation.length).toBeGreaterThan(0);
   });
 });

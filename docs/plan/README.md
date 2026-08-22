@@ -30,11 +30,13 @@ safe or aligned to embed unchanged.
 6. [Canonical journey and business model](17-canonical-journey-and-business-model.md)
 7. [Implementation contracts and cleanup runbook](18-implementation-contracts-and-cleanup.md)
 8. [Implementation v4](implementation-v4/00-README.md)
+9. [Implementation v5](implementation-v5/00-README.md)
 
 `implementation-v4/` is the active execution plan. It turns the reset
 requirements, migration inventory, and Harness boundary into delivery waves,
 concrete contracts, migration gates, web routes, runtime seams, and release
-criteria.
+criteria. `implementation-v5/` follows it with app-native co-founder
+capabilities, grounded retrieval and memory, and reviewable source imports.
 
 ## Delivery order
 
@@ -59,6 +61,7 @@ not implementation authority:
 | `implementation-v2/` | Historical | Reference for prior product-direction changes; do not extend its job/sprint model |
 | `implementation-3/` | Historical | Reference for UI implementation detail; reconcile every item with current requirements first |
 | `implementation-v4/` | Current | Execute the reset in this order; it is constrained by the requirements and plans above |
+| `implementation-v5/` | Proposed next | Close V4’s co-founder capability, grounding, and source-import gaps without moving authority out of the application |
 
 The corresponding research archive retains business-framework and human-ownership
 insights. Its multi-agent architecture and company-operations runtime are

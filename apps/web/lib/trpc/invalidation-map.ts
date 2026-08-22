@@ -30,6 +30,12 @@ export const mutationInvalidations = {
     'proposal.list',
     'journey.getOverview',
   ],
+  'record.saveSection': [
+    'record.listSections',
+    'record.getSection',
+    'record.export',
+    'journey.getOverview',
+  ],
   'proposal.create': ['proposal.list', 'journey.getOverview'],
   'proposal.review': [
     'proposal.get',
@@ -40,6 +46,16 @@ export const mutationInvalidations = {
   ],
   'cofounder.respond': ['conversation.list', 'proposal.list', 'journey.getOverview'],
   'cofounder.cancel': ['journey.getOverview'],
+  'evidence.startInterviewImport': ['evidence.listInterviewImports', 'evidence.listLibrary'],
+  'evidence.reviewInterviewImportCandidate': ['evidence.getInterviewImport'],
+  'evidence.decideInterviewImport': [
+    'evidence.listInterviewImports',
+    'evidence.getInterviewImport',
+    'evidence.listInterviews',
+    'evidence.listLibrary',
+  ],
+  'evidence.upsertMemory': ['evidence.listMemory'],
+  'evidence.deleteMemory': ['evidence.listMemory'],
 } as const satisfies Record<string, readonly string[]>;
 
 export type MutationPath = keyof typeof mutationInvalidations;

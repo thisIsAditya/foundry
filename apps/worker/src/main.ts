@@ -40,10 +40,13 @@ async function main(): Promise<void> {
     connection: redis,
     streamBus,
     redis,
-    harness: {
-      endpoint: env.FOUNDRY_HARNESS_URL,
-      token: env.FOUNDRY_HARNESS_TOKEN,
-    },
+    ...(env.FOUNDRY_AI === undefined ? {} : { aiMode: env.FOUNDRY_AI }),
+    ...(env.FOUNDRY_HARNESS_URL !== undefined && env.FOUNDRY_HARNESS_TOKEN !== undefined
+      ? { harness: { endpoint: env.FOUNDRY_HARNESS_URL, token: env.FOUNDRY_HARNESS_TOKEN } }
+      : {}),
+    ...(env.FOUNDRY_CAPABILITY_INVOKE_URL === undefined
+      ? {}
+      : { capabilityInvokeUrl: env.FOUNDRY_CAPABILITY_INVOKE_URL }),
   });
   const workers = [ingestion, cofounder, notification];
   registerShutdown({ workers, sql, redis, health });

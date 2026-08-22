@@ -14,32 +14,118 @@ export const CofounderRuntimeActorSchema = z.object({
 });
 export type CofounderRuntimeActor = z.infer<typeof CofounderRuntimeActorSchema>;
 
-export const CofounderContextPacketSchema = z.object({
+const ReferenceSchema = z.object({ kind: z.string().min(1), id: z.string().min(1) });
+
+export const CofounderContextEnvelopeSchema = z.object({
   actor: CofounderRuntimeActorSchema,
   currentStage: JourneyStageSchema,
   currentObjective: z.string(),
   acceptedRecord: z.array(
     z.object({
+      id: z.string().uuid().optional(),
       section: RecordSectionKeySchema,
       status: z.string(),
       provenance: z.string(),
       summary: z.string(),
+      versionId: z.string().uuid().nullable().optional(),
+      stale: z.boolean().optional(),
     }),
   ),
   pendingProposals: z.array(z.object({ id: z.string(), rationale: z.string() })),
   activeSteps: z.array(z.object({ id: z.string(), objective: z.string(), status: z.string() })),
+  deferredSteps: z
+    .array(z.object({ id: z.string(), objective: z.string(), status: z.string() }))
+    .default([]),
+  blockedSteps: z
+    .array(z.object({ id: z.string(), objective: z.string(), status: z.string() }))
+    .default([]),
   readiness: z.array(z.object({ section: z.string(), kind: z.string(), explanation: z.string() })),
+  evidence: z
+    .array(
+      z.object({
+        id: z.string(),
+        summary: z.string(),
+        provenanceKind: z.string(),
+      }),
+    )
+    .default([]),
+  interviews: z
+    .array(
+      z.object({
+        id: z.string(),
+        participantType: z.string(),
+        consentGiven: z.boolean(),
+      }),
+    )
+    .default([]),
+  quotes: z
+    .array(z.object({ id: z.string(), interviewId: z.string().nullable(), text: z.string() }))
+    .default([]),
+  decisions: z.array(z.object({ id: z.string(), statement: z.string() })).default([]),
+  assumptions: z.array(z.object({ id: z.string(), statement: z.string() })).default([]),
+  relations: z
+    .array(
+      z.object({
+        recordItemId: z.string(),
+        targetKind: z.string(),
+        targetId: z.string(),
+        relationType: z.string(),
+      }),
+    )
+    .default([]),
+  memory: z
+    .object({
+      id: z.string(),
+      kind: z.string(),
+      body: z.string(),
+      stale: z.boolean(),
+    })
+    .nullable()
+    .default(null),
   recentMessages: z.array(z.object({ actor: z.string(), text: z.string() })),
+  retrieval: z
+    .array(
+      z.object({
+        id: z.string(),
+        kind: z.string(),
+        excerpt: z.string(),
+        citationId: z.string().optional(),
+      }),
+    )
+    .default([]),
   omitted: z.array(z.string()),
+  selectionRationale: z
+    .string()
+    .default('Selected current journey, record, and recent founder-visible context.'),
+  contextChars: z.number().int().nonnegative().default(0),
   correlationId: z.string(),
   allowedCapabilities: z.array(z.string()),
+  capabilityBudget: z
+    .object({
+      maxInvocations: z.number().int().positive(),
+      remaining: z.number().int().nonnegative(),
+    })
+    .default({ maxInvocations: 8, remaining: 8 }),
 });
-export type CofounderContextPacket = z.infer<typeof CofounderContextPacketSchema>;
+export type CofounderContextEnvelope = z.infer<typeof CofounderContextEnvelopeSchema>;
+/** @deprecated Use CofounderContextEnvelope. Kept as a compatible alias. */
+export const CofounderContextPacketSchema = CofounderContextEnvelopeSchema;
+export type CofounderContextPacket = CofounderContextEnvelope;
+
+export const CofounderFactSchema = z.object({
+  statement: z.string().min(1),
+  references: z.array(ReferenceSchema).min(1),
+});
+export type CofounderFact = z.infer<typeof CofounderFactSchema>;
 
 export const CofounderRuntimeResultSchema = z.object({
   explanation: z.string().min(1),
   interactionType: CofounderInteractionTypeSchema,
-  references: z.array(z.object({ kind: z.string(), id: z.string() })),
+  references: z.array(ReferenceSchema),
+  facts: z.array(CofounderFactSchema).default([]),
+  interpretation: z.string().default(''),
+  assumptions: z.array(z.string()).default([]),
+  recommendation: z.string().optional(),
   proposalDraft: z
     .object({
       rationale: z.string().min(1),
@@ -50,6 +136,7 @@ export const CofounderRuntimeResultSchema = z.object({
           itemKey: z.string().optional(),
           afterPayload: z.unknown(),
           rationale: z.string().optional(),
+          evidenceRefs: z.array(z.string().min(1)).default([]),
         }),
       ),
     })
@@ -79,10 +166,12 @@ export type CofounderRuntimeInput = {
   timeoutMs: number;
   abortSignal?: AbortSignal;
   capabilities?: RuntimeCapabilityPort;
+  capabilityToken?: string;
+  capabilityInvokeUrl?: string;
 };
 
 export type CofounderRuntime = {
   run(input: CofounderRuntimeInput): Promise<CofounderRuntimeResult>;
 };
 
-export const COFOUNDER_RUNTIME_INSTRUCTIONS_V1 = `You are one application-controlled co-founder. Work from the supplied business record, journey stage, and evidence. Choose exactly one interaction type: ask, inform, recommend, generate, review, or change. Distinguish founder-approved facts from unverified assumptions and from your interpretation. Never invent customers, prices, quotes, market sizes, or validation. Never claim an accepted record write, stage change, or external side effect. If you propose a record change, return it as proposalDraft for founder review. End with a clear next step.`;
+export const COFOUNDER_RUNTIME_INSTRUCTIONS_V1 = `You are one application-controlled co-founder. Work from the supplied business record, journey stage, and evidence. Choose exactly one interaction type: ask, inform, recommend, generate, review, or change. Split facts (each with a stored reference id) from interpretation and assumptions. Never invent customers, prices, quotes, market sizes, or validation. Never claim an accepted record write, stage change, or external side effect. If you propose a record change, return it as proposalDraft for founder review. Use only listed capabilities through the host gateway. End with a clear next step.`;

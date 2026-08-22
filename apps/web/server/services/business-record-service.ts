@@ -3,9 +3,11 @@ import type {
   RecordExport,
   RecordSectionCard,
   RecordSectionDetail,
+  SaveRecordSectionInput,
 } from '@foundry/api-contracts';
 import {
   getCommandReceipt,
+  getEvidenceItemById,
   getLatestBusinessRecordVersion,
   getRecordItemById,
   getRecordItemBySection,
@@ -15,8 +17,11 @@ import {
   insertCommandReceipt,
   insertDecision,
   insertRecordItemStaleness,
+  insertRecordSupportLink,
+  listDecisionsByProjectId,
   listOpenStalenessByProjectId,
   listRecordItemsByProjectId,
+  listRecordSupportLinksByItemId,
   markRecordItemStale,
   nextBusinessRecordVersionNumber,
   updateRecordItem,
@@ -25,6 +30,7 @@ import {
   type Sql,
 } from '@foundry/db';
 import {
+  EvidenceItemIdSchema,
   RECORD_SECTION_DEFINITIONS,
   RecordItemContentSchema,
   RecordSectionKeys,
@@ -109,14 +115,38 @@ export class BusinessRecordService {
     }
     return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
       const version = await getLatestBusinessRecordVersion(tx, actor.project.id);
+      const links = await listRecordSupportLinksByItemId(tx, card.item.id);
+      const evidence = await Promise.all(
+        links
+          .filter((link) => link.targetKind === 'evidence')
+          .map(async (link) => {
+            const item = await getEvidenceItemById(tx, EvidenceItemIdSchema.parse(link.targetId));
+            return item === null ? null : { id: item.id, summary: item.summary };
+          }),
+      );
+      const decisions = await listDecisionsByProjectId(tx, actor.project.id);
+      const linkedDecisions = links
+        .filter((link) => link.targetKind === 'decision')
+        .map((link) => {
+          const decision = decisions.find((item) => item.id === link.targetId);
+          return {
+            id: link.targetId,
+            statement:
+              decision === undefined
+                ? 'Linked decision'
+                : typeof decision.chosen === 'string'
+                  ? decision.chosen
+                  : JSON.stringify(decision.chosen),
+          };
+        });
       return {
         section: card.section,
         label: card.label,
         item: card.item,
         provenance: card.item.provenance,
         versionNumber: version?.versionNumber ?? null,
-        linkedEvidence: [],
-        linkedDecisions: [],
+        linkedEvidence: evidence.filter((item) => item !== null),
+        linkedDecisions,
         staleReasons: card.staleReasons,
         smallestAction: card.smallestAction,
         pendingProposal: null,
@@ -226,77 +256,197 @@ export class BusinessRecordService {
     return result;
   }
 
-  async appendFounderNote(
-    actor: { membership: WorkspaceMembership; project: Project },
-    input: { summary: string; section?: RecordSectionKey; kind: string },
-  ): Promise<RecordItem | null> {
-    return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) =>
-      this.captureNote(tx, actor.project, input),
-    );
+  async saveSection(
+    actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
+    input: SaveRecordSectionInput,
+  ): Promise<{ versionNumber: number }> {
+    if (!this.policyService.can(actor.membership, 'record.accept')) {
+      throw new AppError({
+        code: 'policy_forbidden',
+        explanation: 'Your role cannot accept record changes.',
+        nextAction: 'Ask a workspace admin to change your role.',
+      });
+    }
+    return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
+      const existing = await getCommandReceipt(
+        tx,
+        actor.userId,
+        'record.saveSection',
+        input.idempotencyKey,
+      );
+      if (existing !== null) {
+        return existing as { versionNumber: number };
+      }
+      const item = await getRecordItemBySection(
+        tx,
+        actor.project.id,
+        input.section,
+        RECORD_SECTION_DEFINITIONS[input.section].defaultItemKey,
+      );
+      if (item === null) {
+        throw new AppError({
+          code: 'not_found',
+          explanation: 'That record section was not found.',
+          nextAction: 'Reload the business model.',
+        });
+      }
+      if (item.revision !== input.expectedRevision) {
+        throw staleRevision();
+      }
+      const result = await this.acceptFounderWrite(tx, actor, {
+        item,
+        summary: input.summary,
+        command: 'record.saveSection',
+        idempotencyKey: input.idempotencyKey,
+      });
+      for (const evidenceId of input.evidenceIds ?? []) {
+        await insertRecordSupportLink(tx, {
+          projectId: actor.project.id,
+          workspaceId: actor.project.workspaceId,
+          recordItemId: item.id,
+          targetKind: 'evidence',
+          targetId: evidenceId,
+          relationType: 'supports',
+        });
+      }
+      return result;
+    });
   }
 
-  async captureNote(
-    tx: Sql,
-    project: Project,
-    input: { summary: string; section?: RecordSectionKey; kind: string },
-  ): Promise<RecordItem | null> {
-    const section = input.section ?? 'evidence_and_learning';
-    const item = await getRecordItemBySection(
-      tx,
-      project.id,
-      section,
-      RECORD_SECTION_DEFINITIONS[section].defaultItemKey,
-    );
-    if (item === null) {
-      return null;
-    }
-    const nextStatus = item.status === 'empty' ? 'draft' : item.status;
-    if (!canTransitionRecordItemStatus(item.status, nextStatus) && nextStatus !== item.status) {
-      return item;
-    }
-    return updateRecordItem(tx, item.id, {
-      expectedRevision: item.revision,
-      content: {
-        summary: item.content.summary.length === 0 ? input.summary : item.content.summary,
-        fields: { ...item.content.fields, lastNote: input.summary, kind: input.kind },
-      },
-      status: nextStatus === 'accepted' ? item.status : nextStatus,
-      provenance: item.provenance === 'unverified' ? 'founder_input' : item.provenance,
+  async appendFounderNote(
+    actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
+    input: { summary: string; section?: RecordSectionKey; kind: string; idempotencyKey: string },
+  ): Promise<{ versionNumber: number } | null> {
+    return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
+      const section = input.section ?? 'evidence_and_learning';
+      const item = await getRecordItemBySection(
+        tx,
+        actor.project.id,
+        section,
+        RECORD_SECTION_DEFINITIONS[section].defaultItemKey,
+      );
+      if (item === null) {
+        return null;
+      }
+      return this.acceptFounderWrite(tx, actor, {
+        item,
+        summary: input.summary,
+        command: 'record.appendFounderNote',
+        idempotencyKey: input.idempotencyKey,
+        fields: { lastNote: input.summary, kind: input.kind },
+      });
     });
   }
 
   async recordAssumption(
     actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
     statement: string,
+    idempotencyKey: string,
   ): Promise<void> {
     await withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
       await insertAssumption(tx, { projectId: actor.project.id, statement });
-      await this.captureNote(tx, actor.project, {
-        summary: statement,
-        section: 'assumptions_and_questions',
-        kind: 'assumption',
-      });
+      const item = await getRecordItemBySection(
+        tx,
+        actor.project.id,
+        'assumptions_and_questions',
+        RECORD_SECTION_DEFINITIONS.assumptions_and_questions.defaultItemKey,
+      );
+      if (item !== null) {
+        await this.acceptFounderWrite(tx, actor, {
+          item,
+          summary: statement,
+          command: 'record.recordAssumption',
+          idempotencyKey,
+        });
+      }
     });
   }
 
   async recordDecision(
     actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
-    input: { statement: string; rationale: string },
+    input: { statement: string; rationale: string; idempotencyKey: string },
   ): Promise<void> {
     await withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
-      await insertDecision(tx, {
+      const decision = await insertDecision(tx, {
         projectId: actor.project.id,
         options: [input.statement],
         chosen: input.statement,
         rationale: input.rationale,
         decidedByUserId: actor.userId,
       });
-      await this.captureNote(tx, actor.project, {
-        summary: input.statement,
-        section: 'decisions_and_changes',
-        kind: 'decision',
-      });
+      const item = await getRecordItemBySection(
+        tx,
+        actor.project.id,
+        'decisions_and_changes',
+        RECORD_SECTION_DEFINITIONS.decisions_and_changes.defaultItemKey,
+      );
+      if (item !== null) {
+        await this.acceptFounderWrite(tx, actor, {
+          item,
+          summary: input.statement,
+          command: 'record.recordDecision',
+          idempotencyKey: input.idempotencyKey,
+          fields: { rationale: input.rationale },
+        });
+        await insertRecordSupportLink(tx, {
+          projectId: actor.project.id,
+          workspaceId: actor.project.workspaceId,
+          recordItemId: item.id,
+          targetKind: 'decision',
+          targetId: decision.id,
+          relationType: 'supports',
+        });
+      }
     });
+  }
+
+  private async acceptFounderWrite(
+    tx: Sql,
+    actor: { userId: UserId; project: Project },
+    input: {
+      item: RecordItem;
+      summary: string;
+      command: string;
+      idempotencyKey: string;
+      fields?: Record<string, unknown>;
+    },
+  ): Promise<{ versionNumber: number }> {
+    const existing = await getCommandReceipt(tx, actor.userId, input.command, input.idempotencyKey);
+    if (existing !== null) {
+      return existing as { versionNumber: number };
+    }
+    const versionNumber = await nextBusinessRecordVersionNumber(tx, actor.project.id);
+    const version = await insertBusinessRecordVersion(tx, {
+      projectId: actor.project.id,
+      workspaceId: actor.project.workspaceId,
+      versionNumber,
+      acceptedBy: actor.userId,
+      sourceProposalIds: [],
+    });
+    const content = {
+      summary: input.summary,
+      fields: { ...input.item.content.fields, ...(input.fields ?? {}) },
+    };
+    await moveItemToAccepted(tx, input.item, content, version.id);
+    await insertActivityEvent(tx, {
+      projectId: actor.project.id,
+      workspaceId: actor.project.workspaceId,
+      eventType: 'record_version_accepted',
+      actorType: 'founder',
+      actorId: actor.userId,
+      versionId: version.id,
+      payload: { versionNumber, command: input.command, section: input.item.section },
+    });
+    const result = { versionNumber };
+    await insertCommandReceipt(tx, {
+      workspaceId: actor.project.workspaceId,
+      projectId: actor.project.id,
+      actorId: actor.userId,
+      command: input.command,
+      idempotencyKey: input.idempotencyKey,
+      result,
+    });
+    return result;
   }
 
   private async resolveItem(

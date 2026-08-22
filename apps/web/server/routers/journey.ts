@@ -103,6 +103,7 @@ export const journeyRouter = router({
         await ctx.services.businessRecordService.recordAssumption(
           { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
           input.summary,
+          input.idempotencyKey,
         );
         return { ok: true as const };
       }
@@ -111,8 +112,8 @@ export const journeyRouter = router({
           { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
           {
             projectId: ctx.project.id,
-            participantType: 'non_friend',
-            consent: { given: true },
+            participantType: input.participantType ?? 'known_contact',
+            consent: { given: input.consentGiven === true },
             quotes: [input.summary],
             idempotencyKey: input.idempotencyKey,
           },
@@ -128,10 +129,11 @@ export const journeyRouter = router({
         );
       }
       await ctx.services.businessRecordService.appendFounderNote(
-        { membership: ctx.membership, project: ctx.project },
+        { userId: ctx.actor.userId, membership: ctx.membership, project: ctx.project },
         {
           summary: input.summary,
           kind: input.kind,
+          idempotencyKey: input.idempotencyKey,
           ...(input.section === undefined ? {} : { section: input.section }),
         },
       );

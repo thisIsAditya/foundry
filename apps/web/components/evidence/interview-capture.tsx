@@ -14,7 +14,7 @@ export function InterviewCapture({ projectId }: { projectId: string }) {
   const idempotencyKey = useRef(crypto.randomUUID());
   const [participantType, setParticipantType] =
     useState<(typeof InterviewParticipantTypes)[number]>('non_friend');
-  const [consentGiven, setConsentGiven] = useState(true);
+  const [consentGiven, setConsentGiven] = useState(false);
   const [quotesText, setQuotesText] = useState('');
   const mutation = useMutation(
     trpc.evidence.addInterview.mutationOptions({

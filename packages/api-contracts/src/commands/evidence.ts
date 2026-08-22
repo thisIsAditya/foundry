@@ -100,12 +100,89 @@ export const EvidenceLibraryItemSchema = z.object({
 });
 export type EvidenceLibraryItem = z.infer<typeof EvidenceLibraryItemSchema>;
 
-export const ListFindingsInputSchema = z.object({
-  projectId: ProjectIdSchema,
-});
-export type ListFindingsInput = z.infer<typeof ListFindingsInputSchema>;
-
 export const ListInterviewsInputSchema = z.object({
   projectId: ProjectIdSchema,
 });
 export type ListInterviewsInput = z.infer<typeof ListInterviewsInputSchema>;
+
+export const StartInterviewImportInputSchema = z
+  .object({
+    projectId: ProjectIdSchema,
+    sourceId: SourceIdSchema.optional(),
+    text: z.string().min(1).optional(),
+    filename: z.string().min(1).optional(),
+    idempotencyKey: IdempotencyKeySchema,
+  })
+  .refine(
+    (value) =>
+      value.sourceId !== undefined || (value.text !== undefined && value.text.trim().length > 0),
+    {
+      message: 'Provide an uploaded source or pasted interview notes.',
+    },
+  );
+export type StartInterviewImportInput = z.infer<typeof StartInterviewImportInputSchema>;
+
+export const ListInterviewImportsInputSchema = z.object({
+  projectId: ProjectIdSchema,
+});
+export type ListInterviewImportsInput = z.infer<typeof ListInterviewImportsInputSchema>;
+
+export const GetInterviewImportInputSchema = z.object({
+  projectId: ProjectIdSchema,
+  batchId: z.string().uuid(),
+});
+export type GetInterviewImportInput = z.infer<typeof GetInterviewImportInputSchema>;
+
+export const ReviewInterviewImportCandidateInputSchema = z.object({
+  projectId: ProjectIdSchema,
+  candidateId: z.string().uuid(),
+  label: z.string().min(1).optional(),
+  participantType: InterviewParticipantTypeSchema.optional(),
+  notes: z.string().optional(),
+  quotes: z.array(z.string().min(1)).optional(),
+  consentGiven: z.boolean().optional(),
+  idempotencyKey: IdempotencyKeySchema,
+});
+export type ReviewInterviewImportCandidateInput = z.infer<
+  typeof ReviewInterviewImportCandidateInputSchema
+>;
+
+export const DecideInterviewImportInputSchema = z.object({
+  projectId: ProjectIdSchema,
+  batchId: z.string().uuid(),
+  acceptIds: z.array(z.string().uuid()),
+  rejectIds: z.array(z.string().uuid()).default([]),
+  idempotencyKey: IdempotencyKeySchema,
+});
+export type DecideInterviewImportInput = z.infer<typeof DecideInterviewImportInputSchema>;
+
+export const ListProjectMemoryInputSchema = z.object({
+  projectId: ProjectIdSchema,
+});
+export type ListProjectMemoryInput = z.infer<typeof ListProjectMemoryInputSchema>;
+
+export const UpsertProjectMemoryInputSchema = z.object({
+  projectId: ProjectIdSchema,
+  id: z.string().uuid().optional(),
+  kind: z.enum([
+    'goal',
+    'constraint',
+    'preference',
+    'decision',
+    'question',
+    'assumption',
+    'experiment',
+    'conversation',
+  ]),
+  body: z.string().min(1),
+  sourceIds: z.array(z.string().min(1)).default([]),
+  idempotencyKey: IdempotencyKeySchema,
+});
+export type UpsertProjectMemoryInput = z.infer<typeof UpsertProjectMemoryInputSchema>;
+
+export const DeleteProjectMemoryInputSchema = z.object({
+  projectId: ProjectIdSchema,
+  id: z.string().uuid(),
+  idempotencyKey: IdempotencyKeySchema,
+});
+export type DeleteProjectMemoryInput = z.infer<typeof DeleteProjectMemoryInputSchema>;

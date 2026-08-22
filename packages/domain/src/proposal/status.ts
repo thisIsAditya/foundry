@@ -41,7 +41,7 @@ export const CofounderOperationStates = [
 export const CofounderOperationStateSchema = z.enum(CofounderOperationStates);
 export type CofounderOperationState = z.infer<typeof CofounderOperationStateSchema>;
 
-export const CofounderRuntimeKinds = ['direct', 'harness'] as const;
+export const CofounderRuntimeKinds = ['direct', 'harness', 'disabled'] as const;
 export const CofounderRuntimeKindSchema = z.enum(CofounderRuntimeKinds);
 export type CofounderRuntimeKind = z.infer<typeof CofounderRuntimeKindSchema>;
 

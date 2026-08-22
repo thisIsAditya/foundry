@@ -10,6 +10,7 @@ import {
   type ContentBlockType,
   type DocumentId,
   type ProjectId,
+  type SourceId,
   type SourceSnapshotId,
 } from '@foundry/domain';
 import { z } from 'zod';
@@ -131,4 +132,52 @@ export async function searchContentBlocks(
     ...parseBlock(row),
     rank: Number(row.rank),
   }));
+}
+
+export async function listReadyContentBlocksByProjectId(
+  sql: Sql,
+  projectId: ProjectId,
+  limit = 20,
+): Promise<ContentBlock[]> {
+  const rows = await sql<ContentBlockRow[]>`
+    select
+      cb.id,
+      cb.document_id,
+      cb.source_snapshot_id,
+      cb.block_type,
+      cb.sequence_no,
+      cb.text_content,
+      cb.structured_content_json,
+      cb.locator_json
+    from content_blocks cb
+    join documents d on d.id = cb.document_id
+    join sources s on s.id = d.source_id
+    where s.project_id = ${projectId}
+      and s.status = 'ready'
+    order by s.created_at desc, cb.sequence_no asc
+    limit ${limit}
+  `;
+  return rows.map(parseBlock);
+}
+
+export async function listContentBlocksBySourceId(
+  sql: Sql,
+  sourceId: SourceId,
+): Promise<ContentBlock[]> {
+  const rows = await sql<ContentBlockRow[]>`
+    select
+      cb.id,
+      cb.document_id,
+      cb.source_snapshot_id,
+      cb.block_type,
+      cb.sequence_no,
+      cb.text_content,
+      cb.structured_content_json,
+      cb.locator_json
+    from content_blocks cb
+    join documents d on d.id = cb.document_id
+    where d.source_id = ${sourceId}
+    order by cb.sequence_no asc
+  `;
+  return rows.map(parseBlock);
 }

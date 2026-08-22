@@ -55,3 +55,13 @@ export async function insertSourceSnapshot(
   `;
   return parseSnapshot(requireRow(rows, 'insertSourceSnapshot'));
 }
+
+export async function listSourceSnapshotsBySourceId(
+  sql: Sql,
+  sourceId: SourceId,
+): Promise<SourceSnapshot[]> {
+  const rows = await sql<SourceSnapshotRow[]>`
+    select * from source_snapshots where source_id = ${sourceId} order by fetched_at desc
+  `;
+  return rows.map(parseSnapshot);
+}

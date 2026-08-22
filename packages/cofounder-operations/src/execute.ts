@@ -1,4 +1,9 @@
-import type { CofounderRuntimeResult } from '@foundry/agent-runtime';
+import {
+  collectCapabilityReferenceIds,
+  collectEnvelopeReferenceIds,
+  isKnownReference,
+  type CofounderRuntimeResult,
+} from '@foundry/agent-runtime';
 import type { CofounderTurn } from '@foundry/api-contracts';
 import {
   isCancelableCofounderOperationState,
@@ -30,6 +35,9 @@ export function inProgressTurn(
       'The co-founder is working. Accepted record state stays unchanged until you review a proposal.',
     interactionType: 'inform',
     references: [],
+    facts: [],
+    interpretation: '',
+    assumptions: [],
     uncertainty: 'This turn is still running.',
     blockedConditions: [],
     activity: 'Queued or running. No accepted record write has occurred.',
@@ -108,46 +116,72 @@ export async function executeCofounderOperation(
       throw canceledError();
     }
     const packet = await ports.context.buildPacket(input.correlationId);
-    await ports.capabilities.invoke({
-      name: 'venture.readCurrentState',
-      input: {
-        currentStage: packet.currentStage,
-        currentObjective: packet.currentObjective,
+    const knownIds = collectEnvelopeReferenceIds(packet);
+    const capabilities = {
+      async invoke(request: { name: string; input: unknown; operationId: string }) {
+        const invoked = await ports.capabilities.invoke(request);
+        for (const ref of collectCapabilityReferenceIds(invoked.data)) {
+          knownIds.add(`${ref.kind}:${ref.id}`);
+          knownIds.add(ref.id);
+        }
+        await ports.events.publish({
+          type: 'capability_completed',
+          operationId: operation.id,
+          capabilityName: request.name,
+        });
+        return invoked;
       },
-      operationId: operation.id,
-    });
+    };
+    const issued =
+      ports.tokens === undefined
+        ? null
+        : await ports.tokens.issue({
+            operationId: operation.id,
+            allowedCapabilities: packet.allowedCapabilities,
+            maxInvocations: packet.capabilityBudget.maxInvocations,
+          });
     if (abort.signal.aborted || (await ports.cancel.isSignaled(operation.id))) {
       throw canceledError();
     }
-    const result = await ports.runtime.run({
+    const rawResult = await ports.runtime.run({
       operationId: operation.id,
       actor: packet.actor,
       contextPacket: packet,
       founderRequest: input.founderRequest,
-      schemaVersion: 'v4.5',
+      schemaVersion: 'v5',
       capabilityManifest: packet.allowedCapabilities,
       timeoutMs: input.timeoutMs,
       abortSignal: abort.signal,
-      capabilities: ports.capabilities,
+      capabilities,
+      ...(issued === null
+        ? {}
+        : { capabilityToken: issued.token, capabilityInvokeUrl: issued.invokeUrl }),
     });
     if (abort.signal.aborted || (await ports.cancel.isSignaled(operation.id))) {
       throw canceledError();
     }
+    const result = groundRuntimeResult(rawResult, knownIds);
     const proposalId = await persistProposalDraft(ports, operation, result);
+    const suggestedStepIds = await persistSuggestedSteps(ports, operation, result);
     const current = await ports.operations.getById(operation.id);
     if (current?.state === 'canceled' || abort.signal.aborted) {
       throw canceledError();
     }
     const terminalState = proposalId === null ? 'completed' : 'awaiting_founder';
+    const stepId = input.stepId ?? suggestedStepIds[0] ?? null;
     const turn: CofounderTurn = {
       explanation: result.explanation,
       interactionType: result.interactionType,
       references: result.references,
+      facts: result.facts,
+      interpretation: result.interpretation,
+      assumptions: result.assumptions,
+      ...(result.recommendation === undefined ? {} : { recommendation: result.recommendation }),
       uncertainty: result.uncertainty,
       blockedConditions: result.blockedConditions,
       activity: result.activity,
       proposalId,
-      stepId: input.stepId ?? null,
+      stepId,
       operation: current,
     };
     const cofounderMessage = await ports.messages.insert({
@@ -161,10 +195,14 @@ export async function executeCofounderOperation(
           blockedConditions: result.blockedConditions,
           activity: result.activity,
           proposalId,
-          stepId: input.stepId ?? null,
+          stepId,
           operationId: operation.id,
           references: result.references,
           operationState: terminalState,
+          facts: result.facts,
+          interpretation: result.interpretation,
+          assumptions: result.assumptions,
+          ...(result.recommendation === undefined ? {} : { recommendation: result.recommendation }),
         }),
       ],
       references: result.references.flatMap((ref) => {
@@ -211,6 +249,9 @@ export async function executeCofounderOperation(
         ...(paused ? { canceledAt: new Date() } : {}),
       });
     }
+    if (ports.tokens !== undefined) {
+      await ports.tokens.cancel(operation.id);
+    }
     await ports.events.publish(
       paused
         ? {
@@ -240,7 +281,7 @@ async function persistProposalDraft(
     return null;
   }
   const created = await ports.capabilities.invoke({
-    name: 'proposal.createDraft',
+    name: 'proposal.createDraft@1',
     input: {
       projectId: operation.projectId,
       rationale: result.proposalDraft.rationale,
@@ -248,7 +289,7 @@ async function persistProposalDraft(
       changes: result.proposalDraft.changes.map((change) => ({
         section: change.section,
         afterPayload: change.afterPayload,
-        evidenceRefs: [],
+        evidenceRefs: change.evidenceRefs,
         ...(change.itemKey === undefined ? {} : { itemKey: change.itemKey }),
         ...(change.rationale === undefined ? {} : { rationale: change.rationale }),
       })),
@@ -262,7 +303,7 @@ async function persistProposalDraft(
   await ports.events.publish({
     type: 'capability_completed',
     operationId: operation.id,
-    capabilityName: 'proposal.createDraft',
+    capabilityName: 'proposal.createDraft@1',
   });
   const proposalId = typeof created.data?.proposalId === 'string' ? created.data.proposalId : null;
   if (proposalId !== null) {
@@ -273,6 +314,55 @@ async function persistProposalDraft(
     });
   }
   return created.ok ? proposalId : null;
+}
+
+async function persistSuggestedSteps(
+  ports: CofounderOperationPorts,
+  operation: CofounderOperation,
+  result: CofounderRuntimeResult,
+): Promise<string[]> {
+  if (result.suggestedSteps === undefined || result.suggestedSteps.length === 0) {
+    return [];
+  }
+  const ids = await ports.suggestions.persist({ steps: result.suggestedSteps });
+  for (const stepId of ids) {
+    await ports.events.publish({
+      type: 'journey_step_suggested',
+      operationId: operation.id,
+      stepId,
+    });
+  }
+  return ids;
+}
+
+function groundRuntimeResult(
+  result: CofounderRuntimeResult,
+  knownIds: Set<string>,
+): CofounderRuntimeResult {
+  const references = result.references.filter((ref) => isKnownReference(ref, knownIds));
+  const incomingFacts = result.facts ?? [];
+  const facts = [];
+  const demoted: string[] = [...(result.assumptions ?? [])];
+  for (const fact of incomingFacts) {
+    const validRefs = fact.references.filter((ref) => isKnownReference(ref, knownIds));
+    if (validRefs.length === 0) {
+      demoted.push(fact.statement);
+      continue;
+    }
+    facts.push({ statement: fact.statement, references: validRefs });
+  }
+  const incomingInterpretation = result.interpretation ?? '';
+  const interpretation =
+    facts.length < incomingFacts.length && incomingInterpretation.length === 0
+      ? 'Some claimed facts had no stored reference and were treated as interpretation.'
+      : incomingInterpretation;
+  return {
+    ...result,
+    references,
+    facts,
+    interpretation,
+    assumptions: demoted,
+  };
 }
 
 export function proposalIdempotencyKey(operationId: CofounderOperationId): string {

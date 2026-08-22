@@ -6,6 +6,8 @@ export {
   RecordProvenanceSchema,
   RecordProvenances,
   RecordRelationTypeSchema,
+  RecordSupportTargetKindSchema,
+  RecordSupportTargetKinds,
   RecordRelationTypes,
   RecordSectionKeySchema,
   RecordSectionKeys,
@@ -20,4 +22,5 @@ export {
   type RecordProvenance,
   type RecordRelationType,
   type RecordSectionKey,
+  type RecordSupportTargetKind,
 } from './sections.js';

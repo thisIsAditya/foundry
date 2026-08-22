@@ -80,6 +80,25 @@ function CofounderTurnCard({ projectId, block }: { projectId: string; block: Cof
   return (
     <CofounderResponseFrame type={block.interactionType}>
       <ChatMarkdown text={block.explanation} />
+      {block.facts === undefined || block.facts.length === 0 ? null : (
+        <div className="stack-tight">
+          <p className="hint">Facts from stored sources</p>
+          <ul className="hint">
+            {block.facts.map((fact) => (
+              <li key={fact.statement}>{fact.statement}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {block.interpretation === undefined || block.interpretation.length === 0 ? null : (
+        <p className="muted">Interpretation: {block.interpretation}</p>
+      )}
+      {block.assumptions === undefined || block.assumptions.length === 0 ? null : (
+        <p className="hint">Assumptions: {block.assumptions.join(' ')}</p>
+      )}
+      {block.recommendation === undefined || block.recommendation.length === 0 ? null : (
+        <p className="text-sm">Recommendation: {block.recommendation}</p>
+      )}
       {block.uncertainty.length === 0 ? null : <p className="hint">{block.uncertainty}</p>}
       {block.blockedConditions.length === 0 ? null : (
         <p className="muted">{block.blockedConditions.join(' ')}</p>

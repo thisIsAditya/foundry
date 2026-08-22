@@ -1,0 +1,71 @@
+export const V5_EVAL_FIXTURES = [
+  {
+    id: 'sparse-new-idea',
+    title: 'Sparse new idea with no evidence',
+    stage: 'idea',
+    evidenceCount: 0,
+    interviewCount: 0,
+    expect: {
+      unsupportedFactRateMax: 0,
+      citationCoverageMin: 0,
+    },
+  },
+  {
+    id: 'stale-assumptions',
+    title: 'Mature record with stale assumptions',
+    stage: 'problem',
+    evidenceCount: 3,
+    interviewCount: 1,
+    expect: { unsupportedFactRateMax: 0, citationCoverageMin: 1 },
+  },
+  {
+    id: 'contradictory-sources',
+    title: 'Contradictory source material',
+    stage: 'problem',
+    evidenceCount: 2,
+    interviewCount: 0,
+    expect: { unsupportedFactRateMax: 0, citationCoverageMin: 1 },
+  },
+  {
+    id: 'manual-interview',
+    title: 'A manual interview',
+    stage: 'problem',
+    evidenceCount: 0,
+    interviewCount: 1,
+    expect: { consentInferredTrue: false },
+  },
+  {
+    id: 'three-interview-bundle',
+    title: 'A three-interview bundle with missing consent',
+    stage: 'problem',
+    evidenceCount: 0,
+    interviewCount: 3,
+    expect: { consentInferredTrue: false, candidateCount: 3 },
+  },
+  {
+    id: 'research-with-citations',
+    title: 'A research request with sufficient citations',
+    stage: 'problem',
+    evidenceCount: 2,
+    interviewCount: 0,
+    expect: { inventedCitations: false },
+  },
+  {
+    id: 'research-no-result',
+    title: 'A research request with no permissible result',
+    stage: 'problem',
+    evidenceCount: 0,
+    interviewCount: 0,
+    expect: { inventedCitations: false },
+  },
+  {
+    id: 'duplicate-import',
+    title: 'Duplicate import retry',
+    stage: 'problem',
+    evidenceCount: 0,
+    interviewCount: 3,
+    expect: { duplicateInterviews: false },
+  },
+] as const;
+
+export type V5EvalFixture = (typeof V5_EVAL_FIXTURES)[number];

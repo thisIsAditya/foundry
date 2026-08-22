@@ -19,6 +19,29 @@ export {
   type RecordItemContent,
 } from './record-item.js';
 export { RecordItemRelationSchema, type RecordItemRelation } from './record-item-relation.js';
+export { RecordSupportLinkSchema, type RecordSupportLink } from './record-support-link.js';
+export {
+  ProjectMemoryAuthorTypeSchema,
+  ProjectMemoryAuthorTypes,
+  ProjectMemoryEntrySchema,
+  ProjectMemoryKindSchema,
+  ProjectMemoryKinds,
+  type ProjectMemoryAuthorType,
+  type ProjectMemoryEntry,
+  type ProjectMemoryKind,
+} from './project-memory-entry.js';
+export {
+  InterviewImportBatchSchema,
+  InterviewImportBatchStatusSchema,
+  InterviewImportBatchStatuses,
+  InterviewImportCandidateSchema,
+  InterviewImportCandidateStatusSchema,
+  InterviewImportCandidateStatuses,
+  type InterviewImportBatch,
+  type InterviewImportBatchStatus,
+  type InterviewImportCandidate,
+  type InterviewImportCandidateStatus,
+} from './interview-import.js';
 export { RecordItemStalenessSchema, type RecordItemStaleness } from './record-item-staleness.js';
 export { AgentRunSchema, type AgentRun } from './agent-run.js';
 export { AlternativeSchema, type Alternative } from './alternative.js';

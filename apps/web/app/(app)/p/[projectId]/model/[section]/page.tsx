@@ -2,6 +2,7 @@ import { RecordSectionKeySchema } from '@foundry/domain';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { RecordSectionEditor } from '../../../../../../components/journey/record-section-editor';
 import { ProposalReview } from '../../../../../../components/journey/proposal-review';
 import { ProvenanceBadge } from '../../../../../../components/journey/primitives';
 import { createServerApi } from '../../../../../../lib/trpc/server';
@@ -68,6 +69,7 @@ export default async function RecordSectionPage({
             </div>
           )}
         </section>
+        <RecordSectionEditor projectId={projectId} detail={detail} />
         {sectionProposal === null ? null : (
           <ProposalReview projectId={projectId} detail={sectionProposal} />
         )}

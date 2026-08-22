@@ -12,7 +12,9 @@ export type CofounderWorkerDeps = {
   connection: ConnectionOptions;
   streamBus: StreamBus;
   redis: Redis;
-  harness: { endpoint: string; token: string };
+  harness?: { endpoint: string; token: string };
+  aiMode?: 'off' | 'direct' | 'harness';
+  capabilityInvokeUrl?: string;
   queueName?: string;
 };
 
@@ -25,7 +27,11 @@ export function startCofounderWorker(deps: CofounderWorkerDeps): Worker {
         sql: deps.sql,
         streamBus: deps.streamBus,
         redis: deps.redis,
-        harness: deps.harness,
+        ...(deps.harness === undefined ? {} : { harness: deps.harness }),
+        ...(deps.aiMode === undefined ? {} : { aiMode: deps.aiMode }),
+        ...(deps.capabilityInvokeUrl === undefined
+          ? {}
+          : { capabilityInvokeUrl: deps.capabilityInvokeUrl }),
       });
     },
     {

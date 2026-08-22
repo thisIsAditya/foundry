@@ -1,6 +1,4 @@
-import { redirect } from 'next/navigation';
-
-import { projectHref } from '../../../../../lib/project-href';
+import { IntakeReview } from '../../../../../components/cofounder/intake-review';
 
 export default async function CofounderPage({
   params,
@@ -8,5 +6,5 @@ export default async function CofounderPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  redirect(projectHref(projectId));
+  return <IntakeReview projectId={projectId} />;
 }

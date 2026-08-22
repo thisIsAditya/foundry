@@ -10,10 +10,17 @@ import { useCofounderTransport } from './use-cofounder-transport';
 
 const SCROLL_BOTTOM_THRESHOLD_PX = 96;
 
-export function CofounderThread({ projectId }: { projectId: string }) {
+export function CofounderThread({
+  projectId,
+  initialPrompt,
+}: {
+  projectId: string;
+  initialPrompt?: string;
+}) {
   const transport = useCofounderTransport(projectId);
   const scroller = useRef<HTMLDivElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
+  const initialPromptSent = useRef(false);
   const [stickToBottom, setStickToBottom] = useState(true);
 
   useEffect(() => {
@@ -31,6 +38,26 @@ export function CofounderThread({ projectId }: { projectId: string }) {
     node.style.height = '0px';
     node.style.height = `${String(node.scrollHeight)}px`;
   }, [transport.answer]);
+
+  useEffect(() => {
+    if (
+      initialPrompt === undefined ||
+      initialPromptSent.current ||
+      !transport.history.isSuccess ||
+      transport.history.data.items.length > 0 ||
+      transport.isPending
+    ) {
+      return;
+    }
+    initialPromptSent.current = true;
+    void transport.submit(initialPrompt).catch(() => undefined);
+  }, [
+    initialPrompt,
+    transport.history.data?.items.length,
+    transport.history.isSuccess,
+    transport.isPending,
+    transport.submit,
+  ]);
 
   function onScroll(): void {
     const node = scroller.current;

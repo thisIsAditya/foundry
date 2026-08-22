@@ -1,11 +1,9 @@
 import type { CreateProjectInput } from '@foundry/api-contracts';
 import { limits } from '@foundry/config/limits';
 import {
-  getEvidenceItemById,
   getProjectById,
   insertProject,
   listProjectsByWorkspaceId,
-  updateEvidenceItemProjectId,
   withWorkspaceScope,
   type PoolSql,
 } from '@foundry/db';
@@ -15,12 +13,10 @@ import { PolicyService } from '@foundry/policy';
 import superjson from 'superjson';
 
 import { withIdempotency, type CoordinationStore } from '../coordination';
-import type { InitialDraftService } from './initial-draft-service';
 import type { JourneyService } from './journey-service';
 import { isUploadInboxProject } from './upload-inbox';
 
 export type ProjectRuntimeDeps = {
-  initialDraftService?: InitialDraftService;
   journeyService?: JourneyService;
 };
 
@@ -61,30 +57,14 @@ export class ProjectService {
           await this.runtime.journeyService?.bootstrap(tx, {
             project: created,
             actorId: actor.userId,
-            ideaText: input.founderPitch ?? created.name,
+            ideaText: input.founderPitch ?? '',
             geography: input.geography ?? created.geography,
             objective: input.objective ?? created.founderObjective,
             constraints: input.constraints ?? null,
             urgency: input.urgency ?? null,
             customerHint: input.customerHint ?? null,
           });
-          for (const evidenceId of input.attachmentIds ?? []) {
-            const evidence = await getEvidenceItemById(tx, evidenceId);
-            if (evidence === null) {
-              continue;
-            }
-            const owner = await getProjectById(tx, evidence.projectId);
-            if (owner?.workspaceId === created.workspaceId) {
-              await updateEvidenceItemProjectId(tx, evidenceId, created.id);
-            }
-          }
           return (await getProjectById(tx, created.id)) ?? created;
-        });
-        await this.runtime.initialDraftService?.generate({
-          userId: actor.userId,
-          membership: actor.membership,
-          project,
-          ...(input.founderPitch === undefined ? {} : { founderPitch: input.founderPitch }),
         });
         return project;
       },

@@ -11,6 +11,7 @@ import type {
   ConversationBlock,
   ConversationMessage,
   ConversationReference,
+  JourneyStage,
 } from '@foundry/domain';
 
 export type OperationStatePatch = {
@@ -51,6 +52,19 @@ export type CofounderOperationPorts = {
   };
   runtime: CofounderRuntime;
   capabilities: RuntimeCapabilityPort;
+  suggestions: {
+    persist(input: {
+      steps: readonly { stage: JourneyStage; objective: string; whyNow: string }[];
+    }): Promise<string[]>;
+  };
+  tokens?: {
+    issue(input: {
+      operationId: CofounderOperationId;
+      allowedCapabilities: readonly string[];
+      maxInvocations: number;
+    }): Promise<{ token: string; invokeUrl: string } | null>;
+    cancel(operationId: CofounderOperationId): Promise<void>;
+  };
   events: {
     publish(event: StreamEvent): Promise<void>;
   };

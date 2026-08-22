@@ -17,6 +17,7 @@ export {
   legacyPhaseIsDeferredExtension,
   nextJourneyStageStatuses,
   nextJourneyStepStatuses,
+  recordSectionForJourneyStage,
   recommendedNextStage,
   type JourneyMoveMode,
   type JourneyStage,
@@ -26,6 +27,7 @@ export {
 export {
   alternativeSteps,
   firstRecommendedStep,
+  recommendedStepForStage,
   type FirstStepContext,
   type RecommendedStepDraft,
 } from './recommended-step.js';

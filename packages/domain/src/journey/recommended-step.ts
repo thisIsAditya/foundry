@@ -27,11 +27,6 @@ function hasText(value: string | null | undefined): boolean {
 
 export function firstRecommendedStep(context: FirstStepContext): RecommendedStepDraft {
   const ideaKnown = hasText(context.ideaText);
-  const contextKnown =
-    hasText(context.geography) ||
-    (hasText(context.objective) && context.objective !== 'undecided') ||
-    hasText(context.constraints) ||
-    hasText(context.urgency);
 
   if (!ideaKnown) {
     return {
@@ -48,45 +43,61 @@ export function firstRecommendedStep(context: FirstStepContext): RecommendedStep
     };
   }
 
-  if (!contextKnown) {
-    return {
-      stage: 'idea',
-      objective: 'Record the goal, geography, constraints, or urgency that would change the path.',
-      whyNow:
-        'These details are optional except when they change the first recommended investigation.',
-      expectedEffort: 'About 5 minutes',
-      expectedMinutes: 5,
-      cofounderWillDo: 'Explain how each choice changes the recommended next step.',
-      expectedOutcome: 'Founder context on the record, still labelled as founder input.',
-      status: 'ready',
-      recommended: true,
-    };
-  }
+  return recommendedStepForStage('problem');
+}
 
-  if (!hasText(context.customerHint)) {
-    return {
-      stage: 'problem',
-      objective: JOURNEY_STAGE_DEFINITIONS.problem.recommendedObjective,
+export function recommendedStepForStage(stage: JourneyStage): RecommendedStepDraft {
+  const definition = JOURNEY_STAGE_DEFINITIONS[stage];
+  const details: Record<
+    JourneyStage,
+    Pick<RecommendedStepDraft, 'whyNow' | 'cofounderWillDo' | 'expectedOutcome'>
+  > = {
+    idea: {
+      whyNow: 'Start with the founder’s words. Do not fill gaps with generated claims.',
+      cofounderWillDo: 'Reflect the idea back and name only what is still unknown.',
+      expectedOutcome: 'An Idea-stage record with honest empty sections and one next step.',
+    },
+    problem: {
       whyNow:
-        'A solution, market, or research sprint would invent facts. The next useful work is a testable problem statement.',
-      expectedEffort: 'About 15 minutes',
-      expectedMinutes: 15,
+        'The idea is already recorded. Before shaping a solution, state the recurring problem in the founder’s words.',
       cofounderWillDo:
         'Turn the idea into candidate problem statements without inventing a customer.',
       expectedOutcome: 'A problem hypothesis marked as founder input or unverified, not as proof.',
-      status: 'ready',
-      recommended: true,
-    };
-  }
-
+    },
+    customer: {
+      whyNow: 'A named customer lets us judge evidence, alternatives, and the first experiment.',
+      cofounderWillDo: 'Compare plausible beachheads and explain the trade-offs.',
+      expectedOutcome: 'A beachhead candidate with explicit uncertainty.',
+    },
+    evidence: {
+      whyNow:
+        'Test the riskiest belief with an observation, interview, or source before treating it as proof.',
+      cofounderWillDo: 'Separate source-backed findings from assumptions and interpretation.',
+      expectedOutcome: 'Traceable evidence and explicit uncertainty.',
+    },
+    opportunity: {
+      whyNow: 'Compare alternatives and the wedge that would make this problem worth solving.',
+      cofounderWillDo: 'Frame alternatives and differentiation without inventing market evidence.',
+      expectedOutcome: 'A bounded opportunity framing with open risks.',
+    },
+    offer: {
+      whyNow:
+        'Turn the selected problem and customer into a testable offer and economics hypothesis.',
+      cofounderWillDo: 'Prepare a draft for review; no offer is accepted automatically.',
+      expectedOutcome: 'A founder-controlled value, pricing, and constraint hypothesis.',
+    },
+    validation_next_step: {
+      whyNow: 'Choose one controlled test that can reduce the most important uncertainty.',
+      cofounderWillDo: 'Help frame a test and success criteria without claiming validation.',
+      expectedOutcome: 'One founder-controlled experiment with explicit success criteria.',
+    },
+  };
   return {
-    stage: 'customer',
-    objective: JOURNEY_STAGE_DEFINITIONS.customer.recommendedObjective,
-    whyNow: 'A named customer lets us judge evidence, alternatives, and the first experiment.',
-    expectedEffort: 'About 15 minutes',
-    expectedMinutes: 15,
-    cofounderWillDo: 'Compare plausible beachheads and explain the trade-offs.',
-    expectedOutcome: 'A beachhead candidate with explicit uncertainty.',
+    stage,
+    objective: definition.recommendedObjective,
+    ...details[stage],
+    expectedEffort: stage === 'idea' ? 'About 5 minutes' : 'About 15 minutes',
+    expectedMinutes: stage === 'idea' ? 5 : 15,
     status: 'ready',
     recommended: true,
   };

@@ -1,4 +1,4 @@
-import { EvidenceItemIdSchema, FounderObjectiveSchema, WorkspaceIdSchema } from '@foundry/domain';
+import { FounderObjectiveSchema, WorkspaceIdSchema } from '@foundry/domain';
 import { z } from 'zod';
 
 import { IdempotencyKeySchema } from './idempotency.js';
@@ -12,7 +12,6 @@ export const CreateProjectInputSchema = z.object({
   constraints: z.string().min(1).optional(),
   urgency: z.enum(['now', 'soon', 'exploring']).optional(),
   customerHint: z.string().min(1).optional(),
-  attachmentIds: z.array(EvidenceItemIdSchema).max(10).optional(),
   idempotencyKey: IdempotencyKeySchema,
 });
 export type CreateProjectInput = z.infer<typeof CreateProjectInputSchema>;

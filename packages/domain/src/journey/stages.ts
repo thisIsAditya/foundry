@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import type { RecordSectionKey } from '../record/sections.js';
 import { canTransition, nextStates } from '../status/transition.js';
 import type { JourneyPhase } from '../status/journey-status.js';
 
@@ -14,6 +15,20 @@ export const JourneyStages = [
 ] as const;
 export const JourneyStageSchema = z.enum(JourneyStages);
 export type JourneyStage = z.infer<typeof JourneyStageSchema>;
+
+const STAGE_RECORD_SECTIONS: Readonly<Record<JourneyStage, RecordSectionKey>> = {
+  idea: 'idea_founder_context',
+  problem: 'problem',
+  customer: 'beachhead_customer',
+  evidence: 'evidence_and_learning',
+  opportunity: 'opportunity_and_differentiation',
+  offer: 'offer_pricing_model',
+  validation_next_step: 'next_validation_experiment',
+};
+
+export function recordSectionForJourneyStage(stage: JourneyStage): RecordSectionKey {
+  return STAGE_RECORD_SECTIONS[stage];
+}
 
 export const JourneyStageStatuses = [
   'not_started',

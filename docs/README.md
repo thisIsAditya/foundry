@@ -13,6 +13,7 @@ and architecture direction:
 6. [DeepSeek Harness evaluation](plan/16-deepseek-harness-evaluation.md)
 7. [Implementation contracts and cleanup runbook](plan/18-implementation-contracts-and-cleanup.md)
 8. [Implementation v4](plan/implementation-v4/00-README.md)
+9. [Implementation v5](plan/implementation-v5/00-README.md)
 
 These documents replace the custom multi-agent, Magentic-style orchestration
 direction. The application owns state, approvals, and policy; DeepSeek Harness
@@ -20,15 +21,16 @@ is an optional later runtime behind that boundary.
 
 ## How to use the remaining documents
 
-| Location                                                                        | Status                              | Use                                                                                             |
-| ------------------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `01-research/01-competitive-landscape/`                                         | Dated research                      | Retain facts and product insights; verify time-sensitive claims before using them               |
-| `01-research/02-idea-to-business-process/`                                      | Background research                 | Use frameworks and validation principles; do not treat the 26-step map as the v1 workflow       |
-| `01-research/03-agent-architecture/`                                            | Historical                          | Do not implement its agent roster, conference loop, or operations runtime                       |
-| `02-product-requirements/00`–`05`                                               | Current                             | Product boundary, shared journey, platform requirements, and delivery slices                    |
-| `plan/00`–`13`                                                                  | Superseded                          | Reference only where the reset inventory explicitly retains a technical or domain concept       |
-| `plan/implementation-v4/`                                                       | Current implementation plan         | Execute the reset through its contracts, migration, web, co-founder, Harness, and release plans |
-| `plan/implementation/`, `plan/implementation-v2/`, and `plan/implementation-3/` | Historical implementation inventory | Do not build from these specifications without reconciling them with the reset                  |
+| Location                                                                        | Status                              | Use                                                                                                      |
+| ------------------------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `01-research/01-competitive-landscape/`                                         | Dated research                      | Retain facts and product insights; verify time-sensitive claims before using them                        |
+| `01-research/02-idea-to-business-process/`                                      | Background research                 | Use frameworks and validation principles; do not treat the 26-step map as the v1 workflow                |
+| `01-research/03-agent-architecture/`                                            | Historical                          | Do not implement its agent roster, conference loop, or operations runtime                                |
+| `02-product-requirements/00`–`05`                                               | Current                             | Product boundary, shared journey, platform requirements, and delivery slices                             |
+| `plan/00`–`13`                                                                  | Superseded                          | Reference only where the reset inventory explicitly retains a technical or domain concept                |
+| `plan/implementation-v4/`                                                       | Current implementation plan         | Execute the reset through its contracts, migration, web, co-founder, Harness, and release plans          |
+| `plan/implementation-v5/`                                                       | Proposed next implementation plan   | Make the co-founder an app-native, grounded, permissioned workflow client with reviewable source imports |
+| `plan/implementation/`, `plan/implementation-v2/`, and `plan/implementation-3/` | Historical implementation inventory | Do not build from these specifications without reconciling them with the reset                           |
 
 ## Product boundary
 

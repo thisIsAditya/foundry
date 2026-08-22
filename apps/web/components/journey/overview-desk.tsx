@@ -40,7 +40,7 @@ function primaryAction(overview: JourneyOverview): {
   if (overview.recommendedStep !== null) {
     return {
       href: projectJourneyHref(overview.projectId, overview.recommendedStep.id),
-      label: 'Start this step',
+      label: 'Open next step',
     };
   }
   return {
@@ -75,6 +75,12 @@ export function OverviewDesk({ overview, map }: { overview: JourneyOverview; map
             Effort: {step.expectedEffort ?? 'Varies'}. Outcome:{' '}
             {step.expectedOutcome ?? 'A record update you control.'}
           </p>
+        )}
+        {overview.founderContext === null ? null : (
+          <div className="overview-now-meta">
+            <p className="callout-eyebrow">What you already told us</p>
+            <p>{overview.founderContext}</p>
+          </div>
         )}
         <div className="overview-now-actions">
           <Link className="overview-now-primary min-h-11" href={action.href}>

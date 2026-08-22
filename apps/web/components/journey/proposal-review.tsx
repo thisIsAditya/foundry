@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 import { errorMessageOf } from '../../lib/error-message';
-import { projectHref } from '../../lib/project-href';
+import { projectEvidenceHref, projectHref } from '../../lib/project-href';
 import { useTRPC } from '../../lib/trpc/client';
 
 export function ProposalReview({
@@ -55,6 +55,15 @@ export function ProposalReview({
             <p className="text-sm font-medium">{change.section.replaceAll('_', ' ')}</p>
             <p className="hint">Current: {JSON.stringify(change.beforePayload)}</p>
             <p className="text-sm">Proposed: {JSON.stringify(change.afterPayload)}</p>
+            {Array.isArray(change.evidenceRefs) && change.evidenceRefs.length > 0 ? (
+              <p className="hint">
+                Based on {String(change.evidenceRefs.length)} stored source excerpt
+                {change.evidenceRefs.length === 1 ? '' : 's'}.{' '}
+                <a className="underline" href={projectEvidenceHref(projectId)}>
+                  Inspect sources
+                </a>
+              </p>
+            ) : null}
             <fieldset className="mt-2">
               <legend className="hint">Your decision</legend>
               {(['accept', 'modify', 'keep_current'] as const).map((outcome) => (

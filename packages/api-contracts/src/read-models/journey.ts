@@ -41,6 +41,7 @@ export const JourneyOverviewSchema = z.object({
   journey: JourneySchema,
   stageLabel: z.string().min(1),
   stageStatus: JourneyStageStatusSchema,
+  founderContext: z.string().nullable(),
   recommendedStep: JourneyStepSchema.nullable(),
   alternativeSteps: z.array(JourneyStepSchema),
   pendingProposals: z.array(ProposalSchema),
@@ -108,6 +109,17 @@ export const CofounderTurnSchema = z.object({
   explanation: z.string().min(1),
   interactionType: CofounderInteractionTypeSchema,
   references: z.array(z.object({ kind: z.string(), id: z.string() })),
+  facts: z
+    .array(
+      z.object({
+        statement: z.string().min(1),
+        references: z.array(z.object({ kind: z.string(), id: z.string() })),
+      }),
+    )
+    .default([]),
+  interpretation: z.string().default(''),
+  assumptions: z.array(z.string()).default([]),
+  recommendation: z.string().optional(),
   uncertainty: z.string(),
   blockedConditions: z.array(z.string()),
   activity: z.string(),

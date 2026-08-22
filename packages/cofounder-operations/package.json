@@ -24,8 +24,10 @@
   "dependencies": {
     "@foundry/agent-runtime": "workspace:*",
     "@foundry/api-contracts": "workspace:*",
+    "@foundry/db": "workspace:*",
     "@foundry/domain": "workspace:*",
     "@foundry/observability": "workspace:*",
+    "@foundry/policy": "workspace:*",
     "zod": "4.4.3"
   },
   "devDependencies": {

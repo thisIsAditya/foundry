@@ -47,6 +47,8 @@ export const PolicyActions = [
   'proposal.read',
   'proposal.review',
   'cofounder.respond',
+  'memory.read',
+  'memory.write',
 ] as const;
 export type PolicyAction = (typeof PolicyActions)[number];
 
@@ -76,6 +78,7 @@ export class PolicyService {
       case 'journey.read':
       case 'record.read':
       case 'proposal.read':
+      case 'memory.read':
         return roleAtLeast(membership.role, 'viewer');
       case 'project.create':
       case 'evidence.upload':
@@ -89,6 +92,7 @@ export class PolicyService {
       case 'metric.write':
       case 'journey.write':
       case 'cofounder.respond':
+      case 'memory.write':
         return roleAtLeast(membership.role, 'member');
       case 'project.answer':
       case 'proposal.review':

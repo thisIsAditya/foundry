@@ -31,7 +31,7 @@ describe('project procedures', () => {
     expect(listed.map((project) => project.id)).toEqual([created.id]);
 
     const overview = await caller.journey.getOverview({ projectId: created.id });
-    expect(overview.journey.currentStage).toBe('problem');
+    expect(overview.journey.currentStage).toBe('idea');
     expect(overview.recommendedStep).not.toBeNull();
   });
 

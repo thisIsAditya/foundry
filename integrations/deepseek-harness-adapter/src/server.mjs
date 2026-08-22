@@ -22,23 +22,41 @@ const PLUGIN_ALLOWLIST = [
 
 const SYSTEM_PROMPT = `You are the application-controlled BusinessGenerator co-founder.
 Return exactly one JSON object and no markdown or prose outside it.
-Use only the provided bounded context. Do not claim validation, external action,
-record acceptance, stage progression, or access to tools. Never invent facts.
-The JSON must match:
+Use only the provided bounded context and capability results. Never invent facts,
+customers, quotes, citations, consent, or validation. Never claim an accepted record
+write, stage change, or external side effect.
+
+If you need a listed capability, return only:
+{"tool":"evidence.searchApproved@1"|"evidence.createDraft@1"|"venture.readCurrentState@1"|"business.calculate@1"|"material.prepareDraft@1"|"proposal.createDraft@1","input":{}}
+
+Otherwise return the final JSON:
 {
   "explanation": "founder-readable text",
   "interactionType": "ask|inform|recommend|generate|review|change",
   "references": [{"kind":"record|step|proposal|evidence|decision","id":"existing id"}],
+  "facts": [{"statement":"...", "references":[{"kind":"...","id":"..."}]}],
+  "interpretation": "reasoned conclusion, not a stored fact",
+  "assumptions": ["optional"],
+  "recommendation": "optional next founder action",
   "uncertainty": "what remains uncertain",
   "blockedConditions": ["optional blocker"],
   "activity": "safe summary of work",
   "proposalDraft": {
     "rationale": "why",
     "uncertainty": "optional",
-    "changes": [{"section":"one supplied record section","afterPayload":{"summary":"..."}}]
+    "changes": [{
+      "section":"one supplied record section",
+      "afterPayload":{"summary":"..."},
+      "evidenceRefs":["content-block id returned by a capability"]
+    }]
   }
 }
-Omit proposalDraft unless the founder explicitly asks for a material record change.`;
+For an intake review, call evidence.searchApproved@1 with
+{"query":"founder intake","scope":"intake"} before proposing changes. Keep the
+proposal bounded to clearly supported sections and include returned content-block
+ids in evidenceRefs. Omit proposalDraft unless the founder explicitly asks for a
+material record change or asks you to review venture intake or setup material.
+Every fact must cite an id from context or a capability result.`;
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -68,7 +86,7 @@ function authorized(request) {
   return request.headers.authorization === `Bearer ${token}`;
 }
 
-function parseResult(value) {
+function parseJsonObject(value) {
   const text = value
     .trim()
     .replace(/^```json\s*/i, '')
@@ -79,9 +97,18 @@ function parseResult(value) {
     throw new Error('missing_structured_result');
   }
   const parsed = JSON.parse(text.slice(firstBrace, lastBrace + 1));
+  if (typeof parsed !== 'object' || parsed === null) {
+    throw new Error('invalid_harness_result');
+  }
+  return parsed;
+}
+
+function parseModelOutput(value) {
+  const parsed = parseJsonObject(value);
+  if (typeof parsed.tool === 'string') {
+    return { kind: 'tool', name: parsed.tool, input: parsed.input ?? {} };
+  }
   if (
-    typeof parsed !== 'object' ||
-    parsed === null ||
     typeof parsed.explanation !== 'string' ||
     typeof parsed.interactionType !== 'string' ||
     !Array.isArray(parsed.references) ||
@@ -91,7 +118,40 @@ function parseResult(value) {
   ) {
     throw new Error('invalid_harness_result');
   }
-  return parsed;
+  return {
+    kind: 'final',
+    result: {
+      ...parsed,
+      facts: Array.isArray(parsed.facts) ? parsed.facts : [],
+      interpretation: typeof parsed.interpretation === 'string' ? parsed.interpretation : '',
+      assumptions: Array.isArray(parsed.assumptions) ? parsed.assumptions : [],
+    },
+  };
+}
+
+async function invokeCapability(input, name, toolInput) {
+  if (
+    typeof input.capabilityInvokeUrl !== 'string' ||
+    typeof input.capabilityToken !== 'string' ||
+    typeof input.contextPacket?.actor?.workspaceId !== 'string'
+  ) {
+    return { ok: false, summary: 'Tools are unavailable for this turn.', data: {} };
+  }
+  const response = await fetch(input.capabilityInvokeUrl, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${input.capabilityToken}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      name,
+      input: toolInput,
+      operationId: input.operationId,
+      workspaceId: input.contextPacket.actor.workspaceId,
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  return payload;
 }
 
 function boundedEnvironment(scratch) {
@@ -145,14 +205,29 @@ async function runTurn(input) {
       model,
       maxTokens: Number(process.env.DSH_MAX_OUTPUT_TOKENS ?? '1800'),
     });
-    const result = await harness.run(
-      JSON.stringify({
-        operationId: input.operationId,
-        founderRequest: input.founderRequest,
-        context: input.contextPacket,
-      }),
-    );
-    return parseResult(result.finalResponse);
+    const toolResults = [];
+    let prompt = {
+      operationId: input.operationId,
+      founderRequest: input.founderRequest,
+      context: input.contextPacket,
+      allowedCapabilities: input.allowedCapabilities ?? [],
+    };
+    for (let round = 0; round < 4; round += 1) {
+      const result = await harness.run(JSON.stringify(prompt));
+      const parsed = parseModelOutput(result.finalResponse);
+      if (parsed.kind === 'final') {
+        return parsed.result;
+      }
+      const toolResult = await invokeCapability(input, parsed.name, parsed.input);
+      toolResults.push({ name: parsed.name, result: toolResult });
+      prompt = {
+        ...prompt,
+        toolResults,
+        instruction:
+          'Use the tool results. Return the final JSON, or another allowed tool request.',
+      };
+    }
+    throw new Error('tool_loop_exhausted');
   } finally {
     await harness?.close().catch(() => undefined);
     await rm(scratch, { recursive: true, force: true });

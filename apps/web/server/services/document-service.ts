@@ -12,8 +12,11 @@ import {
   insertEvidenceItem,
   insertProject,
   insertSource,
+  listAssumptionsByProjectId,
   listEvidenceItemsByProjectId,
+  listInterviewsByProjectId,
   listProjectsByWorkspaceId,
+  listQuotesByInterviewIds,
   listSourcesByProjectId,
   searchContentBlocks,
   updateSourceStatus,
@@ -247,10 +250,16 @@ export class DocumentService {
   ) {
     this.assertCan(membership, 'evidence.read');
     const items = await withWorkspaceScope(this.sql, [project.workspaceId], async (tx) => {
-      const [sources, evidence] = await Promise.all([
+      const [sources, evidence, interviews, assumptions] = await Promise.all([
         listSourcesByProjectId(tx, project.id),
         listEvidenceItemsByProjectId(tx, project.id),
+        listInterviewsByProjectId(tx, project.id),
+        listAssumptionsByProjectId(tx, project.id),
       ]);
+      const quotes = await listQuotesByInterviewIds(
+        tx,
+        interviews.map((item) => item.id),
+      );
       return [
         ...sources.map((source) => ({
           id: source.id,
@@ -269,6 +278,46 @@ export class DocumentService {
           stale: false,
           conflicting: false,
           createdAt: item.createdAt,
+        })),
+        ...interviews.map((interview) => ({
+          id: interview.id,
+          kind: 'interviews' as const,
+          title:
+            typeof interview.consent === 'object' &&
+            interview.consent !== null &&
+            'label' in interview.consent &&
+            typeof interview.consent.label === 'string'
+              ? interview.consent.label
+              : interview.participantType.replaceAll('_', ' '),
+          detail:
+            interview.consent !== null &&
+            typeof interview.consent === 'object' &&
+            'given' in interview.consent &&
+            interview.consent.given === true
+              ? 'Consent recorded'
+              : 'Consent unconfirmed',
+          stale: false,
+          conflicting: false,
+          createdAt: interview.createdAt,
+        })),
+        ...quotes.map((quote) => ({
+          id: quote.id,
+          kind: 'quotes' as const,
+          title: quote.textContent.slice(0, 140),
+          detail:
+            quote.sourceSnapshotId === null ? 'No source snapshot' : 'Linked to source snapshot',
+          stale: false,
+          conflicting: false,
+          createdAt: quote.createdAt,
+        })),
+        ...assumptions.map((assumption) => ({
+          id: assumption.id,
+          kind: 'assumptions' as const,
+          title: assumption.statement,
+          detail: assumption.status,
+          stale: false,
+          conflicting: false,
+          createdAt: assumption.createdAt,
         })),
       ];
     });

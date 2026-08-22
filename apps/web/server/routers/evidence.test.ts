@@ -200,60 +200,129 @@ describe('evidence procedures', () => {
     expect(library.some((entry) => entry.id === item.id)).toBe(true);
   });
 
-  it('uploads against a workspace inbox that project.list hides', async () => {
+  it('lists interviews separately from sources in the evidence library', async () => {
     const user = await insertUser(sql, {
       name: 'Founder',
-      email: `inbox-${randomUUID()}@example.com`,
+      email: `lib-${randomUUID()}@example.com`,
     });
     const workspace = await appRouter
       .createCaller(await createTestContext(sql, user))
       .workspace.create({ name: 'Acme', idempotencyKey: randomUUID() });
-    const ctx = await createTestContext(sql, user);
-    const caller = appRouter.createCaller(ctx);
-
-    const intent = await caller.evidence.createUploadIntent({
+    const caller = appRouter.createCaller(await createTestContext(sql, user));
+    const project = await caller.project.create({
       workspaceId: workspace.id,
-      filename: 'brief.txt',
-      mimeType: 'text/plain',
-      sizeBytes: 12,
+      name: 'Venture',
       idempotencyKey: randomUUID(),
     });
-    expect(intent.projectId).toBeTruthy();
-    expect(intent.uploadUrl).toContain('memory://');
-
-    const listed = await caller.project.list({ workspaceId: workspace.id });
-    expect(listed.map((project) => project.id)).not.toContain(intent.projectId);
-
-    const pending = await caller.evidence.list({ projectId: intent.projectId });
-    const source = pending[0];
-    if (source === undefined || source.s3Key === null) {
-      throw new Error('expected a pending inbox source');
-    }
-    await ctx.objectStore.put(source.s3Key, Buffer.from('hello inbox'), 'text/plain');
-    await caller.evidence.confirmUpload({
-      sourceId: intent.sourceId,
+    const saved = await caller.evidence.addInterview({
+      projectId: project.id,
+      participantType: 'known_contact',
+      consent: { given: false },
+      quotes: ['We lose two hours closing the books.'],
       idempotencyKey: randomUUID(),
     });
-    const evidence = await caller.evidence.recordObservation({
-      projectId: intent.projectId,
-      summary: 'brief.txt',
-      idempotencyKey: randomUUID(),
+    const interviews = await caller.evidence.listLibrary({
+      projectId: project.id,
+      filter: 'interviews',
     });
+    expect(interviews.some((entry) => entry.id === saved.interview.id)).toBe(true);
+  });
 
-    const created = await caller.project.create({
+  it('extracts three interview candidates and never infers consent as true', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `import-${randomUUID()}@example.com`,
+    });
+    const workspace = await appRouter
+      .createCaller(await createTestContext(sql, user))
+      .workspace.create({ name: 'Acme', idempotencyKey: randomUUID() });
+    const caller = appRouter.createCaller(await createTestContext(sql, user));
+    const project = await caller.project.create({
       workspaceId: workspace.id,
-      name: 'Cafe books',
-      founderPitch: 'Cafe owners lose two hours every night closing the books by hand.',
-      attachmentIds: [evidence.id],
+      name: 'Venture',
       idempotencyKey: randomUUID(),
     });
-    const library = await caller.evidence.listLibrary({
-      projectId: created.id,
-      filter: 'sources',
+    const started = await caller.evidence.startInterviewImport({
+      projectId: project.id,
+      text: `Interview 1
+Cafe owner in Pune.
+> We lose two hours closing the books.
+
+---
+Interview 2
+participant type: friend
+> I would not pay for this.
+
+---
+Interview 3
+consent: yes
+> The reconciling is the painful part.`,
+      idempotencyKey: randomUUID(),
     });
-    expect(library.some((entry) => entry.id === evidence.id)).toBe(true);
+    expect(started.candidates).toHaveLength(3);
+    expect(started.candidates.every((item) => item.consentGiven === false)).toBe(true);
+    expect(started.batch.classification).toBe('interview_bundle');
+
+    const replayKey = randomUUID();
+    const firstDecide = await caller.evidence.decideInterviewImport({
+      projectId: project.id,
+      batchId: started.batch.id,
+      acceptIds: [started.candidates[0]!.id, started.candidates[1]!.id],
+      rejectIds: [started.candidates[2]!.id],
+      idempotencyKey: replayKey,
+    });
+    expect(firstDecide).toEqual({ created: 2, rejected: 1, duplicates: 0 });
+    const replayed = await caller.evidence.decideInterviewImport({
+      projectId: project.id,
+      batchId: started.batch.id,
+      acceptIds: [started.candidates[0]!.id, started.candidates[1]!.id],
+      rejectIds: [started.candidates[2]!.id],
+      idempotencyKey: replayKey,
+    });
+    expect(replayed).toEqual(firstDecide);
+    const listed = await caller.evidence.listInterviews({ projectId: project.id });
+    expect(listed).toHaveLength(2);
     expect(
-      (await caller.project.list({ workspaceId: workspace.id })).map((project) => project.name),
-    ).toEqual(['Cafe books']);
+      listed.every((item) => {
+        const consent = item.interview.consent;
+        return !(
+          typeof consent === 'object' &&
+          consent !== null &&
+          'given' in consent &&
+          consent.given === true
+        );
+      }),
+    ).toBe(true);
+  });
+
+  it('lets the founder inspect, edit, and delete project memory', async () => {
+    const user = await insertUser(sql, {
+      name: 'Founder',
+      email: `mem-${randomUUID()}@example.com`,
+    });
+    const workspace = await appRouter
+      .createCaller(await createTestContext(sql, user))
+      .workspace.create({ name: 'Acme', idempotencyKey: randomUUID() });
+    const caller = appRouter.createCaller(await createTestContext(sql, user));
+    const project = await caller.project.create({
+      workspaceId: workspace.id,
+      name: 'Venture',
+      idempotencyKey: randomUUID(),
+    });
+    const created = await caller.evidence.upsertMemory({
+      projectId: project.id,
+      kind: 'constraint',
+      body: 'Do not treat friend interviews as independent proof.',
+      idempotencyKey: randomUUID(),
+    });
+    expect(created.body).toContain('friend interviews');
+    const listed = await caller.evidence.listMemory({ projectId: project.id });
+    expect(listed).toHaveLength(1);
+    await caller.evidence.deleteMemory({
+      projectId: project.id,
+      id: created.id,
+      idempotencyKey: randomUUID(),
+    });
+    expect(await caller.evidence.listMemory({ projectId: project.id })).toHaveLength(0);
   });
 });

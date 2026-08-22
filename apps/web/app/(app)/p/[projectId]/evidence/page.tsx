@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 
 import { EvidenceLibrary } from '../../../../../components/journey/evidence-library';
 import { InterviewCapture } from '../../../../../components/evidence/interview-capture';
+import { InterviewImportPanel } from '../../../../../components/evidence/interview-import';
+import { ProjectMemoryPanel } from '../../../../../components/evidence/project-memory-panel';
 
 export const metadata: Metadata = { title: 'Evidence' };
 
@@ -31,7 +33,9 @@ export default async function EvidencePage({
         projectId={projectId}
         {...(query.filter === undefined ? {} : { filter: query.filter })}
       />
+      <InterviewImportPanel projectId={projectId} />
       <InterviewCapture projectId={projectId} />
+      <ProjectMemoryPanel projectId={projectId} />
     </article>
   );
 }

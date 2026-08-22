@@ -1,5 +1,6 @@
 export * from './entities/index.js';
 export * from './ids.js';
+export * from './interviews/index.js';
 export * from './journey/index.js';
 export * from './proposal/index.js';
 export * from './readiness/index.js';

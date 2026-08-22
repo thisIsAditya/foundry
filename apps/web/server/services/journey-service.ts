@@ -16,6 +16,7 @@ import {
   insertJourneyStep,
   insertJourneyTransition,
   insertRecordItem,
+  clearRecommendedJourneySteps,
   getCommandReceipt,
   getJourneyStepById,
   listActivityEventsByProjectId,
@@ -42,6 +43,9 @@ import {
   canTransitionJourneyStepStatus,
   firstRecommendedStep,
   legacyPhaseFromJourneyStage,
+  recordSectionForJourneyStage,
+  recommendedNextStage,
+  recommendedStepForStage,
   readinessSignal,
   type Journey,
   type JourneyStageStatus,
@@ -102,7 +106,7 @@ export class JourneyService {
       return existing;
     }
     const step = firstRecommendedStep({
-      ideaText: input.ideaText ?? input.project.name,
+      ideaText: input.ideaText ?? '',
       geography: input.geography ?? input.project.geography,
       objective: input.objective ?? input.project.founderObjective,
       constraints: input.constraints ?? null,
@@ -115,8 +119,14 @@ export class JourneyService {
       currentStage: step.stage,
       currentObjective: step.objective,
     });
+    const ideaText = (input.ideaText ?? '').trim();
     for (const stage of JourneyStages) {
-      const status: JourneyStageStatus = stage === step.stage ? 'in_progress' : 'not_started';
+      const status: JourneyStageStatus =
+        stage === step.stage
+          ? 'in_progress'
+          : stage === 'idea' && ideaText.length > 0
+            ? 'complete'
+            : 'not_started';
       await insertJourneyStageState(tx, {
         journeyId: journey.id,
         workspaceId: journey.workspaceId,
@@ -125,10 +135,11 @@ export class JourneyService {
         goal: JOURNEY_STAGE_DEFINITIONS[stage].founderQuestion,
       });
     }
-    const ideaText = (input.ideaText ?? '').trim();
     for (const section of RecordSectionKeys) {
       const definition = RECORD_SECTION_DEFINITIONS[section];
       const isIdea = section === 'idea_founder_context' && ideaText.length > 0;
+      const isCustomerHint =
+        section === 'beachhead_customer' && (input.customerHint ?? '').trim().length > 0;
       await insertRecordItem(tx, {
         projectId: input.project.id,
         workspaceId: input.project.workspaceId,
@@ -136,21 +147,27 @@ export class JourneyService {
         itemKey: definition.defaultItemKey,
         title: definition.label,
         content: {
-          summary: isIdea ? ideaText : '',
+          summary: isIdea ? ideaText : isCustomerHint ? (input.customerHint ?? '').trim() : '',
           fields: {
-            ...(input.geography === undefined || input.geography === null
+            ...(section !== 'idea_founder_context' ||
+            input.geography === undefined ||
+            input.geography === null
               ? {}
               : { geography: input.geography }),
-            ...(input.constraints === undefined || input.constraints === null
+            ...(section !== 'idea_founder_context' ||
+            input.constraints === undefined ||
+            input.constraints === null
               ? {}
               : { constraints: input.constraints }),
-            ...(input.urgency === undefined || input.urgency === null
+            ...(section !== 'idea_founder_context' ||
+            input.urgency === undefined ||
+            input.urgency === null
               ? {}
               : { urgency: input.urgency }),
           },
         },
-        status: isIdea ? 'draft' : 'empty',
-        provenance: isIdea ? 'founder_input' : 'unverified',
+        status: isIdea || isCustomerHint ? 'draft' : 'empty',
+        provenance: isIdea || isCustomerHint ? 'founder_input' : 'unverified',
       });
     }
     await insertJourneyStep(tx, {
@@ -200,6 +217,7 @@ export class JourneyService {
       journeyId: journey.id,
       payload: { stage: journey.currentStage },
     });
+    // Compatibility projection only. Journey stage is the authority.
     await updateProjectCurrentPhase(
       tx,
       input.project.id,
@@ -229,12 +247,16 @@ export class JourneyService {
       ]);
       const currentStage = stages.find((item) => item.stage === journey.currentStage);
       const recommended = steps.find((item) => item.recommended) ?? null;
+      const founderContext =
+        items.find((item) => item.section === 'idea_founder_context')?.content.summary.trim() ||
+        null;
       const latest = activity[0];
       return {
         projectId: actor.project.id,
         journey,
         stageLabel: JOURNEY_STAGE_DEFINITIONS[journey.currentStage].label,
         stageStatus: currentStage?.status ?? 'in_progress',
+        founderContext,
         recommendedStep: recommended,
         alternativeSteps: steps.filter((item) => !item.recommended && item.status === 'proposed'),
         pendingProposals: proposals.filter(
@@ -393,7 +415,7 @@ export class JourneyService {
     actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
     input: JourneySubmitStepInput,
   ): Promise<JourneyStep> {
-    return this.mutate(actor, 'journey.submitStep', input.idempotencyKey, async (tx) => {
+    return this.mutate(actor, 'journey.submitStep', input.idempotencyKey, async (tx, journey) => {
       const step = await getJourneyStepById(tx, input.stepId);
       if (step === null) {
         throw new AppError({
@@ -405,9 +427,31 @@ export class JourneyService {
       if (step.revision !== input.expectedRevision) {
         throw staleRevision();
       }
+      if (step.recommended && step.stage === journey.currentStage) {
+        const section = recordSectionForJourneyStage(step.stage);
+        const items = await listRecordItemsByProjectId(tx, actor.project.id);
+        const item = items.find(
+          (candidate) =>
+            candidate.section === section &&
+            candidate.itemKey === RECORD_SECTION_DEFINITIONS[section].defaultItemKey,
+        );
+        if (
+          item === undefined ||
+          item.status !== 'accepted' ||
+          item.content.summary.trim().length === 0
+        ) {
+          throw invalid(
+            `Save the ${RECORD_SECTION_DEFINITIONS[section].label.toLowerCase()} before completing this step.`,
+            'Add your founder input in the step form, then mark the step complete.',
+          );
+        }
+      }
       const updated = await advanceStepStatuses(tx, step, ['submitted', 'reviewed', 'complete'], {
         completionEvidence: input.completionEvidence,
       });
+      if (step.recommended && step.stage === journey.currentStage) {
+        await this.advanceToNextStage(tx, actor, journey, step);
+      }
       await insertActivityEvent(tx, {
         projectId: actor.project.id,
         workspaceId: actor.project.workspaceId,
@@ -470,9 +514,17 @@ export class JourneyService {
       }
       const stages = await listJourneyStageStates(tx, journey.id);
       const current = stages.find((item) => item.stage === journey.currentStage);
-      if (current !== undefined && canTransitionJourneyStageStatus(current.status, 'revisited')) {
+      const currentNextStatus: JourneyStageStatus =
+        input.mode === 'advance' ? 'complete' : 'revisited';
+      if (
+        current !== undefined &&
+        canTransitionJourneyStageStatus(current.status, currentNextStatus)
+      ) {
         await updateJourneyStageState(tx, journey.id, journey.currentStage, {
-          status: 'revisited',
+          status: currentNextStatus,
+          ...(input.mode === 'advance'
+            ? { completionReason: 'Founder context was already captured at venture creation.' }
+            : {}),
         });
       }
       const target = stages.find((item) => item.stage === input.stage);
@@ -496,6 +548,7 @@ export class JourneyService {
       if (updated === null) {
         throw staleRevision();
       }
+      // Compatibility projection only. Journey stage is the authority.
       await updateProjectCurrentPhase(
         tx,
         actor.project.id,
@@ -511,7 +564,79 @@ export class JourneyService {
         toState: { stage: updated.currentStage, reason: input.reason ?? null },
         command: 'journey.revisitStage',
       });
+      await this.activateRecommendedStep(tx, updated, input.stage);
       return updated;
+    });
+  }
+
+  private async advanceToNextStage(
+    tx: Sql,
+    actor: { userId: UserId; membership: WorkspaceMembership; project: Project },
+    journey: Journey,
+    step: JourneyStep,
+  ): Promise<void> {
+    const nextStage = recommendedNextStage(journey.currentStage);
+    if (nextStage === null) {
+      return;
+    }
+    const stages = await listJourneyStageStates(tx, journey.id);
+    const current = stages.find((item) => item.stage === journey.currentStage);
+    if (current !== undefined && canTransitionJourneyStageStatus(current.status, 'complete')) {
+      await updateJourneyStageState(tx, journey.id, journey.currentStage, {
+        status: 'complete',
+        completionReason: `Completed: ${step.objective}`,
+      });
+    }
+    const next = stages.find((item) => item.stage === nextStage);
+    if (next !== undefined && canTransitionJourneyStageStatus(next.status, 'in_progress')) {
+      await updateJourneyStageState(tx, journey.id, nextStage, { status: 'in_progress' });
+    }
+    const updated = await updateJourneyState(tx, journey.id, {
+      expectedRevision: journey.revision,
+      currentStage: nextStage,
+      currentObjective: JOURNEY_STAGE_DEFINITIONS[nextStage].recommendedObjective,
+    });
+    if (updated === null) {
+      throw staleRevision();
+    }
+    // Compatibility projection only. Journey stage is the authority.
+    await updateProjectCurrentPhase(
+      tx,
+      actor.project.id,
+      legacyPhaseFromJourneyStage(updated.currentStage),
+    );
+    await insertJourneyTransition(tx, {
+      journeyId: journey.id,
+      workspaceId: journey.workspaceId,
+      actorType: 'founder',
+      actorId: actor.userId,
+      cause: 'advance',
+      fromState: { stage: journey.currentStage, completedStepId: step.id },
+      toState: { stage: updated.currentStage },
+      command: 'journey.submitStep',
+    });
+    await this.activateRecommendedStep(tx, updated, nextStage);
+  }
+
+  private async activateRecommendedStep(
+    tx: Sql,
+    journey: Journey,
+    stage: Journey['currentStage'],
+  ): Promise<void> {
+    const draft = recommendedStepForStage(stage);
+    await clearRecommendedJourneySteps(tx, journey.id);
+    await insertJourneyStep(tx, {
+      journeyId: journey.id,
+      workspaceId: journey.workspaceId,
+      stage: draft.stage,
+      objective: draft.objective,
+      whyNow: draft.whyNow,
+      expectedEffort: draft.expectedEffort,
+      expectedMinutes: draft.expectedMinutes,
+      cofounderWillDo: draft.cofounderWillDo,
+      expectedOutcome: draft.expectedOutcome,
+      status: 'ready',
+      recommended: true,
     });
   }
 
