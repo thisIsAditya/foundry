@@ -1,9 +1,12 @@
 import {
+  capabilityInvokeUrl,
   clusterName,
   infra,
   harnessContainerName,
+  serviceDiscoveryNamespace,
   ssmPrefix,
   webContainerName,
+  webServiceDiscoveryName,
   webServiceName,
   webTaskFamily,
   workerContainerName,
@@ -20,6 +23,7 @@ import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import type * as logs from 'aws-cdk-lib/aws-logs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as servicediscovery from 'aws-cdk-lib/aws-servicediscovery';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import type { Construct } from 'constructs';
 
@@ -55,11 +59,25 @@ export class EcsStack extends cdk.Stack {
       'BedrockBearerToken',
       environment.bedrockBearerTokenSecretName,
     );
+    const exaApiKey =
+      environment.exaApiKeySecretName === undefined
+        ? undefined
+        : secretsmanager.Secret.fromSecretNameV2(
+            this,
+            'ExaApiKey',
+            environment.exaApiKeySecretName,
+          );
 
     this.cluster = new ecs.Cluster(this, 'Cluster', {
       clusterName: clusterName(envName),
       vpc: network.vpc,
       containerInsightsV2: ecs.ContainerInsights.ENABLED,
+      // Private DNS namespace so the worker can reach web's capability-invoke
+      // endpoint directly inside the VPC, without a public CloudFront/ALB round trip.
+      defaultCloudMapNamespace: {
+        name: serviceDiscoveryNamespace(envName),
+        type: servicediscovery.NamespaceType.DNS_PRIVATE,
+      },
     });
 
     this.alb = new elbv2.ApplicationLoadBalancer(this, 'Alb', {
@@ -206,6 +224,9 @@ export class EcsStack extends cdk.Stack {
       secrets: {
         RDS_SECRET: ecs.Secret.fromSecretsManager(data.dbSecret),
         BETTER_AUTH_SECRET: ecs.Secret.fromSecretsManager(data.betterAuthSecret),
+        ...(exaApiKey === undefined
+          ? {}
+          : { EXA_API_KEY: ecs.Secret.fromSecretsManager(exaApiKey) }),
       },
       portMappings: [{ containerPort: infra.webPort }],
       stopTimeout: cdk.Duration.seconds(30),
@@ -233,6 +254,11 @@ export class EcsStack extends cdk.Stack {
       maxHealthyPercent: 200,
       circuitBreaker: { rollback: true },
       enableExecuteCommand: false,
+      cloudMapOptions: {
+        name: webServiceDiscoveryName(),
+        dnsRecordType: servicediscovery.DnsRecordType.A,
+        dnsTtl: cdk.Duration.seconds(10),
+      },
     });
     this.webService.attachToApplicationTargetGroup(targetGroup);
 
@@ -313,10 +339,14 @@ export class EcsStack extends cdk.Stack {
         AWS_S3_UPLOADS_BUCKET: data.uploadsBucket.bucketName,
         AWS_S3_ARTIFACTS_BUCKET: data.artifactsBucket.bucketName,
         FOUNDRY_HARNESS_URL: 'http://127.0.0.1:8787',
+        FOUNDRY_CAPABILITY_INVOKE_URL: capabilityInvokeUrl(envName),
       },
       secrets: {
         RDS_SECRET: ecs.Secret.fromSecretsManager(data.dbSecret),
         FOUNDRY_HARNESS_TOKEN: ecs.Secret.fromSecretsManager(data.harnessToken),
+        ...(exaApiKey === undefined
+          ? {}
+          : { EXA_API_KEY: ecs.Secret.fromSecretsManager(exaApiKey) }),
       },
       portMappings: [{ containerPort: infra.workerHealthPort }],
       stopTimeout: cdk.Duration.seconds(120),

@@ -23,6 +23,7 @@ export function useCofounderTransport(projectId: string) {
   const [answer, setAnswer] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [pendingOperationId, setPendingOperationId] = useState<string | null>(null);
+  const [lastTerminalOperationId, setLastTerminalOperationId] = useState<string | null>(null);
   const history = useQuery(trpc.conversation.list.queryOptions({ projectId, limit: 40 }));
   const createIntent = useMutation(trpc.evidence.createUploadIntent.mutationOptions());
   const confirm = useMutation(trpc.evidence.confirmUpload.mutationOptions());
@@ -68,26 +69,24 @@ export function useCofounderTransport(projectId: string) {
           event.type === 'cofounder_canceled' ||
           event.type === 'cofounder_waiting',
       );
-    if (terminal === undefined) {
+    if (terminal === undefined || pendingOperationId === null || !('operationId' in terminal)) {
       return;
     }
     if (
-      pendingOperationId !== null &&
-      'operationId' in terminal &&
-      terminal.operationId !== pendingOperationId
+      terminal.operationId !== pendingOperationId ||
+      terminal.operationId === lastTerminalOperationId
     ) {
       return;
     }
     void refresh();
-    if (terminal.type !== 'cofounder_waiting') {
-      setPendingOperationId(null);
-    }
-  }, [pendingOperationId, refresh, stream.events]);
+    setLastTerminalOperationId(terminal.operationId);
+    setPendingOperationId(null);
+  }, [lastTerminalOperationId, pendingOperationId, refresh, stream.events]);
 
-  async function submit(nextText?: string): Promise<void> {
+  async function submit(nextText?: string): Promise<string | null> {
     const text = (nextText ?? answer).trim();
     if (text.length === 0 || respond.isPending) {
-      return;
+      return null;
     }
     for (const file of files) {
       await uploadEvidenceAttachment({
@@ -108,6 +107,7 @@ export function useCofounderTransport(projectId: string) {
     window.sessionStorage.removeItem(DRAFT_KEY(projectId));
     setPendingOperationId(turn.operation?.id ?? null);
     await refresh();
+    return turn.operation?.id ?? null;
   }
 
   async function cancelTurn(): Promise<void> {
@@ -135,7 +135,8 @@ export function useCofounderTransport(projectId: string) {
     files,
     setFiles,
     pendingOperationId,
-    isPending: respond.isPending,
+    lastTerminalOperationId,
+    isPending: respond.isPending || pendingOperationId !== null,
     errorMessage,
     fileAccept: DOCUMENT_FILE_ACCEPT,
     maxFiles: MAX_CHAT_ATTACHMENTS,

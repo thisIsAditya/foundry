@@ -34,6 +34,7 @@ export class DeepSeekHarnessRuntime implements CofounderRuntime {
   constructor(private readonly options: DeepSeekHarnessRuntimeOptions) {}
 
   async run(input: CofounderRuntimeInput): Promise<CofounderRuntimeResult> {
+    const endpoint = this.options.endpoint.replace(/\/$/, '');
     if (isCanceled(input.abortSignal)) {
       throw canceledError();
     }
@@ -42,7 +43,7 @@ export class DeepSeekHarnessRuntime implements CofounderRuntime {
       input.abortSignal === undefined ? timeout : AbortSignal.any([input.abortSignal, timeout]);
     let response: Response;
     try {
-      response = await fetch(`${this.options.endpoint.replace(/\/$/, '')}/v1/cofounder/run`, {
+      response = await fetch(`${endpoint}/v1/cofounder/run`, {
         method: 'POST',
         headers: {
           authorization: `Bearer ${this.options.token}`,

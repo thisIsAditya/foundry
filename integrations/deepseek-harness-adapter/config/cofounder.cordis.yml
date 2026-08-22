@@ -18,7 +18,7 @@
         models:
           - id: !!js process.env.DSH_MODEL
             contextWindow: !!js Number(process.env.DSH_CONTEXT_WINDOW ?? 128000)
-            maxTokens: !!js Number(process.env.DSH_MAX_OUTPUT_TOKENS ?? 1800)
+            maxTokens: !!js Number(process.env.DSH_MAX_OUTPUT_TOKENS ?? 4000)
 
 - id: cofounder-agent
   name: '@deepseek-ai/dsh-agent-spine-demo'

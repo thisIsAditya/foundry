@@ -15,6 +15,7 @@ export type CofounderWorkerDeps = {
   harness?: { endpoint: string; token: string };
   aiMode?: 'off' | 'direct' | 'harness';
   capabilityInvokeUrl?: string;
+  webSearchApiKey?: string;
   queueName?: string;
 };
 
@@ -32,6 +33,7 @@ export function startCofounderWorker(deps: CofounderWorkerDeps): Worker {
         ...(deps.capabilityInvokeUrl === undefined
           ? {}
           : { capabilityInvokeUrl: deps.capabilityInvokeUrl }),
+        ...(deps.webSearchApiKey === undefined ? {} : { webSearchApiKey: deps.webSearchApiKey }),
       });
     },
     {

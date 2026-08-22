@@ -13,14 +13,17 @@ const SCROLL_BOTTOM_THRESHOLD_PX = 96;
 export function CofounderThread({
   projectId,
   initialPrompt,
+  onInitialPromptSettled,
 }: {
   projectId: string;
   initialPrompt?: string;
+  onInitialPromptSettled?: () => void;
 }) {
   const transport = useCofounderTransport(projectId);
   const scroller = useRef<HTMLDivElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const initialPromptSent = useRef(false);
+  const initialOperationId = useRef<string | null>(null);
   const [stickToBottom, setStickToBottom] = useState(true);
 
   useEffect(() => {
@@ -50,7 +53,12 @@ export function CofounderThread({
       return;
     }
     initialPromptSent.current = true;
-    void transport.submit(initialPrompt).catch(() => undefined);
+    void transport
+      .submit(initialPrompt)
+      .then((operationId) => {
+        initialOperationId.current = operationId;
+      })
+      .catch(() => undefined);
   }, [
     initialPrompt,
     transport.history.data?.items.length,
@@ -58,6 +66,17 @@ export function CofounderThread({
     transport.isPending,
     transport.submit,
   ]);
+
+  useEffect(() => {
+    if (
+      onInitialPromptSettled === undefined ||
+      initialOperationId.current === null ||
+      transport.lastTerminalOperationId !== initialOperationId.current
+    ) {
+      return;
+    }
+    onInitialPromptSettled();
+  }, [onInitialPromptSettled, transport.lastTerminalOperationId]);
 
   function onScroll(): void {
     const node = scroller.current;
@@ -88,7 +107,9 @@ export function CofounderThread({
     <CofounderAssistantRuntimeProvider
       messages={chronological}
       isRunning={transport.isPending}
-      onSubmit={(text) => transport.submit(text)}
+      onSubmit={async (text) => {
+        await transport.submit(text);
+      }}
       onCancel={() => transport.cancelTurn()}
     >
       <div className="chat-shell">

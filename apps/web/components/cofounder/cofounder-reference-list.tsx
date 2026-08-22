@@ -16,23 +16,36 @@ export function CofounderReferenceList({
   projectId: string;
   references: readonly { kind: string; id: string }[];
 }) {
-  if (references.length === 0) {
+  const actionableReferences = uniqueReferences(projectId, references);
+  if (actionableReferences.length === 0) {
     return null;
   }
   return (
-    <ul className="flex flex-wrap gap-2" aria-label="Linked business state">
-      {references.map((ref) => (
+    <ul className="cofounder-reference-list" aria-label="Linked business state">
+      {actionableReferences.map((ref) => (
         <li key={`${ref.kind}-${ref.id}`}>
-          <Link
-            className="badge no-underline min-h-11 inline-flex items-center"
-            href={hrefFor(projectId, ref)}
-          >
+          <Link className="cofounder-action" href={hrefFor(projectId, ref)}>
             {labelFor(ref)}
           </Link>
         </li>
       ))}
     </ul>
   );
+}
+
+function uniqueReferences(
+  projectId: string,
+  references: readonly { kind: string; id: string }[],
+): { kind: string; id: string }[] {
+  const seenDestinations = new Set<string>();
+  return references.filter((ref) => {
+    const destination = hrefFor(projectId, ref);
+    if (seenDestinations.has(destination)) {
+      return false;
+    }
+    seenDestinations.add(destination);
+    return true;
+  });
 }
 
 function hrefFor(projectId: string, ref: { kind: string; id: string }): string {

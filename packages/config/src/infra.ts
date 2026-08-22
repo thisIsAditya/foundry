@@ -75,6 +75,19 @@ export function harnessContainerName(): string {
   return 'harness';
 }
 
+export function serviceDiscoveryNamespace(environment: string): string {
+  return `foundry-${environment}.internal`;
+}
+
+export function webServiceDiscoveryName(): string {
+  return 'web';
+}
+
+export function capabilityInvokeUrl(environment: string): string {
+  const host = `${webServiceDiscoveryName()}.${serviceDiscoveryNamespace(environment)}`;
+  return `http://${host}:${infra.webPort}/api/internal/capabilities/invoke`;
+}
+
 export function webLogGroupName(environment: string): string {
   return `/foundry/${environment}/web`;
 }

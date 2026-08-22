@@ -3,6 +3,11 @@
 @source '../node_modules/streamdown/dist/*.js';
 
 @layer base {
+  :root {
+    --cofounder-accent: #d97757;
+    --cofounder-progress: #6a9bcc;
+  }
+
   html {
     height: 100%;
   }
@@ -187,6 +192,11 @@
     @apply items-end;
   }
 
+  .chat-turn-founder .chat-speaker,
+  .chat-turn-founder .chat-blocks {
+    @apply self-end;
+  }
+
   .chat-turn-cofounder {
     @apply items-stretch;
   }
@@ -207,7 +217,7 @@
   }
 
   .chat-bubble-founder {
-    @apply bg-text text-surface-raised;
+    @apply w-fit self-end bg-text text-surface-raised;
   }
 
   .chat-bubble-cofounder {
@@ -280,6 +290,100 @@
     animation-delay: 0.3s;
   }
 
+  .cofounder-working {
+    @apply flex items-center gap-3 rounded-sm px-3 py-2.5;
+    border: 1px solid color-mix(in oklab, var(--cofounder-progress) 35%, transparent);
+    background: color-mix(in oklab, var(--cofounder-progress) 10%, var(--color-surface-raised));
+  }
+
+  .cofounder-working-mark {
+    @apply inline-flex shrink-0 items-center gap-1;
+  }
+
+  .cofounder-working-mark span {
+    @apply size-1.5 rounded-full;
+    background: var(--cofounder-progress);
+    animation: chat-thinking-bounce 1.2s ease-in-out infinite;
+  }
+
+  .cofounder-working-mark span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .cofounder-working-mark span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  .cofounder-working-cancel {
+    @apply ml-auto inline-flex min-h-9 shrink-0 items-center rounded-sm px-2 text-xs font-medium text-text-muted hover:bg-surface-raised hover:text-text;
+  }
+
+  .cofounder-answer {
+    @apply flex flex-col items-start gap-1.5;
+  }
+
+  .cofounder-context {
+    @apply flex flex-col items-start gap-2 self-stretch;
+  }
+
+  .cofounder-context-trigger {
+    @apply inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-border text-text-muted;
+  }
+
+  .cofounder-context-trigger:hover,
+  .cofounder-context-trigger[aria-expanded='true'] {
+    border-color: color-mix(in oklab, var(--cofounder-accent) 50%, var(--color-border));
+    background: color-mix(in oklab, var(--cofounder-accent) 10%, var(--color-surface-raised));
+    color: var(--cofounder-accent);
+  }
+
+  .cofounder-context-panel {
+    @apply flex w-full flex-col gap-3 rounded-sm border border-border bg-surface-raised p-3 text-xs leading-relaxed text-text;
+    animation: cofounder-context-open 0.15s ease-out;
+  }
+
+  .cofounder-context-panel section {
+    @apply flex flex-col gap-1;
+  }
+
+  .cofounder-context-panel ul {
+    @apply list-disc ps-4;
+  }
+
+  .cofounder-context-label {
+    @apply font-medium text-text;
+  }
+
+  @keyframes cofounder-context-open {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .cofounder-recommendation {
+    @apply border-l-2 pl-3 text-sm leading-6 text-text;
+    border-color: var(--cofounder-accent);
+  }
+
+  .cofounder-actions,
+  .cofounder-reference-list {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .cofounder-action {
+    @apply inline-flex min-h-9 items-center rounded-sm border border-border bg-surface px-2.5 text-xs font-medium text-text no-underline hover:text-text hover:no-underline;
+  }
+
+  .cofounder-action:hover {
+    border-color: color-mix(in oklab, var(--cofounder-accent) 50%, var(--color-border));
+    background: color-mix(in oklab, var(--cofounder-accent) 10%, var(--color-surface));
+  }
+
   .chat-trace {
     @apply flex flex-col gap-1;
   }
@@ -314,12 +418,17 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .chat-thinking-dots span {
+    .chat-thinking-dots span,
+    .cofounder-working-mark span {
       animation: none;
       opacity: 0.6;
     }
 
     .chat-spin {
+      animation: none;
+    }
+
+    .cofounder-context-panel {
       animation: none;
     }
   }
@@ -635,6 +744,23 @@
 
   .venture-composer {
     @apply mx-auto flex w-full max-w-2xl flex-col gap-6;
+  }
+
+  .venture-creation-chat {
+    @apply mx-auto flex w-full max-w-3xl flex-col gap-4 rounded-sm bg-surface-raised p-5 text-text shadow-xl;
+  }
+
+  .venture-creation-chat .page-title,
+  .venture-creation-chat .lede {
+    color: var(--color-ink);
+  }
+
+  .venture-creation-chat .chat-shell {
+    min-height: min(32rem, 55dvh);
+  }
+
+  .venture-creation-chat .chat-viewport {
+    @apply rounded-sm border border-border;
   }
 
   .venture-hero .page-title,

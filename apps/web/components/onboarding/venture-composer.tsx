@@ -13,6 +13,7 @@ import {
 import { projectCofounderHref } from '../../lib/project-href';
 import { useTRPC } from '../../lib/trpc/client';
 import { ventureNameFromPitch } from '../../lib/venture-name';
+import { CofounderThread } from '../cofounder/cofounder-thread';
 
 const PROGRESS_LINES = [
   'Creating your venture…',
@@ -43,6 +44,10 @@ export function VentureComposer({
   const [customerHint, setCustomerHint] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(-1);
+  const [createdVenture, setCreatedVenture] = useState<{
+    id: string;
+    founderMessage: string;
+  } | null>(null);
   const createProject = useMutation(trpc.project.create.mutationOptions());
   const createIntent = useMutation(trpc.evidence.createUploadIntent.mutationOptions());
   const confirm = useMutation(trpc.evidence.confirmUpload.mutationOptions());
@@ -78,7 +83,7 @@ export function VentureComposer({
       }
       setProgress(2);
       idempotencyKey.current = crypto.randomUUID();
-      router.push(projectCofounderHref(created.id));
+      setCreatedVenture({ id: created.id, founderMessage: trimmed });
     } catch {
       setProgress(-1);
     }
@@ -88,6 +93,26 @@ export function VentureComposer({
     errorMessageOf(createProject.error) ??
     errorMessageOf(createIntent.error) ??
     errorMessageOf(confirm.error);
+
+  if (createdVenture !== null) {
+    return (
+      <div className={variant === 'hero' ? 'venture-hero' : 'venture-overlay'}>
+        <section className="venture-creation-chat" aria-live="polite">
+          <p className="callout-eyebrow">Your co-founder</p>
+          <h1 className="page-title">Taking the first pass on your idea</h1>
+          <p className="lede">
+            Your idea is the first message in this conversation. We’ll open your venture as soon as
+            the co-founder’s response is ready.
+          </p>
+          <CofounderThread
+            projectId={createdVenture.id}
+            initialPrompt={createdVenture.founderMessage}
+            onInitialPromptSettled={() => router.replace(projectCofounderHref(createdVenture.id))}
+          />
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className={variant === 'hero' ? 'venture-hero' : 'venture-overlay'}>

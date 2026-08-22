@@ -28,4 +28,5 @@ export const stagingEnvironment: EnvironmentConfig = {
   logRetentionDays: 7,
   monthlyBudgetUsd: 80,
   bedrockBearerTokenSecretName: 'foundry/staging/bedrock-bearer-token',
+  exaApiKeySecretName: 'foundry/staging/exa-api-key',
 };

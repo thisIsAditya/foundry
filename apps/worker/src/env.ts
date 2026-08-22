@@ -31,6 +31,7 @@ const EnvSchema = z.object({
   FOUNDRY_HARNESS_URL: z.preprocess(emptyToUndefined, z.url().optional()),
   FOUNDRY_HARNESS_TOKEN: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
   FOUNDRY_CAPABILITY_INVOKE_URL: z.preprocess(emptyToUndefined, z.url().optional()),
+  EXA_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   CLAMD_HOST: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   CLAMD_PORT: z
     .string()

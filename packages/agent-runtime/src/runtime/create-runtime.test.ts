@@ -66,6 +66,11 @@ describe('createCofounderRuntime', () => {
     expect(selected.kind).toBe('direct');
   });
 
+  it('does not silently fall back to the direct runtime when Harness is required', () => {
+    const selected = createCofounderRuntime({ aiMode: 'harness' });
+    expect(selected.kind).toBe('disabled');
+  });
+
   it('selects Harness only when URL and token are both present', () => {
     const selected = createCofounderRuntime({
       harnessEndpoint: 'http://127.0.0.1:8787',

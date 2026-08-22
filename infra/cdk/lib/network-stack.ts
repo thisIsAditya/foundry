@@ -62,6 +62,13 @@ export class NetworkStack extends cdk.Stack {
       description: 'worker Fargate tasks (Milestone 4)',
       allowAllOutbound: true,
     });
+    // Co-founder capability calls: worker reaches web directly over the private
+    // Cloud Map service discovery DNS name, never through the public CloudFront/ALB path.
+    this.webTaskSg.addIngressRule(
+      this.workerTaskSg,
+      ec2.Port.tcp(infra.webPort),
+      'worker to web (capability invoke)',
+    );
 
     this.dbSg = new ec2.SecurityGroup(this, 'DbSg', {
       vpc: this.vpc,

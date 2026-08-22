@@ -179,10 +179,18 @@ export async function buildCofounderContextEnvelope(
               body: latestMemory.body,
               stale: latestMemory.stale,
             },
-      recentMessages: messages.map((item) => ({
-        actor: item.actor,
-        text: item.text.slice(0, 500),
-      })),
+      recentMessages: [...messages].reverse().map((item) => {
+        const turn = item.blocks.find((block) => block.kind === 'cofounder_turn');
+        return {
+          actor: item.actor,
+          text: item.text.slice(0, 500),
+          ...(turn === undefined ? {} : { interactionType: turn.interactionType }),
+          ...(turn?.recommendation === undefined ? {} : { recommendation: turn.recommendation }),
+          ...(turn?.proposalId === null || turn?.proposalId === undefined
+            ? {}
+            : { proposalId: turn.proposalId }),
+        };
+      }),
       retrieval: [],
       omitted,
       selectionRationale:

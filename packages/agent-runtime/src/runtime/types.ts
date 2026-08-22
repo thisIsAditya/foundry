@@ -82,7 +82,15 @@ export const CofounderContextEnvelopeSchema = z.object({
     })
     .nullable()
     .default(null),
-  recentMessages: z.array(z.object({ actor: z.string(), text: z.string() })),
+  recentMessages: z.array(
+    z.object({
+      actor: z.string(),
+      text: z.string(),
+      interactionType: CofounderInteractionTypeSchema.optional(),
+      recommendation: z.string().optional(),
+      proposalId: z.string().optional(),
+    }),
+  ),
   retrieval: z
     .array(
       z.object({
@@ -118,6 +126,13 @@ export const CofounderFactSchema = z.object({
 });
 export type CofounderFact = z.infer<typeof CofounderFactSchema>;
 
+export const CofounderArtifactSchema = z.object({
+  title: z.string().min(1),
+  kind: z.enum(['survey', 'interview_guide', 'experiment_draft', 'note']),
+  content: z.string().min(1),
+});
+export type CofounderArtifact = z.infer<typeof CofounderArtifactSchema>;
+
 export const CofounderRuntimeResultSchema = z.object({
   explanation: z.string().min(1),
   interactionType: CofounderInteractionTypeSchema,
@@ -150,6 +165,7 @@ export const CofounderRuntimeResultSchema = z.object({
       }),
     )
     .optional(),
+  artifact: CofounderArtifactSchema.optional(),
   uncertainty: z.string(),
   blockedConditions: z.array(z.string()),
   activity: z.string().min(1),
@@ -173,5 +189,3 @@ export type CofounderRuntimeInput = {
 export type CofounderRuntime = {
   run(input: CofounderRuntimeInput): Promise<CofounderRuntimeResult>;
 };
-
-export const COFOUNDER_RUNTIME_INSTRUCTIONS_V1 = `You are one application-controlled co-founder. Work from the supplied business record, journey stage, and evidence. Choose exactly one interaction type: ask, inform, recommend, generate, review, or change. Split facts (each with a stored reference id) from interpretation and assumptions. Never invent customers, prices, quotes, market sizes, or validation. Never claim an accepted record write, stage change, or external side effect. If you propose a record change, return it as proposalDraft for founder review. Use only listed capabilities through the host gateway. End with a clear next step.`;

@@ -47,6 +47,7 @@ async function main(): Promise<void> {
     ...(env.FOUNDRY_CAPABILITY_INVOKE_URL === undefined
       ? {}
       : { capabilityInvokeUrl: env.FOUNDRY_CAPABILITY_INVOKE_URL }),
+    ...(env.EXA_API_KEY === undefined ? {} : { webSearchApiKey: env.EXA_API_KEY }),
   });
   const workers = [ingestion, cofounder, notification];
   registerShutdown({ workers, sql, redis, health });

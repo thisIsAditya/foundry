@@ -43,6 +43,9 @@ function result() {
     explanation: 'What would most change the next useful step?',
     interactionType: 'ask' as const,
     references: [],
+    facts: [],
+    interpretation: '',
+    assumptions: [],
     uncertainty: 'No live model was configured.',
     blockedConditions: [],
     activity: 'Asked one clarifying question. Accepted record state is unchanged.',
@@ -248,6 +251,7 @@ describe('executeCofounderOperation', () => {
               {
                 section: 'beachhead_customer',
                 afterPayload: { summary: 'Independent cafe owners.' },
+                evidenceRefs: [],
               },
             ],
           },

@@ -32,4 +32,7 @@ export type EnvironmentConfig = {
   monthlyBudgetUsd: number;
   budgetNotificationEmail?: string;
   bedrockBearerTokenSecretName: string;
+  /** Pre-provisioned Secrets Manager entry holding the Exa web-search API key.
+   * Optional: the co-founder degrades to "web search not configured" without it. */
+  exaApiKeySecretName?: string;
 };

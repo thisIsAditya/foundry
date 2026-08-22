@@ -21,7 +21,10 @@ export function createCofounderRuntime(input: {
     input.harnessEndpoint.length > 0 &&
     input.harnessToken !== undefined &&
     input.harnessToken.length >= 32;
-  if (input.aiMode === 'harness' && harnessReady) {
+  if (input.aiMode === 'harness') {
+    if (!harnessReady) {
+      return { kind: 'disabled', runtime: new DisabledCofounderRuntime() };
+    }
     return {
       kind: 'harness',
       runtime: new DeepSeekHarnessRuntime({

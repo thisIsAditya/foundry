@@ -204,6 +204,14 @@ export async function executeCofounderOperation(
           assumptions: result.assumptions,
           ...(result.recommendation === undefined ? {} : { recommendation: result.recommendation }),
         }),
+        ...(result.artifact === undefined
+          ? []
+          : [
+              {
+                kind: 'draft_action' as const,
+                text: `## ${result.artifact.title}\n\n${result.artifact.content}`,
+              },
+            ]),
       ],
       references: result.references.flatMap((ref) => {
         const parsed = ConversationReferenceSchema.safeParse(ref);
@@ -252,6 +260,9 @@ export async function executeCofounderOperation(
     if (ports.tokens !== undefined) {
       await ports.tokens.cancel(operation.id);
     }
+    if (!paused) {
+      await insertFailureMessage(ports, error).catch(() => undefined);
+    }
     await ports.events.publish(
       paused
         ? {
@@ -270,6 +281,23 @@ export async function executeCofounderOperation(
   } finally {
     unsubscribe();
   }
+}
+
+async function insertFailureMessage(ports: CofounderOperationPorts, error: unknown): Promise<void> {
+  const text =
+    error instanceof AppError
+      ? error.explanation
+      : 'The co-founder could not complete this turn. Accepted record state is unchanged.';
+  const message = await ports.messages.insert({
+    actor: 'co_founder',
+    text,
+    blocks: [{ kind: 'concise_answer', text }],
+  });
+  await ports.events.publish({
+    type: 'conversation_message_appended',
+    messageId: message.id,
+    actor: 'co_founder',
+  });
 }
 
 async function persistProposalDraft(

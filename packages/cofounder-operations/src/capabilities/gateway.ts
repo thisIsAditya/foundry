@@ -14,7 +14,11 @@ import {
   insertProposalV4,
   insertSource,
   insertSourceSnapshot,
+  listDecisionsByProjectId,
   listEvidenceItemsByProjectId,
+  listJourneySteps,
+  listOpenStalenessByProjectId,
+  listProposalsV4ByProjectId,
   listReadyContentBlocksByProjectId,
   listRecordItemsByProjectId,
   searchContentBlocks,
@@ -23,6 +27,7 @@ import {
 } from '@foundry/db';
 import {
   RECORD_SECTION_DEFINITIONS,
+  readinessSignal,
   SourceIdSchema,
   type CofounderOperationId,
   type Project,
@@ -38,6 +43,7 @@ import {
   CAPABILITY_REGISTRY,
   PrepareMaterialInputSchema,
   SearchApprovedInputSchema,
+  SearchWebInputSchema,
   resolveCapabilityId,
   type CapabilityId,
 } from './registry.js';
@@ -53,6 +59,7 @@ export class CapabilityGateway {
     private readonly sql: PoolSql,
     private readonly policyService: PolicyService,
     private readonly fetchImpl: typeof fetch = fetch,
+    private readonly webSearchApiKey?: string,
   ) {}
 
   async invoke(
@@ -117,6 +124,8 @@ export class CapabilityGateway {
         return this.readCurrentState(actor);
       case 'evidence.searchApproved@1':
         return this.searchApproved(actor, input);
+      case 'evidence.searchWeb@1':
+        return this.searchWeb(input);
       case 'business.calculate@1':
         return this.calculate(input);
       case 'material.prepareDraft@1':
@@ -131,7 +140,14 @@ export class CapabilityGateway {
   private async readCurrentState(actor: { project: Project }): Promise<CapabilityInvokeResult> {
     return withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
       const journey = await getJourneyByProjectId(tx, actor.project.id);
-      const items = await listRecordItemsByProjectId(tx, actor.project.id);
+      const [items, proposals, steps, staleness, decisions] = await Promise.all([
+        listRecordItemsByProjectId(tx, actor.project.id),
+        listProposalsV4ByProjectId(tx, actor.project.id),
+        journey === null ? Promise.resolve([]) : listJourneySteps(tx, journey.id),
+        listOpenStalenessByProjectId(tx, actor.project.id),
+        listDecisionsByProjectId(tx, actor.project.id),
+      ]);
+      const staleIds = new Set(staleness.map((item) => item.affectedItemId));
       return {
         ok: true,
         summary:
@@ -140,7 +156,36 @@ export class CapabilityGateway {
           projectId: actor.project.id,
           currentStage: journey?.currentStage ?? 'idea',
           currentObjective: journey?.currentObjective ?? 'Capture the idea.',
-          recordItemIds: items.map((item) => item.id),
+          recordItems: items.map((item) => ({
+            id: item.id,
+            section: item.section,
+            status: item.status,
+            summary: item.content.summary,
+            stale: staleIds.has(item.id),
+          })),
+          readiness: items.map((item) =>
+            readinessSignal({
+              section: item.section,
+              label: item.title,
+              status: item.status,
+              provenance: item.provenance,
+              smallestAction: RECORD_SECTION_DEFINITIONS[item.section].smallestAction,
+            }),
+          ),
+          steps: steps.map((item) => ({
+            id: item.id,
+            stage: item.stage,
+            objective: item.objective,
+            status: item.status,
+            recommended: item.recommended,
+          })),
+          pendingProposals: proposals
+            .filter((item) => item.status === 'awaiting_founder' || item.status === 'draft')
+            .map((item) => ({ id: item.id, rationale: item.rationale, status: item.status })),
+          decisions: decisions.slice(0, 8).map((item) => ({
+            id: item.id,
+            statement: typeof item.chosen === 'string' ? item.chosen : JSON.stringify(item.chosen),
+          })),
         },
       };
     });
@@ -192,6 +237,65 @@ export class CapabilityGateway {
         data: { hits, ids: hits.map((hit) => hit.id) },
       };
     });
+  }
+
+  private async searchWeb(input: unknown): Promise<CapabilityInvokeResult> {
+    const parsed = SearchWebInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        ok: false,
+        summary: 'Web search input was invalid. No external research was fetched.',
+      };
+    }
+    if (this.webSearchApiKey === undefined || this.webSearchApiKey.length === 0) {
+      return {
+        ok: false,
+        summary:
+          'Web search is not configured for this workspace. No external research was fetched.',
+      };
+    }
+    let response: Response;
+    try {
+      response = await this.fetchImpl('https://api.exa.ai/search', {
+        method: 'POST',
+        headers: { 'x-api-key': this.webSearchApiKey, 'content-type': 'application/json' },
+        body: JSON.stringify({ query: parsed.data.query, numResults: 5, type: 'auto' }),
+        signal: AbortSignal.timeout(8_000),
+      });
+    } catch {
+      return {
+        ok: false,
+        summary: 'Web search could not be reached. No external research was fetched.',
+      };
+    }
+    if (!response.ok) {
+      return {
+        ok: false,
+        summary: 'Web search returned no usable results. No external research was fetched.',
+      };
+    }
+    const payload = (await response.json().catch(() => null)) as { results?: unknown } | null;
+    const rawResults = Array.isArray(payload?.results) ? payload.results : [];
+    const hits = rawResults.slice(0, 5).flatMap((item) => {
+      if (typeof item !== 'object' || item === null) {
+        return [];
+      }
+      const url = 'url' in item && typeof item.url === 'string' ? item.url : undefined;
+      if (url === undefined) {
+        return [];
+      }
+      const title = 'title' in item && typeof item.title === 'string' ? item.title : url;
+      const text = 'text' in item && typeof item.text === 'string' ? item.text : '';
+      return [{ url, title, excerpt: text.slice(0, 400) }];
+    });
+    return {
+      ok: true,
+      summary:
+        hits.length === 0
+          ? 'The web search returned no results. No citation was invented.'
+          : `Found ${String(hits.length)} external result(s). Call evidence.createDraft@1 with a chosen url to keep a citation.`,
+      data: { hits },
+    };
   }
 
   private calculate(input: unknown): CapabilityInvokeResult {

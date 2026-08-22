@@ -37,6 +37,7 @@ export async function processCofounderJob(
     harness?: { endpoint: string; token: string };
     aiMode?: 'off' | 'direct' | 'harness';
     capabilityInvokeUrl?: string;
+    webSearchApiKey?: string;
   },
 ): Promise<void> {
   const job = CofounderJobDataSchema.parse(data);
@@ -85,13 +86,14 @@ export async function processCofounderJob(
       ...(deps.capabilityInvokeUrl === undefined
         ? {}
         : { capabilityInvokeUrl: deps.capabilityInvokeUrl }),
+      ...(deps.webSearchApiKey === undefined ? {} : { webSearchApiKey: deps.webSearchApiKey }),
     }),
     {
       operationId: job.operationId,
       founderRequest,
       correlationId: job.correlationId,
       executor: 'worker',
-      timeoutMs: operation?.timeoutMs ?? 20_000,
+      timeoutMs: operation?.timeoutMs ?? 45_000,
       ...(stepId === undefined ? {} : { stepId }),
     },
   );
@@ -104,6 +106,7 @@ function portsFor(input: {
   harness?: { endpoint: string; token: string };
   aiMode?: 'off' | 'direct' | 'harness';
   capabilityInvokeUrl?: string;
+  webSearchApiKey?: string;
   actor: { userId: UserId; membership: WorkspaceMembership; project: Project };
 }): CofounderOperationPorts {
   const { sql, streamBus, redis, actor } = input;
@@ -114,7 +117,7 @@ function portsFor(input: {
     ...(input.harness === undefined ? {} : { harnessEndpoint: input.harness.endpoint }),
     ...(input.harness === undefined ? {} : { harnessToken: input.harness.token }),
   });
-  const gateway = new CapabilityGateway(sql, new PolicyService());
+  const gateway = new CapabilityGateway(sql, new PolicyService(), fetch, input.webSearchApiKey);
   return {
     operations: {
       getById: (id) => scope((tx) => getCofounderOperationById(tx, id)),

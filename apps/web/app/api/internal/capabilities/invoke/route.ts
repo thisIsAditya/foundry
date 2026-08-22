@@ -15,6 +15,7 @@ import { AppError } from '@foundry/observability';
 import { PolicyService } from '@foundry/policy';
 import { z } from 'zod';
 
+import { getEnv } from '../../../../../lib/env';
 import { getSql } from '../../../../../lib/sql';
 
 const BodySchema = z.object({
@@ -90,7 +91,7 @@ export async function POST(request: Request): Promise<Response> {
         nextAction: 'Retry as a workspace member.',
       });
     }
-    const gateway = new CapabilityGateway(sql, new PolicyService());
+    const gateway = new CapabilityGateway(sql, new PolicyService(), fetch, getEnv().EXA_API_KEY);
     const result = await gateway.invoke(
       {
         userId: prepared.record.actorUserId,

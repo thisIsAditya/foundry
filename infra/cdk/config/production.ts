@@ -28,4 +28,5 @@ export const productionEnvironment: EnvironmentConfig = {
   logRetentionDays: 30,
   monthlyBudgetUsd: 165,
   bedrockBearerTokenSecretName: 'foundry/production/bedrock-bearer-token',
+  exaApiKeySecretName: 'foundry/production/exa-api-key',
 };

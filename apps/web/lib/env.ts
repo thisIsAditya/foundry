@@ -40,6 +40,7 @@ const EnvSchema = z.object({
   FOUNDRY_HARNESS_URL: z.preprocess(emptyToUndefined, z.url().optional()),
   FOUNDRY_HARNESS_TOKEN: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
   FOUNDRY_CAPABILITY_INVOKE_URL: z.preprocess(emptyToUndefined, z.url().optional()),
+  EXA_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -90,6 +91,7 @@ function readProcessEnv(): Record<string, string | undefined> {
       FOUNDRY_HARNESS_URL: process.env.FOUNDRY_HARNESS_URL,
       FOUNDRY_HARNESS_TOKEN: process.env.FOUNDRY_HARNESS_TOKEN,
       FOUNDRY_CAPABILITY_INVOKE_URL: process.env.FOUNDRY_CAPABILITY_INVOKE_URL,
+      EXA_API_KEY: process.env.EXA_API_KEY,
     };
   }
   return process.env;

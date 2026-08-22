@@ -6,7 +6,12 @@ import {
   type StreamBus,
 } from '@foundry/agent-runtime';
 import { listWorkspaceMembershipsByUserId, type PoolSql } from '@foundry/db';
-import { UserIdSchema, type UserId, type WorkspaceMembership } from '@foundry/domain';
+import {
+  UserIdSchema,
+  type CofounderRuntimeKind,
+  type UserId,
+  type WorkspaceMembership,
+} from '@foundry/domain';
 import { PolicyService } from '@foundry/policy';
 import { randomUUID } from 'node:crypto';
 
@@ -79,8 +84,10 @@ export type ServiceExtras = {
   jobQueue: JobQueue;
   streamBus: StreamBus;
   cofounderRuntime: CofounderRuntime;
+  cofounderRuntimeKind?: CofounderRuntimeKind;
   cofounderWorkerEnabled?: boolean;
   capabilityInvokeUrl?: string;
+  webSearchApiKey?: string;
 };
 
 export function createServices(
@@ -100,9 +107,10 @@ export function createServices(
     sql,
     policyService,
     contextService,
-    new CapabilityGateway(sql, policyService),
+    new CapabilityGateway(sql, policyService, fetch, extras.webSearchApiKey),
     extras.streamBus,
     extras.cofounderRuntime,
+    extras.cofounderRuntimeKind ?? 'direct',
     coordination,
     extras.jobQueue,
     extras.cofounderWorkerEnabled !== false,
@@ -156,10 +164,12 @@ function extrasFromEnv(): ServiceExtras {
       env.REDIS_URL === undefined ? createMemoryJobQueue() : createBullmqJobQueue(env.REDIS_URL),
     streamBus: streamBusSingleton,
     cofounderRuntime: selected.runtime,
+    cofounderRuntimeKind: selected.kind,
     cofounderWorkerEnabled: env.FOUNDRY_COFOUNDER_WORKER !== 'false',
     capabilityInvokeUrl:
       env.FOUNDRY_CAPABILITY_INVOKE_URL ??
       `${env.BETTER_AUTH_URL}/api/internal/capabilities/invoke`,
+    ...(env.EXA_API_KEY === undefined ? {} : { webSearchApiKey: env.EXA_API_KEY }),
   };
 }
 

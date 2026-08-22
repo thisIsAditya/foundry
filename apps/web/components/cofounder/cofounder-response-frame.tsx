@@ -4,8 +4,8 @@ import type { CofounderInteractionType } from '@foundry/domain';
 import type { ReactNode } from 'react';
 
 const INTERACTION_COPY: Record<CofounderInteractionType, { eyebrow: string; next: string }> = {
-  ask: { eyebrow: 'Ask', next: 'Answer with founder-only context, or pick a suggestion.' },
-  inform: { eyebrow: 'Current state', next: 'Continue, or open the linked record.' },
+  ask: { eyebrow: 'Question', next: 'Reply with the missing context to continue.' },
+  inform: { eyebrow: 'Answer', next: 'Ask a follow-up or open a linked item when useful.' },
   recommend: {
     eyebrow: 'Recommendation',
     next: 'Accept this direction only through a proposal, or ask why.',

@@ -5,6 +5,7 @@ import { z } from 'zod';
 export const CAPABILITY_IDS = [
   'venture.readCurrentState@1',
   'evidence.searchApproved@1',
+  'evidence.searchWeb@1',
   'business.calculate@1',
   'material.prepareDraft@1',
   'evidence.createDraft@1',
@@ -42,6 +43,16 @@ export const CAPABILITY_REGISTRY: Record<CapabilityId, CapabilityDefinition> = {
     policyAction: 'evidence.read',
     timeoutMs: 8_000,
     maxInvocationsPerOperation: 6,
+    idempotent: true,
+  },
+  'evidence.searchWeb@1': {
+    id: 'evidence.searchWeb@1',
+    name: 'evidence.searchWeb',
+    version: '1',
+    riskClass: 'read',
+    policyAction: 'evidence.read',
+    timeoutMs: 8_000,
+    maxInvocationsPerOperation: 4,
     idempotent: true,
   },
   'business.calculate@1': {
@@ -109,6 +120,10 @@ export const SearchApprovedInputSchema = z.object({
   scope: z.enum(['match', 'intake']).default('match'),
 });
 
+export const SearchWebInputSchema = z.object({
+  query: z.string().min(1).max(300),
+});
+
 export const CreateEvidenceDraftInputSchema = z.object({
   summary: z.string().min(1),
   sourceId: z.string().uuid().optional(),
@@ -118,7 +133,7 @@ export const CreateEvidenceDraftInputSchema = z.object({
 });
 
 export const PrepareMaterialInputSchema = z.object({
-  kind: z.enum(['interview_guide', 'experiment_draft', 'note']),
+  kind: z.enum(['interview_guide', 'survey', 'experiment_draft', 'note']),
   summary: z.string().min(1),
   idempotencyKey: z.string().uuid().optional(),
 });

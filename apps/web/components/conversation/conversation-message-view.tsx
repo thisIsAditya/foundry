@@ -2,7 +2,7 @@
 
 import type { ConversationBlock, ConversationMessage, CofounderTurnBlock } from '@foundry/domain';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 import { formatMessageTimestamp } from '../../lib/format';
 import { projectEvidenceHref, projectJourneyHref } from '../../lib/project-href';
@@ -76,45 +76,118 @@ function ArchivedWork({ children }: { children: string }) {
   );
 }
 
+function InfoGlyph() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="size-3.5"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+    >
+      <circle cx="8" cy="8" r="5.75" />
+      <path d="M8 7.1v3.5M8 4.85h.01" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CofounderContextDisclosure({ block }: { block: CofounderTurnBlock }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const hasDetails =
+    (block.facts?.length ?? 0) > 0 ||
+    (block.interpretation?.length ?? 0) > 0 ||
+    (block.assumptions?.length ?? 0) > 0 ||
+    block.uncertainty.length > 0 ||
+    block.blockedConditions.length > 0;
+  if (!hasDetails) {
+    return null;
+  }
+
+  return (
+    <div className="cofounder-context">
+      <button
+        type="button"
+        className="cofounder-context-trigger"
+        aria-label={open ? 'Hide supporting context' : 'Show supporting context'}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <InfoGlyph />
+      </button>
+      {open ? (
+        <div id={panelId} className="cofounder-context-panel">
+          {block.facts === undefined || block.facts.length === 0 ? null : (
+            <section>
+              <p className="cofounder-context-label">Grounded facts</p>
+              <ul>
+                {block.facts.map((fact) => (
+                  <li key={fact.statement}>{fact.statement}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {block.interpretation === undefined || block.interpretation.length === 0 ? null : (
+            <section>
+              <p className="cofounder-context-label">Interpretation</p>
+              <p>{block.interpretation}</p>
+            </section>
+          )}
+          {block.assumptions === undefined || block.assumptions.length === 0 ? null : (
+            <section>
+              <p className="cofounder-context-label">Assumptions</p>
+              <ul>
+                {block.assumptions.map((assumption) => (
+                  <li key={assumption}>{assumption}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {block.uncertainty.length === 0 ? null : (
+            <section>
+              <p className="cofounder-context-label">Still unknown</p>
+              <p>{block.uncertainty}</p>
+            </section>
+          )}
+          {block.blockedConditions.length === 0 ? null : (
+            <section>
+              <p className="cofounder-context-label">Blocked by</p>
+              <ul>
+                {block.blockedConditions.map((condition) => (
+                  <li key={condition}>{condition}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function CofounderTurnCard({ projectId, block }: { projectId: string; block: CofounderTurnBlock }) {
   return (
     <CofounderResponseFrame type={block.interactionType}>
-      <ChatMarkdown text={block.explanation} />
-      {block.facts === undefined || block.facts.length === 0 ? null : (
-        <div className="stack-tight">
-          <p className="hint">Facts from stored sources</p>
-          <ul className="hint">
-            {block.facts.map((fact) => (
-              <li key={fact.statement}>{fact.statement}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {block.interpretation === undefined || block.interpretation.length === 0 ? null : (
-        <p className="muted">Interpretation: {block.interpretation}</p>
-      )}
-      {block.assumptions === undefined || block.assumptions.length === 0 ? null : (
-        <p className="hint">Assumptions: {block.assumptions.join(' ')}</p>
-      )}
+      <div className="cofounder-answer">
+        <ChatMarkdown text={block.explanation} />
+        <CofounderContextDisclosure block={block} />
+      </div>
       {block.recommendation === undefined || block.recommendation.length === 0 ? null : (
-        <p className="text-sm">Recommendation: {block.recommendation}</p>
+        <p className="cofounder-recommendation">{block.recommendation}</p>
       )}
-      {block.uncertainty.length === 0 ? null : <p className="hint">{block.uncertainty}</p>}
-      {block.blockedConditions.length === 0 ? null : (
-        <p className="muted">{block.blockedConditions.join(' ')}</p>
-      )}
-      <CofounderReferenceList projectId={projectId} references={block.references} />
-      {block.proposalId === null ? null : (
-        <CofounderProposalCard projectId={projectId} proposalId={block.proposalId} />
-      )}
-      {block.stepId === null ? null : (
-        <Link
-          className="min-h-11 inline-flex items-center"
-          href={projectJourneyHref(projectId, block.stepId)}
-        >
-          Open the related step
-        </Link>
-      )}
+      <div className="cofounder-actions">
+        <CofounderReferenceList projectId={projectId} references={block.references} />
+        {block.proposalId === null ? null : (
+          <CofounderProposalCard projectId={projectId} proposalId={block.proposalId} />
+        )}
+        {block.stepId === null ? null : (
+          <Link className="cofounder-action" href={projectJourneyHref(projectId, block.stepId)}>
+            Open related step
+          </Link>
+        )}
+      </div>
     </CofounderResponseFrame>
   );
 }
@@ -155,7 +228,7 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
     case 'draft_action':
       return (
         <div className="panel stack-tight">
-          <p className="hint">Draft help</p>
+          <p className="hint">Generated draft</p>
           <ChatMarkdown text={block.text} />
         </div>
       );
@@ -231,7 +304,9 @@ export function ConversationMessageView({
         </ul>
       )}
       {plainText ? (
-        <div className="flex flex-col gap-1">
+        <div
+          className={isFounder ? 'flex flex-col items-end gap-1 self-end' : 'flex flex-col gap-1'}
+        >
           <div className={bubbleClass}>
             <ChatMarkdown text={message.text} />
           </div>
@@ -241,7 +316,12 @@ export function ConversationMessageView({
       {textBlocks.length === 0 ? null : (
         <div className={isFounder ? 'flex flex-col items-end gap-2' : 'chat-blocks'}>
           {textBlocks.map((block, index) => (
-            <div key={`${message.id}-text-${String(index)}`} className="flex flex-col gap-1">
+            <div
+              key={`${message.id}-text-${String(index)}`}
+              className={
+                isFounder ? 'flex flex-col items-end gap-1 self-end' : 'flex flex-col gap-1'
+              }
+            >
               <div className={bubbleClass}>
                 {block.kind === 'concise_answer' ? <ChatMarkdown text={block.text} /> : null}
               </div>

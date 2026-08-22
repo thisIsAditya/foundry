@@ -9,6 +9,22 @@ function BlockView({ block }: { block: ConversationBlock }) {
   switch (block.kind) {
     case 'concise_answer':
       return <Text style={screen.body}>{block.text}</Text>;
+    case 'cofounder_turn':
+      return (
+        <View style={screen.card}>
+          <Text style={screen.muted}>{block.interactionType}</Text>
+          <Text style={screen.body}>{block.explanation}</Text>
+          {block.interpretation === undefined || block.interpretation.length === 0 ? null : (
+            <Text style={screen.muted}>{block.interpretation}</Text>
+          )}
+          {block.recommendation === undefined || block.recommendation.length === 0 ? null : (
+            <Text style={screen.body}>Recommendation: {block.recommendation}</Text>
+          )}
+          {block.uncertainty.length === 0 ? null : (
+            <Text style={screen.muted}>{block.uncertainty}</Text>
+          )}
+        </View>
+      );
     case 'cited_finding':
       return (
         <View style={screen.card}>
