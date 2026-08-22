@@ -1,21 +1,26 @@
 import { describe, expect, it } from 'vitest';
 
-import { isProjectPanel, projectHref, projectPanelHref } from './project-href';
+import {
+  projectCofounderHref,
+  projectDecisionsHref,
+  projectEvidenceHref,
+  projectHref,
+  projectJourneyHref,
+  projectModelHref,
+  projectPanelHref,
+} from './project-href';
 
-describe('projectPanelHref', () => {
-  it('builds drawer query strings on the project URL', () => {
+describe('project hrefs', () => {
+  it('builds founder destinations instead of drawer query strings', () => {
     expect(projectHref('aaaa')).toBe('/p/aaaa');
-    expect(projectPanelHref('aaaa', 'plan')).toBe('/p/aaaa?panel=plan');
-    expect(projectPanelHref('aaaa', 'plan', { section: 'problem' })).toBe(
-      '/p/aaaa?panel=plan&section=problem',
-    );
-    expect(projectPanelHref('aaaa', 'work', { view: 'blocked', job: 'j1' })).toBe(
-      '/p/aaaa?panel=work&job=j1&view=blocked',
-    );
-    expect(projectPanelHref('aaaa', 'research', { finding: 'f1' })).toBe(
-      '/p/aaaa?panel=research&finding=f1',
-    );
-    expect(isProjectPanel('settings')).toBe(true);
-    expect(isProjectPanel('overview')).toBe(false);
+    expect(projectJourneyHref('aaaa')).toBe('/p/aaaa/journey');
+    expect(projectJourneyHref('aaaa', 'step-1')).toBe('/p/aaaa/journey/step-1');
+    expect(projectModelHref('aaaa', 'problem')).toBe('/p/aaaa/model/problem');
+    expect(projectEvidenceHref('aaaa')).toBe('/p/aaaa/evidence');
+    expect(projectDecisionsHref('aaaa')).toBe('/p/aaaa/decisions');
+    expect(projectCofounderHref('aaaa')).toBe('/p/aaaa/co-founder');
+    expect(projectPanelHref('aaaa', 'plan', { section: 'problem' })).toBe('/p/aaaa/model/problem');
+    expect(projectPanelHref('aaaa', 'work')).toBe('/p/aaaa/journey');
+    expect(projectPanelHref('aaaa', 'research')).toBe('/p/aaaa/evidence');
   });
 });

@@ -1,4 +1,25 @@
+export { ActivityEventSchema, type ActivityEvent } from './activity-event.js';
 export { AgentDefinitionSchema, type AgentDefinition } from './agent-definition.js';
+export {
+  BusinessRecordVersionSchema,
+  type BusinessRecordVersion,
+} from './business-record-version.js';
+export { CapabilityInvocationSchema, type CapabilityInvocation } from './capability-invocation.js';
+export { CofounderOperationSchema, type CofounderOperation } from './cofounder-operation.js';
+export { JourneySchema, type Journey } from './journey.js';
+export { JourneyStageStateSchema, type JourneyStageState } from './journey-stage-state.js';
+export { JourneyStepSchema, type JourneyStep } from './journey-step.js';
+export { JourneyTransitionSchema, type JourneyTransition } from './journey-transition.js';
+export { ProposalSchema, type Proposal } from './proposal.js';
+export { ProposalChangeSchema, type ProposalChange } from './v4-proposal-change.js';
+export {
+  RecordItemContentSchema,
+  RecordItemSchema,
+  type RecordItem,
+  type RecordItemContent,
+} from './record-item.js';
+export { RecordItemRelationSchema, type RecordItemRelation } from './record-item-relation.js';
+export { RecordItemStalenessSchema, type RecordItemStaleness } from './record-item-staleness.js';
 export { AgentRunSchema, type AgentRun } from './agent-run.js';
 export { AlternativeSchema, type Alternative } from './alternative.js';
 export { ApprovalRequestSchema, type ApprovalRequest } from './approval-request.js';
@@ -35,9 +56,12 @@ export {
 } from './pack-section.js';
 export { CompetitorSchema, type Competitor } from './competitor.js';
 export {
+  COFOUNDER_TURN_SCHEMA_VERSION,
   ConversationBlockSchema,
   ConversationMessageSchema,
   ConversationReferenceSchema,
+  toCofounderTurnBlock,
+  type CofounderTurnBlock,
   type ConversationBlock,
   type ConversationMessage,
   type ConversationReference,

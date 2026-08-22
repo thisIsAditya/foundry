@@ -15,6 +15,7 @@ export const ConversationBlockKinds = [
   'draft_action',
   'decision_card',
   'blocker',
+  'cofounder_turn',
 ] as const;
 export const ConversationBlockKindSchema = z.enum(ConversationBlockKinds);
 export type ConversationBlockKind = z.infer<typeof ConversationBlockKindSchema>;
@@ -27,6 +28,10 @@ export const ConversationReferenceKinds = [
   'revision',
   'decision',
   'source',
+  'proposal',
+  'step',
+  'record',
+  'operation',
 ] as const;
 export const ConversationReferenceKindSchema = z.enum(ConversationReferenceKinds);
 export type ConversationReferenceKind = z.infer<typeof ConversationReferenceKindSchema>;

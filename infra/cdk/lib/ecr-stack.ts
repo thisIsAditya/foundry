@@ -13,12 +13,14 @@ export type EcrStackProps = cdk.StackProps & {
 export class EcrStack extends cdk.Stack {
   readonly webRepository: ecr.Repository;
   readonly workerRepository: ecr.Repository;
+  readonly harnessRepository: ecr.Repository;
 
   constructor(scope: Construct, id: string, props: EcrStackProps) {
     super(scope, id, props);
 
     this.webRepository = this.createRepository('Web', infra.names.ecrWeb);
     this.workerRepository = this.createRepository('Worker', infra.names.ecrWorker);
+    this.harnessRepository = this.createRepository('Harness', infra.names.ecrHarness);
 
     new ssm.StringParameter(this, 'WebRepoUri', {
       parameterName: `${ssmPrefix(props.environmentName)}/ecr-web-uri`,
@@ -27,6 +29,10 @@ export class EcrStack extends cdk.Stack {
     new ssm.StringParameter(this, 'WorkerRepoUri', {
       parameterName: `${ssmPrefix(props.environmentName)}/ecr-worker-uri`,
       stringValue: this.workerRepository.repositoryUri,
+    });
+    new ssm.StringParameter(this, 'HarnessRepoUri', {
+      parameterName: `${ssmPrefix(props.environmentName)}/ecr-harness-uri`,
+      stringValue: this.harnessRepository.repositoryUri,
     });
   }
 

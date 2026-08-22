@@ -1,5 +1,5 @@
 export const layout = {
-  rail: '40%',
+  rail: '22rem',
   drawer: '40rem',
   appHeader: '3rem',
   projectHeader: '4rem',

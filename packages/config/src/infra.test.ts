@@ -25,11 +25,13 @@ describe('infra constants', () => {
     expect(infra.names.ecrWeb).toBe('foundry-web');
     expect(infra.names.ecrWorker).toBe('foundry-worker');
     expect(infra.queues.ingestion).toBe('ingestion');
-    expect(infra.queues.sprint).toBe('sprint');
+    expect(infra.queues.cofounder).toBe('cofounder');
     expect(infra.queues.render).toBe('render');
     expect(infra.queues.notification).toBe('notification');
     expect(infra.ingestion.concurrency).toBe(8);
-    expect(infra.sprintQueue.attempts).toBe(1);
+    expect(infra.cofounderQueue.concurrency).toBe(4);
+    expect(infra.cofounderQueue.attempts).toBe(3);
+    expect(infra.cofounderQueue.lockDurationMs).toBe(5 * 60_000);
     expect(infra.renderQueue.concurrency).toBe(4);
     expect(infra.renderQueue.attempts).toBe(3);
   });

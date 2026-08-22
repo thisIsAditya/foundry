@@ -7,10 +7,11 @@ export const infra = {
   names: {
     ecrWeb: 'foundry-web',
     ecrWorker: 'foundry-worker',
+    ecrHarness: 'foundry-harness',
   },
   queues: {
     ingestion: 'ingestion',
-    sprint: 'sprint',
+    cofounder: 'cofounder',
     render: 'render',
     notification: 'notification',
   },
@@ -19,9 +20,10 @@ export const infra = {
     attempts: 3,
     backoffMs: 5_000,
   },
-  sprintQueue: {
+  cofounderQueue: {
     concurrency: 4,
-    attempts: 1,
+    attempts: 3,
+    backoffMs: 5_000,
     lockDurationMs: 5 * 60_000,
   },
   renderQueue: {
@@ -67,6 +69,10 @@ export function workerTaskFamily(environment: string): string {
 
 export function workerContainerName(): string {
   return 'worker';
+}
+
+export function harnessContainerName(): string {
+  return 'harness';
 }
 
 export function webLogGroupName(environment: string): string {

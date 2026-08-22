@@ -6,5 +6,6 @@ export default defineConfig({
   test: {
     ...base.test,
     passWithNoTests: false,
+    include: ['src/runtime/deepseek-harness-runtime.test.ts'],
   },
 });

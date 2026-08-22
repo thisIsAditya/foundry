@@ -1,8 +1,4 @@
-import {
-  createMemoryStreamBus,
-  createSecretBox,
-  anthropicCapabilities,
-} from '@foundry/agent-runtime';
+import { createMemoryStreamBus, type CofounderRuntime } from '@foundry/agent-runtime';
 import { listWorkspaceMembershipsByUserId, type PoolSql } from '@foundry/db';
 import type { User } from '@foundry/domain';
 import { PolicyService } from '@foundry/policy';
@@ -13,8 +9,21 @@ import { createServices, type Context, type ServiceExtras } from '../context';
 import { createMemoryJobQueue, type MemoryJobQueue } from '../queue/job-queue';
 import { createMemoryObjectStore } from '../storage/object-store';
 
+const testRuntime: CofounderRuntime = {
+  async run(input) {
+    return {
+      explanation: `We are in ${input.contextPacket.currentStage}: ${input.contextPacket.currentObjective}`,
+      interactionType: 'ask',
+      references: [],
+      uncertainty: 'This deterministic test runtime does not write business state.',
+      blockedConditions: [],
+      activity: 'Asked one clarifying question. Accepted record state is unchanged.',
+    };
+  },
+};
+
 export function memoryJobQueue(ctx: Context): MemoryJobQueue {
-  if (!('sprintJobs' in ctx.jobQueue)) {
+  if (!('cofounderJobs' in ctx.jobQueue)) {
     throw new Error('test context expected a memory job queue');
   }
   return ctx.jobQueue as MemoryJobQueue;
@@ -33,27 +42,14 @@ export async function createTestContext(
   overrides: Partial<ServiceExtras> = {},
 ): Promise<Context> {
   const coordination = createMemoryCoordinationStore();
-  const policyService = new PolicyService();
   const extras: ServiceExtras = {
     objectStore: createMemoryObjectStore(),
     jobQueue: createMemoryJobQueue(),
     streamBus: createMemoryStreamBus(),
-    secretBox: createSecretBox('0'.repeat(64)),
-    secrets: {},
-    capabilityProbe: async () => anthropicCapabilities,
-    mcpFactory: async () => ({
-      async tools() {
-        return { search: { description: 'Search the fixture knowledge base' } };
-      },
-      async close() {
-        return;
-      },
-    }),
-    allowMcpLoopback: true,
+    cofounderRuntime: testRuntime,
     ...overrides,
   };
-  const services = createServices(sql, coordination, policyService, extras);
-
+  const services = createServices(sql, coordination, new PolicyService(), extras);
   if (user === null) {
     return {
       sql,
@@ -68,19 +64,11 @@ export async function createTestContext(
       streamBus: extras.streamBus,
     };
   }
-
   const memberships = await listWorkspaceMembershipsByUserId(sql, user.id);
   return {
     sql,
     actor: { type: 'user', userId: user.id, memberships },
-    session: {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    },
+    session: { user: { id: user.id, name: user.name, email: user.email, role: user.role } },
     correlationId: randomUUID(),
     coordination,
     services,

@@ -141,7 +141,7 @@ describe('evidence procedures', () => {
     expect(listed[0]?.quoteCount).toBe(2);
   });
 
-  it('excludes friend and simulated interviews from Gate A even though they are captured', async () => {
+  it('preserves friend and simulated interview provenance without treating it as validation', async () => {
     const user = await insertUser(sql, {
       name: 'Founder',
       email: `iv-gate-${randomUUID()}@example.com`,
@@ -171,9 +171,8 @@ describe('evidence procedures', () => {
       idempotencyKey: randomUUID(),
     });
 
-    const desk = await caller.project.getDeskSummary({ projectId: project.id });
-    expect(desk.gateA.qualifyingInterviews).toBe(0);
-    expect(desk.gateA.passed).toBe(false);
+    const listed = await caller.evidence.listInterviews({ projectId: project.id });
+    expect(listed).toHaveLength(2);
   });
 
   it('records a field observation as an evidence item', async () => {

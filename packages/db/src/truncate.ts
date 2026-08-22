@@ -8,8 +8,28 @@ export async function truncateAppTables(sql: PoolSql): Promise<void> {
     await tx`select pg_advisory_xact_lock(${TEST_TRUNCATE_LOCK})`;
     await tx`update projects set current_pack_revision_id = null`;
     await tx`update artifacts set current_version_id = null`;
+    await tx`update journeys set accepted_record_version_id = null`;
+    await tx`update journey_stage_states set latest_record_version_id = null`;
+    await tx`update record_items set current_version_id = null`;
+    await tx`update record_item_staleness set resolved_by_version_id = null`;
+    await tx`update activity_events set journey_id = null, step_id = null, proposal_id = null, version_id = null`;
     await tx`
       truncate table
+        capability_invocations,
+        cofounder_operations,
+        proposal_changes_v4,
+        proposals_v4,
+        record_item_staleness,
+        record_item_relations,
+        record_items,
+        business_record_versions,
+        journey_transitions,
+        journey_steps,
+        journey_stage_states,
+        activity_events,
+        command_receipts,
+        command_outbox,
+        journeys,
         tool_calls,
         tool_definitions,
         render_jobs,

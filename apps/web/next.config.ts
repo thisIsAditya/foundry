@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
     '@foundry/observability',
     '@foundry/policy',
     '@foundry/ui',
+    '@assistant-ui/react',
   ],
   serverExternalPackages: [
     // postgres.js Query extends Promise; bundling it throws on V8's Promise #state.

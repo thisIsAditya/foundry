@@ -15,6 +15,10 @@
     "./infra": {
       "types": "./dist/infra.d.ts",
       "import": "./dist/infra.js"
+    },
+    "./flags": {
+      "types": "./dist/flags.d.ts",
+      "import": "./dist/flags.js"
     }
   },
   "files": [

@@ -20,7 +20,6 @@ export function InterviewCapture({ projectId }: { projectId: string }) {
     trpc.evidence.addInterview.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: trpc.evidence.listInterviews.queryKey() });
-        await queryClient.invalidateQueries({ queryKey: trpc.project.getDeskSummary.queryKey() });
       },
     }),
   );

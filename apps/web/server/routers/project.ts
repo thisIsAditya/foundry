@@ -1,11 +1,7 @@
-import {
-  CreateProjectInputSchema,
-  GetMoneyRulesInputSchema,
-  ListProjectsInputSchema,
-} from '@foundry/api-contracts';
+import { CreateProjectInputSchema, ListProjectsInputSchema } from '@foundry/api-contracts';
 
 import { mutationInvalidations } from '../../lib/trpc/invalidation-map';
-import { projectReadProcedure, router, workspaceProcedure, workspaceReadProcedure } from '../trpc';
+import { router, workspaceProcedure, workspaceReadProcedure } from '../trpc';
 
 export const projectRouter = router({
   create: workspaceProcedure
@@ -22,11 +18,5 @@ export const projectRouter = router({
     }),
   list: workspaceReadProcedure.input(ListProjectsInputSchema).query(async ({ ctx, input }) => {
     return ctx.services.projectService.list(ctx.membership, input.workspaceId);
-  }),
-  getDeskSummary: projectReadProcedure.input(GetMoneyRulesInputSchema).query(async ({ ctx }) => {
-    return ctx.services.projectService.getDeskSummary({
-      membership: ctx.membership,
-      project: ctx.project,
-    });
   }),
 });

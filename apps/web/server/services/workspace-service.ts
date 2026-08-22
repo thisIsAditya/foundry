@@ -1,12 +1,9 @@
-import { randomUUID } from 'node:crypto';
-
 import type { CreateWorkspaceInput } from '@foundry/api-contracts';
 import { limits } from '@foundry/config/limits';
 import {
   getWorkspaceById,
   insertWorkspace,
   insertWorkspaceMembership,
-  listProviderConnectionsByWorkspaceId,
   listWorkspaceMembershipsByUserId,
   listWorkspaces,
   withWorkspaceScope,
@@ -19,12 +16,9 @@ import {
   type WorkspaceId,
   type WorkspaceMembership,
 } from '@foundry/domain';
-import { after } from 'next/server';
 import superjson from 'superjson';
 
-import { getEnv } from '../../lib/env';
 import { withIdempotency, type CoordinationStore } from '../coordination';
-import type { ProviderService } from './provider-service';
 
 const DEFAULT_WORKSPACE_IDEMPOTENCY_KEY = '00000000-0000-4000-8000-000000000001';
 
@@ -32,7 +26,6 @@ export class WorkspaceService {
   constructor(
     private readonly sql: PoolSql,
     private readonly coordination: CoordinationStore,
-    private readonly providerService: ProviderService,
   ) {}
 
   async getById(workspaceId: WorkspaceId): Promise<Workspace | null> {
@@ -62,7 +55,6 @@ export class WorkspaceService {
         });
       },
     );
-    this.scheduleDefaultBedrock(userId, workspace);
     return workspace;
   }
 
@@ -72,7 +64,6 @@ export class WorkspaceService {
     if (membership !== undefined) {
       const workspace = await this.getById(membership.workspaceId);
       if (workspace !== null) {
-        this.scheduleDefaultBedrock(userId, workspace);
         return workspace;
       }
     }
@@ -88,41 +79,5 @@ export class WorkspaceService {
       return [];
     }
     return withWorkspaceScope(this.sql, ids, async (tx) => listWorkspaces(tx));
-  }
-
-  private scheduleDefaultBedrock(userId: UserId, workspace: Workspace): void {
-    const env = getEnv();
-    if (env.NODE_ENV === 'test' || env.BEDROCK_AUTO_CONNECT === 'false') {
-      return;
-    }
-    const modelId = env.BEDROCK_MODEL_ID ?? limits.provider.defaultBedrockModel;
-    const region = env.AWS_REGION ?? limits.provider.defaultBedrockRegion;
-    after(() =>
-      listWorkspaceMembershipsByUserId(this.sql, userId)
-        .then((memberships) => {
-          const membership = memberships.find((item) => item.workspaceId === workspace.id);
-          if (membership === undefined) {
-            return undefined;
-          }
-          return withWorkspaceScope(this.sql, [workspace.id], async (tx) => {
-            const connections = await listProviderConnectionsByWorkspaceId(tx, workspace.id);
-            if (connections.some((connection) => connection.providerFamily === 'bedrock')) {
-              return undefined;
-            }
-            return this.providerService.connect(
-              { userId, membership },
-              {
-                workspaceId: workspace.id,
-                family: 'bedrock',
-                authMode: 'aws_iam_role',
-                endpointOrRegion: region,
-                modelId,
-                idempotencyKey: randomUUID(),
-              },
-            );
-          });
-        })
-        .catch(() => undefined),
-    );
   }
 }

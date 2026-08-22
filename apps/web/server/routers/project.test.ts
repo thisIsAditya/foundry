@@ -26,20 +26,13 @@ describe('project procedures', () => {
     expect(created.name).toBe('Venture');
     expect(created.workspaceId).toBe(createdWorkspace.id);
     expect(created.founderObjective).toBe('bootstrap');
-    expect(created.currentPhase).toBe('diagnose');
 
     const listed = await caller.project.list({ workspaceId: createdWorkspace.id });
     expect(listed.map((project) => project.id)).toEqual([created.id]);
 
-    const desk = await caller.project.getDeskSummary({ projectId: created.id });
-    expect(desk.phase).toBe('diagnose');
-    expect(desk.derivedPhase).toBe('problem');
-    expect(desk.moneyRulesSet).toBe(false);
-    expect(desk.nextAction).toBe('Set canonical MoneyRules.');
-    expect(desk.overview.runningAiWork).toEqual([]);
-    expect(
-      desk.overview.overallScore === null || typeof desk.overview.overallScore === 'number',
-    ).toBe(true);
+    const overview = await caller.journey.getOverview({ projectId: created.id });
+    expect(overview.journey.currentStage).toBe('problem');
+    expect(overview.recommendedStep).not.toBeNull();
   });
 
   it('inserts a problem statement when founderPitch is long enough', async () => {
@@ -59,11 +52,12 @@ describe('project procedures', () => {
       founderPitch: pitch,
       idempotencyKey: randomUUID(),
     });
-    const section = await caller.pack.getBusinessModelSection({
-      projectId: created.id,
-      key: 'problem',
-    });
-    expect(section.card.knownFacts.some((fact) => fact.includes(pitch))).toBe(true);
+    const sections = await caller.record.listSections({ projectId: created.id });
+    const idea = sections.find((item) => item.section === 'idea_founder_context');
+    expect(idea?.item.content.summary).toContain(pitch);
+    expect(idea?.item.provenance).toBe('founder_input');
+    const overview = await caller.journey.getOverview({ projectId: created.id });
+    expect(overview.journey.currentStage).toBe('problem');
   });
 
   it('rejects project create without a session', async () => {

@@ -14,19 +14,14 @@ import { PolicyService } from '@foundry/policy';
 import superjson from 'superjson';
 
 import { withIdempotency, type CoordinationStore } from '../coordination';
-import type { ScoringService } from './scoring-service';
 
-export type InterviewSummary = {
-  interview: Interview;
-  quoteCount: number;
-};
+export type InterviewSummary = { interview: Interview; quoteCount: number };
 
 export class InterviewService {
   constructor(
     private readonly sql: PoolSql,
     private readonly coordination: CoordinationStore,
     private readonly policyService: PolicyService,
-    private readonly scoringService?: ScoringService,
   ) {}
 
   async addInterview(
@@ -40,14 +35,13 @@ export class InterviewService {
         nextAction: 'Ask a workspace admin to change your role.',
       });
     }
-    const key = `idem:${actor.userId}:evidence.addInterview:${input.idempotencyKey}`;
-    const created = await withIdempotency(
+    return withIdempotency(
       this.coordination,
-      key,
+      `idem:${actor.userId}:evidence.addInterview:${input.idempotencyKey}`,
       limits.idempotencyKeyTtlSeconds,
       (raw) => superjson.parse(raw) as { interview: Interview; quotes: Quote[] },
       (value) => superjson.stringify(value),
-      async () =>
+      () =>
         withWorkspaceScope(this.sql, [actor.project.workspaceId], async (tx) => {
           const interview = await insertInterview(tx, {
             projectId: actor.project.id,
@@ -60,15 +54,14 @@ export class InterviewService {
             },
             conductedAt: input.conductedAt ?? null,
           });
-          const quotes: Quote[] = [];
-          for (const textContent of input.quotes) {
-            quotes.push(await insertQuote(tx, { interviewId: interview.id, textContent }));
-          }
+          const quotes = await Promise.all(
+            input.quotes.map((textContent) =>
+              insertQuote(tx, { interviewId: interview.id, textContent }),
+            ),
+          );
           return { interview, quotes };
         }),
     );
-    await this.scoringService?.recalculate(actor.project);
-    return created;
   }
 
   async listInterviews(actor: {
@@ -88,16 +81,15 @@ export class InterviewService {
         tx,
         interviews.map((item) => item.id),
       );
-      const quoteCounts = new Map<string, number>();
+      const counts = new Map<string, number>();
       for (const quote of quotes) {
-        if (quote.interviewId === null) {
-          continue;
+        if (quote.interviewId !== null) {
+          counts.set(quote.interviewId, (counts.get(quote.interviewId) ?? 0) + 1);
         }
-        quoteCounts.set(quote.interviewId, (quoteCounts.get(quote.interviewId) ?? 0) + 1);
       }
       return interviews.map((interview) => ({
         interview,
-        quoteCount: quoteCounts.get(interview.id) ?? 0,
+        quoteCount: counts.get(interview.id) ?? 0,
       }));
     });
   }

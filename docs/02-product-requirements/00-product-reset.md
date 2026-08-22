@@ -75,7 +75,9 @@ Every material item must show its status and provenance: `founder_input`, `cited
 
 ### 3.3 Change and approval model
 
-The co-founder may propose, draft, summarize, calculate, or retrieve. It must not silently change material business state.
+The co-founder may propose, draft, summarize,
+
+calculate, or retrieve. It must not silently change material business state.
 
 For a material change, the user sees:
 

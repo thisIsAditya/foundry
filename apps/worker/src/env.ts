@@ -27,10 +27,8 @@ const EnvSchema = z.object({
   AWS_S3_SECRET_ACCESS_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   BETTER_AUTH_SECRET: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
   FOUNDRY_SECRETS_KEY: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
-  ANTHROPIC_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-  OPENAI_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-  AI_GATEWAY_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-  BEDROCK_MODEL_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  FOUNDRY_HARNESS_URL: z.url(),
+  FOUNDRY_HARNESS_TOKEN: z.string().min(32),
   CLAMD_HOST: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   CLAMD_PORT: z
     .string()

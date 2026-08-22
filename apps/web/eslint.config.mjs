@@ -28,6 +28,12 @@ export default [
               name: 'pg',
               message: 'pg is allowed only in lib/auth.ts (00-tech-stack §8).',
             },
+            {
+              name: '@foundry/agent-runtime',
+              importNames: ['FoundryAgent', 'runCofounderTurn'],
+              message:
+                'Web founder paths must use CofounderService and DirectAiSdkRuntime. FoundryAgent is frozen until P2.3 retirement.',
+            },
           ],
         },
       ],

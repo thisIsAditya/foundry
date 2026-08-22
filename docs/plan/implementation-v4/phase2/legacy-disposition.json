@@ -1,0 +1,166 @@
+{
+  "schemaVersion": "v4.p2.0",
+  "generatedAt": "2026-08-22",
+  "purpose": "Machine-readable legacy disposition for Implementation v4 Phase 2. Counts are not production snapshots; they must be recaptured before any DROP.",
+  "flags": {
+    "journeyCutover": {
+      "default": true,
+      "owner": "web-founder-product",
+      "removalCondition": "Remove after every active reader uses journey/record/proposal commands and legacy rollback is no longer supported."
+    },
+    "assistantUi": {
+      "default": true,
+      "owner": "web-cofounder-ui",
+      "removalCondition": "Remove after the ExternalStoreRuntime conversation is the only founder co-founder interface."
+    },
+    "cofounderWorker": {
+      "default": false,
+      "owner": "cofounder-operations",
+      "removalCondition": "Remove after inline versus worker mode selection is stable and sprint writes are gone."
+    },
+    "harnessPoc": {
+      "default": false,
+      "owner": "runtime-evaluation",
+      "removalCondition": "Remove after an explicit adopt or reject decision; default remains off."
+    }
+  },
+  "families": [
+    {
+      "id": "web-orphan-ui-wave-1",
+      "status": "deleted",
+      "reachability": "unreachable",
+      "replacement": "Journey, Model, Evidence, Decisions, and Co-founder routes plus typed cofounder_turn rendering",
+      "dataDisposition": "code-only; no database rows",
+      "retainedCount": null,
+      "conversionResult": "deleted_after_import_scan",
+      "archiveLocation": null,
+      "foreignKeys": [],
+      "deletionCommit": null,
+      "postDeleteVerification": "apps/web app and chrome imports no longer reference the deleted files",
+      "items": [
+        "apps/web/components/chrome/phase-focus.tsx",
+        "apps/web/components/chrome/project-header.tsx",
+        "apps/web/components/plan/*",
+        "apps/web/components/work/*",
+        "apps/web/components/research/research-view.tsx",
+        "apps/web/components/score/*",
+        "apps/web/components/conversation/agent-step-trace.tsx",
+        "apps/web/lib/agent-step-trace.ts",
+        "apps/web/lib/agent-step-trace.test.ts",
+        "apps/web/lib/describe-tool-call.ts",
+        "apps/web/lib/describe-tool-call.test.ts",
+        "apps/web/lib/journey.ts",
+        "apps/web/lib/founder-task-priority.ts",
+        "apps/web/lib/last-viewed-decisions.ts"
+      ]
+    },
+    {
+      "id": "conversation-send-shim",
+      "status": "migrated",
+      "reachability": "active-compatibility",
+      "replacement": "CofounderService.respond with waitForResult via DirectAiSdkRuntime",
+      "dataDisposition": "retain conversation_messages; persist cofounder_turn blocks going forward",
+      "retainedCount": "pending_production_snapshot",
+      "conversionResult": "writers_closed_to_foundry_agent",
+      "archiveLocation": null,
+      "foreignKeys": ["conversation_messages.project_id"],
+      "callers": [
+        "apps/web/server/routers/conversation.ts",
+        "apps/mobile/app/(app)/co-founder.tsx",
+        "apps/web/server/routers/cofounder.test.ts",
+        "apps/web/server/routers/score.test.ts"
+      ],
+      "notes": "Mobile still uses conversation.send. The shim no longer reaches runCofounderTurn, FoundryAgent, sprint preview, or MCP."
+    },
+    {
+      "id": "foundry-agent-and-sprint-runtime",
+      "status": "retained",
+      "reachability": "active-worker-and-tests",
+      "replacement": "packages/cofounder-operations + DirectAiSdkRuntime",
+      "dataDisposition": "do_not_drop",
+      "retainedCount": "pending_production_snapshot",
+      "conversionResult": "frozen_in_web_founder_paths",
+      "archiveLocation": null,
+      "foreignKeys": [
+        "agent_runs.agent_definition_id",
+        "agent_runs.sprint_id",
+        "usage_records.agent_run_id",
+        "pack_revisions.source_sprint_id"
+      ],
+      "callers": [
+        "packages/agent-runtime/src/orchestration/foundry-agent.ts",
+        "packages/agent-runtime/src/orchestration/cofounder-turn.ts",
+        "packages/agent-runtime/src/orchestration/worker-pool.ts",
+        "apps/worker/src/sprint/process.ts",
+        "apps/web/server/services/sprint-service.ts"
+      ],
+      "notes": "P2.3 only. ESLint blocks new FoundryAgent/runCofounderTurn imports in apps/web."
+    },
+    {
+      "id": "sprint-job-score-gate-routers",
+      "status": "retained",
+      "reachability": "active-compatibility",
+      "replacement": "journey.*, record.*, proposal.*, cofounder.*",
+      "dataDisposition": "do_not_drop",
+      "retainedCount": "pending_production_snapshot",
+      "conversionResult": "still_mounted",
+      "archiveLocation": null,
+      "foreignKeys": ["sprints.project_id", "jobs.sprint_id", "founder_tasks.project_id"],
+      "callers": [
+        "apps/web/server/routers/_app.ts",
+        "apps/web/server/routers/sprint.ts",
+        "apps/web/server/routers/job.ts",
+        "apps/web/server/routers/score.ts",
+        "apps/web/server/routers/gate.ts"
+      ]
+    },
+    {
+      "id": "sprint-worker",
+      "status": "retained",
+      "reachability": "active",
+      "replacement": "cofounder queue behind FOUNDRY_COFOUNDER_WORKER",
+      "dataDisposition": "do_not_drop",
+      "retainedCount": "pending_production_snapshot",
+      "conversionResult": "still_started_from_worker_main",
+      "archiveLocation": null,
+      "foreignKeys": [],
+      "callers": ["apps/worker/src/main.ts", "apps/worker/src/queues/sprint.worker.ts"]
+    },
+    {
+      "id": "pack-revisions-and-sections",
+      "status": "retained",
+      "reachability": "migration-and-compatibility",
+      "replacement": "business_record_versions / record_items",
+      "dataDisposition": "historical_migration_source",
+      "retainedCount": "pending_production_snapshot",
+      "conversionResult": "not_converted_this_phase",
+      "archiveLocation": null,
+      "foreignKeys": ["pack_sections.revision_id", "pack_revisions.source_sprint_id"]
+    },
+    {
+      "id": "projects.current_phase",
+      "status": "retained",
+      "reachability": "compatibility-only",
+      "replacement": "Journey.currentStage one-way projection",
+      "dataDisposition": "keep_until_readers_gone",
+      "retainedCount": "pending_production_snapshot",
+      "conversionResult": "not_an_independent_write_path_in_v4_ui"
+    },
+    {
+      "id": "legacy-href-and-proxy",
+      "status": "retained",
+      "reachability": "deprecation-redirects",
+      "replacement": "projectJourneyHref / projectModelHref / projectEvidenceHref",
+      "dataDisposition": "code-only",
+      "items": ["apps/web/lib/legacy-href.ts", "apps/web/proxy.ts"]
+    },
+    {
+      "id": "deepseek-harness",
+      "status": "deferred",
+      "reachability": "not_started",
+      "replacement": "isolated sidecar after P2.2 gates",
+      "dataDisposition": "no_in_process_dependency",
+      "notes": "FOUNDRY_HARNESS_POC remains false. Do not add @deepseek-ai packages to the root workspace, web, or worker."
+    }
+  ]
+}

@@ -31,4 +31,5 @@ export type EnvironmentConfig = {
   logRetentionDays: 7 | 30;
   monthlyBudgetUsd: number;
   budgetNotificationEmail?: string;
+  bedrockBearerTokenSecretName: string;
 };

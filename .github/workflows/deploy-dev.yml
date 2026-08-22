@@ -13,6 +13,7 @@ env:
   AWS_REGION: ap-south-1
   ECR_REPOSITORY: foundry-web
   ECR_WORKER_REPOSITORY: foundry-worker
+  ECR_HARNESS_REPOSITORY: foundry-harness
 
 jobs:
   deploy:
@@ -53,6 +54,18 @@ jobs:
             ${{ steps.ecr.outputs.registry }}/${{ env.ECR_WORKER_REPOSITORY }}:latest
           cache-from: type=gha,scope=worker
           cache-to: type=gha,mode=max,scope=worker
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./integrations/deepseek-harness-adapter
+          file: integrations/deepseek-harness-adapter/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_HARNESS_REPOSITORY }}:${{ github.sha }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_HARNESS_REPOSITORY }}:latest
+          cache-from: type=gha,scope=harness
+          cache-to: type=gha,mode=max,scope=harness
 
       - name: Register task definition, migrate, update service
         env:
@@ -105,11 +118,16 @@ jobs:
           aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
 
           WORKER_IMAGE="${{ steps.ecr.outputs.registry }}/${{ env.ECR_WORKER_REPOSITORY }}:${{ github.sha }}"
+          HARNESS_IMAGE="${{ steps.ecr.outputs.registry }}/${{ env.ECR_HARNESS_REPOSITORY }}:${{ github.sha }}"
           WORKER_SERVICE=$(aws ssm get-parameter --name "$PREFIX/worker-service-name" --query Parameter.Value --output text)
           WORKER_FAMILY=$(aws ssm get-parameter --name "$PREFIX/worker-task-family" --query Parameter.Value --output text)
           WORKER_TASK_DEF=$(aws ecs describe-task-definition --task-definition "$WORKER_FAMILY" --query taskDefinition)
-          echo "$WORKER_TASK_DEF" | jq --arg IMAGE "$WORKER_IMAGE" '
-            .containerDefinitions |= map(if .name == "worker" then .image = $IMAGE else . end) |
+          echo "$WORKER_TASK_DEF" | jq --arg IMAGE "$WORKER_IMAGE" --arg HARNESS_IMAGE "$HARNESS_IMAGE" '
+            .containerDefinitions |= map(
+              if .name == "worker" then .image = $IMAGE
+              elif .name == "harness" then .image = $HARNESS_IMAGE
+              else . end
+            ) |
             del(
               .taskDefinitionArn,
               .revision,

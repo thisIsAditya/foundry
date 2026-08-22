@@ -8,18 +8,22 @@ export default async function HomePage() {
     const workspaceId = workspaces[0]?.id;
     if (workspaceId === undefined) {
       return (
-        <p className="alert px-6 py-10">
+        <main id="main-content" className="alert px-6 py-10" tabIndex={-1}>
           No workspace is ready yet. Refresh the page — one is created automatically.
-        </p>
+        </main>
       );
     }
     const projects = await api.project.list({ workspaceId });
-    return <VenturesHome workspaceId={workspaceId} initialProjects={projects} />;
+    return (
+      <main id="main-content" tabIndex={-1}>
+        <VenturesHome workspaceId={workspaceId} initialProjects={projects} />
+      </main>
+    );
   } catch (error) {
     return (
-      <p className="alert px-6 py-10">
+      <main id="main-content" className="alert px-6 py-10" tabIndex={-1}>
         {error instanceof Error ? error.message : 'Could not load your workspace.'}
-      </p>
+      </main>
     );
   }
 }

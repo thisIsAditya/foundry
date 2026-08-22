@@ -26,6 +26,7 @@ export class DataStack extends cdk.Stack {
   readonly uploadsBucket: s3.Bucket;
   readonly artifactsBucket: s3.Bucket;
   readonly betterAuthSecret: secretsmanager.Secret;
+  readonly harnessToken: secretsmanager.Secret;
 
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
@@ -101,6 +102,13 @@ export class DataStack extends cdk.Stack {
 
     this.betterAuthSecret = new secretsmanager.Secret(this, 'BetterAuthSecret', {
       secretName: `foundry/${environment.name}/better-auth-secret`,
+      generateSecretString: {
+        passwordLength: 64,
+        excludePunctuation: true,
+      },
+    });
+    this.harnessToken = new secretsmanager.Secret(this, 'HarnessToken', {
+      secretName: `foundry/${environment.name}/harness-token`,
       generateSecretString: {
         passwordLength: 64,
         excludePunctuation: true,

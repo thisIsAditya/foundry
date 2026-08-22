@@ -4,7 +4,6 @@ import {
   CreateUploadIntentInputSchema,
   ListEvidenceInputSchema,
   ListEvidenceLibraryInputSchema,
-  ListFindingsInputSchema,
   ListInterviewsInputSchema,
   RecordObservationInputSchema,
   SearchEvidenceInputSchema,
@@ -79,12 +78,6 @@ export const evidenceRouter = router({
     .query(async ({ ctx, input }) => {
       return ctx.services.documentService.listLibrary(ctx.membership, ctx.project, input.filter);
     }),
-  listFindings: projectReadProcedure.input(ListFindingsInputSchema).query(async ({ ctx }) => {
-    return ctx.services.researchFindingService.listByProject(
-      ctx.project.workspaceId,
-      ctx.project.id,
-    );
-  }),
   recordObservation: projectProcedure
     .meta({ invalidates: mutationInvalidations['evidence.recordObservation'] })
     .input(RecordObservationInputSchema)

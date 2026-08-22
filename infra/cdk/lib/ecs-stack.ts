@@ -1,6 +1,7 @@
 import {
   clusterName,
   infra,
+  harnessContainerName,
   ssmPrefix,
   webContainerName,
   webServiceName,
@@ -18,6 +19,7 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import type * as logs from 'aws-cdk-lib/aws-logs';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import type { Construct } from 'constructs';
 
@@ -48,6 +50,11 @@ export class EcsStack extends cdk.Stack {
 
     const { environment, network, data, ecr } = props;
     const envName = environment.name;
+    const bedrockBearerToken = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'BedrockBearerToken',
+      environment.bedrockBearerTokenSecretName,
+    );
 
     this.cluster = new ecs.Cluster(this, 'Cluster', {
       clusterName: clusterName(envName),
@@ -255,8 +262,42 @@ export class EcsStack extends cdk.Stack {
 
     data.uploadsBucket.grantReadWrite(workerTaskDefinition.taskRole);
     data.artifactsBucket.grantReadWrite(workerTaskDefinition.taskRole);
+    workerTaskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+        resources: ['*'],
+      }),
+    );
 
-    workerTaskDefinition.addContainer(workerContainerName(), {
+    const harness = workerTaskDefinition.addContainer(harnessContainerName(), {
+      image: ecs.ContainerImage.fromEcrRepository(ecr.harnessRepository, props.imageTag),
+      logging: ecs.LogDrivers.awsLogs({
+        streamPrefix: 'harness',
+        logGroup: props.workerLogGroup,
+      }),
+      environment: {
+        NODE_ENV: 'production',
+        PORT: '8787',
+        DSH_MODEL: 'openai.gpt-5.6-luna',
+        AWS_REGION: this.region,
+      },
+      secrets: {
+        HARNESS_ADAPTER_TOKEN: ecs.Secret.fromSecretsManager(data.harnessToken),
+        AWS_BEARER_TOKEN_BEDROCK: ecs.Secret.fromSecretsManager(bedrockBearerToken),
+      },
+      healthCheck: {
+        command: [
+          'CMD-SHELL',
+          'node -e "fetch(\'http://127.0.0.1:8787/healthz\').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ],
+        interval: cdk.Duration.seconds(30),
+        timeout: cdk.Duration.seconds(5),
+        retries: 3,
+        startPeriod: cdk.Duration.seconds(40),
+      },
+    });
+
+    const workerContainer = workerTaskDefinition.addContainer(workerContainerName(), {
       image: ecs.ContainerImage.fromEcrRepository(ecr.workerRepository, props.imageTag),
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'worker',
@@ -271,9 +312,11 @@ export class EcsStack extends cdk.Stack {
         AWS_REGION: this.region,
         AWS_S3_UPLOADS_BUCKET: data.uploadsBucket.bucketName,
         AWS_S3_ARTIFACTS_BUCKET: data.artifactsBucket.bucketName,
+        FOUNDRY_HARNESS_URL: 'http://127.0.0.1:8787',
       },
       secrets: {
         RDS_SECRET: ecs.Secret.fromSecretsManager(data.dbSecret),
+        FOUNDRY_HARNESS_TOKEN: ecs.Secret.fromSecretsManager(data.harnessToken),
       },
       portMappings: [{ containerPort: infra.workerHealthPort }],
       stopTimeout: cdk.Duration.seconds(120),
@@ -287,6 +330,10 @@ export class EcsStack extends cdk.Stack {
         retries: 3,
         startPeriod: cdk.Duration.seconds(40),
       },
+    });
+    workerContainer.addContainerDependencies({
+      container: harness,
+      condition: ecs.ContainerDependencyCondition.HEALTHY,
     });
 
     this.workerService = new ecs.FargateService(this, 'WorkerService', {

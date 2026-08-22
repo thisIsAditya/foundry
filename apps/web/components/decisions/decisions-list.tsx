@@ -6,17 +6,27 @@ import { formatUnknown } from '../../lib/format';
 import { useTRPC } from '../../lib/trpc/client';
 import { EmptyState } from '../ui/empty-state';
 
-export function DecisionsList({ projectId }: { projectId: string }) {
+export function DecisionsList({
+  projectId,
+  embedded = false,
+}: {
+  projectId: string;
+  embedded?: boolean;
+}) {
   const trpc = useTRPC();
   const list = useQuery(trpc.decision.list.queryOptions({ projectId }));
   const items = list.data ?? [];
 
   return (
     <div className="stack">
-      <header>
-        <h1 className="page-title">Decisions</h1>
-        <p className="lede">GO, PIVOT, and KILL — the calls that changed the plan, and why.</p>
-      </header>
+      {embedded ? (
+        <h2 className="card-title">Recorded decisions</h2>
+      ) : (
+        <header>
+          <h1 className="page-title">Decisions</h1>
+          <p className="lede">GO, PIVOT, and KILL — the calls that changed the plan, and why.</p>
+        </header>
+      )}
       {list.isLoading ? <p className="muted">Loading…</p> : null}
       {list.isError ? <p className="alert">{list.error.message}</p> : null}
       {!list.isLoading && items.length === 0 ? (

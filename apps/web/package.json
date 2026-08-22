@@ -10,12 +10,14 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "create-admin-key": "node --env-file-if-exists=../../.env --import tsx ./scripts/create-admin-key.ts"
   },
   "engines": {
     "node": ">=24 <25"
   },
   "dependencies": {
+    "@assistant-ui/react": "0.15.16",
     "@aws-sdk/client-s3": "3.1111.0",
     "@aws-sdk/s3-request-presigner": "3.1111.0",
     "@better-auth/api-key": "1.5.6",
@@ -23,6 +25,7 @@
     "@foundry/agent-runtime": "workspace:*",
     "@foundry/api-contracts": "workspace:*",
     "@foundry/artifacts": "workspace:*",
+    "@foundry/cofounder-operations": "workspace:*",
     "@foundry/config": "workspace:*",
     "@foundry/db": "workspace:*",
     "@foundry/domain": "workspace:*",
@@ -50,6 +53,8 @@
     "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.3",
     "@types/pg": "8.15.6",

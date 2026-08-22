@@ -1,0 +1,36 @@
+# Allowlist composition: no base profile, persistence, filesystem, terminal,
+# browser, MCP, telemetry, tools, skills, jobs, workflows, or subagents.
+- id: sdk-jsonrpc-server
+  name: '@deepseek-ai/dsh-sdk-jsonrpc-server'
+  config:
+    maxTokensAsSuccess: false
+
+# Mantle is Bedrock's OpenAI-compatible endpoint for OpenAI GPT-5.6. The
+# bearer token is the only provider credential exposed to this sidecar.
+- id: llm-bedrock-mantle
+  name: '@deepseek-ai/dsh-llm-pi-ai'
+  config:
+    providers:
+      bedrock-mantle:
+        apiKeyEnv: AWS_BEARER_TOKEN_BEDROCK
+        api: openai-responses
+        baseURL: !!js process.env.BEDROCK_MANTLE_BASE_URL
+        models:
+          - id: !!js process.env.DSH_MODEL
+            contextWindow: !!js Number(process.env.DSH_CONTEXT_WINDOW ?? 128000)
+            maxTokens: !!js Number(process.env.DSH_MAX_OUTPUT_TOKENS ?? 1800)
+
+- id: cofounder-agent
+  name: '@deepseek-ai/dsh-agent-spine-demo'
+  config:
+    includeHarnessIdentity: false
+    includeRuntimeContext: false
+    persona: !!js process.env.DSH_SYSTEM_PROMPT
+    workspaceContext: false
+    skills:
+      enabled: false
+    toolBash: false
+    toolJobs: false
+    goals: false
+    tools:
+      mode: native

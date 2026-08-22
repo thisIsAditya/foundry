@@ -18,9 +18,11 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1111.0",
-    "@foundry/config": "workspace:*",
     "@foundry/agent-runtime": "workspace:*",
+    "@foundry/api-contracts": "workspace:*",
+    "@foundry/config": "workspace:*",
     "@foundry/artifacts": "workspace:*",
+    "@foundry/cofounder-operations": "workspace:*",
     "@foundry/db": "workspace:*",
     "@foundry/document-intelligence": "workspace:*",
     "@foundry/domain": "workspace:*",

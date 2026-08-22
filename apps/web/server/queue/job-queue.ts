@@ -1,4 +1,4 @@
-import { SprintJobDataSchema, type SprintJobData } from '@foundry/agent-runtime';
+import { CofounderJobDataSchema, type CofounderJobData } from '@foundry/cofounder-operations';
 import { RenderJobDataSchema, type RenderJobData } from '@foundry/artifacts';
 import { infra } from '@foundry/config/infra';
 import {
@@ -17,7 +17,7 @@ export const IngestionJobDataSchema = z.object({
   correlationId: z.string().min(1),
 });
 export type IngestionJobData = z.infer<typeof IngestionJobDataSchema>;
-export type { SprintJobData, RenderJobData };
+export type { RenderJobData };
 
 export const NotificationJobDataSchema = z.object({
   kind: z.enum([
@@ -41,26 +41,26 @@ export type NotificationJobData = z.infer<typeof NotificationJobDataSchema>;
 
 export type JobQueue = {
   enqueueIngestion(data: IngestionJobData): Promise<void>;
-  enqueueSprint(data: SprintJobData): Promise<void>;
+  enqueueCofounder(data: CofounderJobData): Promise<void>;
   enqueueRender(data: RenderJobData): Promise<void>;
   enqueueNotification(data: NotificationJobData): Promise<void>;
 };
 
 export type MemoryJobQueue = JobQueue & {
   readonly jobs: IngestionJobData[];
-  readonly sprintJobs: SprintJobData[];
+  readonly cofounderJobs: CofounderJobData[];
   readonly renderJobs: RenderJobData[];
   readonly notificationJobs: NotificationJobData[];
 };
 
 export function createMemoryJobQueue(): MemoryJobQueue {
   const jobs: IngestionJobData[] = [];
-  const sprintJobs: SprintJobData[] = [];
+  const cofounderJobs: CofounderJobData[] = [];
   const renderJobs: RenderJobData[] = [];
   const notificationJobs: NotificationJobData[] = [];
   return {
     jobs,
-    sprintJobs,
+    cofounderJobs,
     renderJobs,
     notificationJobs,
     async enqueueIngestion(data) {
@@ -69,12 +69,12 @@ export function createMemoryJobQueue(): MemoryJobQueue {
       }
       jobs.push(data);
     },
-    async enqueueSprint(data) {
-      if (sprintJobs.some((job) => job.sprintId === data.sprintId)) {
+    async enqueueCofounder(data) {
+      if (cofounderJobs.some((job) => job.operationId === data.operationId)) {
         return;
       }
-      SprintJobDataSchema.parse(data);
-      sprintJobs.push(data);
+      CofounderJobDataSchema.parse(data);
+      cofounderJobs.push(data);
     },
     async enqueueRender(data) {
       if (renderJobs.some((job) => job.artifactVersionId === data.artifactVersionId)) {
@@ -101,10 +101,11 @@ export function createBullmqJobQueue(redisUrl: string): JobQueue {
       removeOnFail: 5000,
     },
   });
-  const sprint = new Queue(infra.queues.sprint, {
+  const cofounder = new Queue(infra.queues.cofounder, {
     connection,
     defaultJobOptions: {
-      attempts: infra.sprintQueue.attempts,
+      attempts: infra.cofounderQueue.attempts,
+      backoff: { type: 'exponential', delay: infra.cofounderQueue.backoffMs },
       removeOnComplete: 1000,
       removeOnFail: 5000,
     },
@@ -139,9 +140,9 @@ export function createBullmqJobQueue(redisUrl: string): JobQueue {
         throw error;
       }
     },
-    async enqueueSprint(data) {
+    async enqueueCofounder(data) {
       try {
-        await sprint.add('run', data, { jobId: `sprint-${data.sprintId}` });
+        await cofounder.add('run', data, { jobId: `cofounder-${data.operationId}` });
       } catch (error) {
         if (error instanceof Error && /already exists/i.test(error.message)) {
           return;

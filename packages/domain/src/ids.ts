@@ -195,3 +195,45 @@ export type ResearchFindingId = z.infer<typeof ResearchFindingIdSchema>;
 
 export const PlanScoreIdSchema = brandedUuid('PlanScoreId');
 export type PlanScoreId = z.infer<typeof PlanScoreIdSchema>;
+
+export const JourneyIdSchema = brandedUuid('JourneyId');
+export type JourneyId = z.infer<typeof JourneyIdSchema>;
+
+export const JourneyStageStateIdSchema = brandedUuid('JourneyStageStateId');
+export type JourneyStageStateId = z.infer<typeof JourneyStageStateIdSchema>;
+
+export const JourneyStepIdSchema = brandedUuid('JourneyStepId');
+export type JourneyStepId = z.infer<typeof JourneyStepIdSchema>;
+
+export const JourneyTransitionIdSchema = brandedUuid('JourneyTransitionId');
+export type JourneyTransitionId = z.infer<typeof JourneyTransitionIdSchema>;
+
+export const BusinessRecordVersionIdSchema = brandedUuid('BusinessRecordVersionId');
+export type BusinessRecordVersionId = z.infer<typeof BusinessRecordVersionIdSchema>;
+
+export const RecordItemIdSchema = brandedUuid('RecordItemId');
+export type RecordItemId = z.infer<typeof RecordItemIdSchema>;
+
+export const RecordItemRelationIdSchema = brandedUuid('RecordItemRelationId');
+export type RecordItemRelationId = z.infer<typeof RecordItemRelationIdSchema>;
+
+export const RecordItemStalenessIdSchema = brandedUuid('RecordItemStalenessId');
+export type RecordItemStalenessId = z.infer<typeof RecordItemStalenessIdSchema>;
+
+export const ProposalIdSchema = brandedUuid('ProposalId');
+export type ProposalId = z.infer<typeof ProposalIdSchema>;
+
+export const ProposalChangeIdSchema = brandedUuid('ProposalChangeId');
+export type ProposalChangeId = z.infer<typeof ProposalChangeIdSchema>;
+
+export const CofounderOperationIdSchema = brandedUuid('CofounderOperationId');
+export type CofounderOperationId = z.infer<typeof CofounderOperationIdSchema>;
+
+export const CapabilityInvocationIdSchema = brandedUuid('CapabilityInvocationId');
+export type CapabilityInvocationId = z.infer<typeof CapabilityInvocationIdSchema>;
+
+export const ActivityEventIdSchema = brandedUuid('ActivityEventId');
+export type ActivityEventId = z.infer<typeof ActivityEventIdSchema>;
+
+export const CommandReceiptIdSchema = brandedUuid('CommandReceiptId');
+export type CommandReceiptId = z.infer<typeof CommandReceiptIdSchema>;

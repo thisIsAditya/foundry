@@ -21,6 +21,8 @@ export default tseslint.config(
       '**/.expo/**',
       '**/metro.config.js',
       '**/babel.config.js',
+      '**/playwright-report/**',
+      '**/test-results/**',
     ],
   },
   js.configs.recommended,
@@ -74,6 +76,15 @@ export default tseslint.config(
                 path.join(repoRoot, 'packages/db'),
                 path.join(repoRoot, 'packages/agent-runtime'),
                 path.join(repoRoot, 'packages/tools'),
+              ],
+            },
+            {
+              target: path.join(repoRoot, 'packages/cofounder-operations'),
+              from: [
+                path.join(repoRoot, 'packages/db'),
+                path.join(repoRoot, 'packages/tools'),
+                path.join(repoRoot, 'packages/document-intelligence'),
+                path.join(repoRoot, 'apps'),
               ],
             },
             {

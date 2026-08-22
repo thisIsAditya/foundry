@@ -1,58 +1,102 @@
 'use client';
 
-import type { ConversationBlock, ConversationMessage } from '@foundry/domain';
+import type { ConversationBlock, ConversationMessage, CofounderTurnBlock } from '@foundry/domain';
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { businessModelSectionLabel, formatMessageTimestamp } from '../../lib/format';
-import { projectPanelHref } from '../../lib/project-href';
+import { formatMessageTimestamp } from '../../lib/format';
+import { projectEvidenceHref, projectJourneyHref } from '../../lib/project-href';
 import { ChatMarkdown } from './chat-markdown';
+import { CofounderProposalCard } from '../cofounder/cofounder-proposal-card';
+import { CofounderReferenceList } from '../cofounder/cofounder-reference-list';
+import { CofounderResponseFrame } from '../cofounder/cofounder-response-frame';
 
-function CopyButton({ text, align }: { text: string; align: 'start' | 'end' }) {
+function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
 
   return (
-    <div
-      className={`flex opacity-0 transition-opacity group-hover/msg:opacity-100 focus-within:opacity-100 ${
-        align === 'end' ? 'justify-end' : 'justify-start'
-      }`}
+    <button
+      type="button"
+      className="chat-copy-btn"
+      aria-label={copied ? 'Copied' : 'Copy message'}
+      title={copied ? 'Copied' : 'Copy'}
+      onClick={() => {
+        void navigator.clipboard.writeText(text).then(() => {
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 1500);
+        });
+      }}
     >
-      <button
-        type="button"
-        className="chat-copy-btn"
-        aria-label={copied ? 'Copied' : 'Copy message'}
-        onClick={() => {
-          void navigator.clipboard.writeText(text).then(() => {
-            setCopied(true);
-            window.setTimeout(() => setCopied(false), 1500);
-          });
-        }}
-      >
-        {copied ? <CheckGlyph /> : <CopyGlyph />}
-      </button>
-    </div>
+      {copied ? <CopiedGlyph /> : <CopyGlyph />}
+    </button>
   );
 }
 
 function CopyGlyph() {
   return (
-    <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M5.5 2A1.5 1.5 0 0 0 4 3.5v7A1.5 1.5 0 0 0 5.5 12h5A1.5 1.5 0 0 0 12 10.5v-7A1.5 1.5 0 0 0 10.5 2h-5ZM5 3.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-7ZM2.5 5A.5.5 0 0 0 2 5.5v7A1.5 1.5 0 0 0 3.5 14h5a.5.5 0 0 0 0-1h-5a.5.5 0 0 1-.5-.5v-7a.5.5 0 0 0-.5-.5Z"
-      />
+    <svg
+      viewBox="0 0 16 16"
+      className="size-3.5"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="5.5" y="5.5" width="8" height="8" rx="1.2" />
+      <path d="M10.5 5.5V3.8A1.3 1.3 0 0 0 9.2 2.5H3.8A1.3 1.3 0 0 0 2.5 3.8v5.4A1.3 1.3 0 0 0 3.8 10.5H5.5" />
     </svg>
   );
 }
 
-function CheckGlyph() {
+function CopiedGlyph() {
   return (
-    <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M13.7 4.3a1 1 0 0 1 0 1.4l-6 6a1 1 0 0 1-1.4 0l-3-3a1 1 0 1 1 1.4-1.4L7 9.6l5.3-5.3a1 1 0 0 1 1.4 0Z"
-      />
+    <svg
+      viewBox="0 0 16 16"
+      className="size-3.5"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
     </svg>
+  );
+}
+
+function ArchivedWork({ children }: { children: string }) {
+  return (
+    <div className="panel stack-tight">
+      <p className="hint">Archived work from the previous sprint product</p>
+      <p className="muted">{children}</p>
+    </div>
+  );
+}
+
+function CofounderTurnCard({ projectId, block }: { projectId: string; block: CofounderTurnBlock }) {
+  return (
+    <CofounderResponseFrame type={block.interactionType}>
+      <ChatMarkdown text={block.explanation} />
+      {block.uncertainty.length === 0 ? null : <p className="hint">{block.uncertainty}</p>}
+      {block.blockedConditions.length === 0 ? null : (
+        <p className="muted">{block.blockedConditions.join(' ')}</p>
+      )}
+      <CofounderReferenceList projectId={projectId} references={block.references} />
+      {block.proposalId === null ? null : (
+        <CofounderProposalCard projectId={projectId} proposalId={block.proposalId} />
+      )}
+      {block.stepId === null ? null : (
+        <Link
+          className="min-h-11 inline-flex items-center"
+          href={projectJourneyHref(projectId, block.stepId)}
+        >
+          Open the related step
+        </Link>
+      )}
+    </CofounderResponseFrame>
   );
 }
 
@@ -60,23 +104,18 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
   switch (block.kind) {
     case 'concise_answer':
       return <ChatMarkdown text={block.text} />;
+    case 'cofounder_turn':
+      return <CofounderTurnCard projectId={projectId} block={block} />;
     case 'cited_finding':
       return (
         <div className="panel stack-tight">
           <p className="hint">Cited finding</p>
           <ChatMarkdown text={block.text} />
-          {block.citationIds.length === 0 ? null : (
-            <p className="muted">{block.citationIds.length} citation(s)</p>
-          )}
           <Link
-            href={
-              block.evidenceItemId === undefined
-                ? projectPanelHref(projectId, 'research')
-                : projectPanelHref(projectId, 'research', { finding: block.evidenceItemId })
-            }
-            className="text-sm"
+            href={projectEvidenceHref(projectId)}
+            className="text-sm min-h-11 inline-flex items-center"
           >
-            Open research
+            Open evidence
           </Link>
         </div>
       );
@@ -87,61 +126,11 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
           <ChatMarkdown text={block.text} />
         </div>
       );
-    case 'proposed_plan_change':
+    case 'decision_card':
       return (
         <div className="panel stack-tight">
-          <p className="hint">Proposed plan change</p>
-          <p className="text-sm">
-            {block.sectionKey === undefined
-              ? 'A draft revision is ready to review.'
-              : `Update to ${businessModelSectionLabel(block.sectionKey)}.`}
-          </p>
-          <Link
-            href={
-              block.sectionKey === undefined
-                ? projectPanelHref(projectId, 'plan')
-                : projectPanelHref(projectId, 'plan', { section: block.sectionKey })
-            }
-            className="text-sm"
-          >
-            Review the diff
-          </Link>
-        </div>
-      );
-    case 'research_plan':
-      return (
-        <div className="panel stack-tight">
-          <p className="hint">Research plan</p>
-          <Link
-            href={projectPanelHref(projectId, 'work', { job: block.jobId })}
-            className="text-sm"
-          >
-            Review before it starts
-          </Link>
-        </div>
-      );
-    case 'founder_task':
-      return (
-        <div className="panel stack-tight">
-          <p className="hint">Founder task</p>
-          <Link
-            href={projectPanelHref(projectId, 'work', { task: block.founderTaskId })}
-            className="text-sm"
-          >
-            Open the task
-          </Link>
-        </div>
-      );
-    case 'job_request':
-      return (
-        <div className="panel stack-tight">
-          <p className="hint">Job request</p>
-          <Link
-            href={projectPanelHref(projectId, 'work', { job: block.jobId })}
-            className="text-sm"
-          >
-            Open the job
-          </Link>
+          <p className="hint">Decision</p>
+          <ChatMarkdown text={block.text} />
         </div>
       );
     case 'draft_action':
@@ -149,16 +138,6 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
         <div className="panel stack-tight">
           <p className="hint">Draft help</p>
           <ChatMarkdown text={block.text} />
-        </div>
-      );
-    case 'decision_card':
-      return (
-        <div className="panel stack-tight">
-          <p className="hint">Decision</p>
-          <ChatMarkdown text={block.text} />
-          <Link href={projectPanelHref(projectId, 'decisions')} className="text-sm">
-            Open decisions
-          </Link>
         </div>
       );
     case 'blocker':
@@ -170,6 +149,23 @@ function BlockCard({ projectId, block }: { projectId: string; block: Conversatio
             <p className="muted">{block.recoveryAction}</p>
           )}
         </div>
+      );
+    case 'proposed_plan_change':
+      return (
+        <ArchivedWork>
+          A previous plan-change card. Open the model to review the current record.
+        </ArchivedWork>
+      );
+    case 'research_plan':
+    case 'job_request':
+      return (
+        <ArchivedWork>A previous research job. That sprint path is no longer in use.</ArchivedWork>
+      );
+    case 'founder_task':
+      return (
+        <ArchivedWork>
+          A previous founder task. Continue from the current journey step instead.
+        </ArchivedWork>
       );
   }
 }
@@ -202,15 +198,12 @@ export function ConversationMessageView({
         {timestamp === '' ? null : <span className="chat-timestamp"> · {timestamp}</span>}
       </p>
       {attachments.length === 0 ? null : (
-        <ul
-          className={isFounder ? 'chat-attachments' : 'flex flex-wrap gap-2'}
-          aria-label="Attached files"
-        >
+        <ul className="flex flex-wrap gap-2" aria-label="Attached files">
           {attachments.map((ref) => (
             <li key={`${ref.kind}-${ref.id}`}>
               <Link
-                href={projectPanelHref(projectId, 'research', { finding: ref.id })}
-                className="badge no-underline"
+                href={projectEvidenceHref(projectId)}
+                className="badge no-underline min-h-11 inline-flex items-center"
               >
                 Attached file
               </Link>
@@ -219,26 +212,21 @@ export function ConversationMessageView({
         </ul>
       )}
       {plainText ? (
-        <div className="group/msg flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <div className={bubbleClass}>
             <ChatMarkdown text={message.text} />
           </div>
-          <CopyButton text={message.text} align={isFounder ? 'end' : 'start'} />
+          <CopyButton text={message.text} />
         </div>
       ) : null}
       {textBlocks.length === 0 ? null : (
         <div className={isFounder ? 'flex flex-col items-end gap-2' : 'chat-blocks'}>
           {textBlocks.map((block, index) => (
-            <div
-              key={`${message.id}-text-${String(index)}`}
-              className="group/msg flex flex-col gap-1"
-            >
+            <div key={`${message.id}-text-${String(index)}`} className="flex flex-col gap-1">
               <div className={bubbleClass}>
                 {block.kind === 'concise_answer' ? <ChatMarkdown text={block.text} /> : null}
               </div>
-              {block.kind === 'concise_answer' ? (
-                <CopyButton text={block.text} align={isFounder ? 'end' : 'start'} />
-              ) : null}
+              {block.kind === 'concise_answer' ? <CopyButton text={block.text} /> : null}
             </div>
           ))}
         </div>
@@ -253,6 +241,9 @@ export function ConversationMessageView({
             />
           ))}
         </div>
+      )}
+      {isFounder || material.some((block) => block.kind === 'cofounder_turn') ? null : (
+        <p className="hint">Historic Inform content. Typed interaction details were not stored.</p>
       )}
     </article>
   );

@@ -42,7 +42,8 @@ function createProjectStreamStore(): ProjectStreamStore {
           events: [...state.events, event],
           lastSeq: seq,
           unreadCount:
-            event.type === 'conversation_message_appended' && event.actor === 'co_founder'
+            (event.type === 'conversation_message_appended' && event.actor === 'co_founder') ||
+            event.type === 'cofounder_completed'
               ? state.unreadCount + 1
               : state.unreadCount,
           // Cleared on completion too: the final answer lands in conversation

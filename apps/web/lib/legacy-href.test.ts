@@ -8,21 +8,24 @@ describe('legacyAppDestination', () => {
     expect(legacyAppDestination('/w/abc/settings')).toBe('/home');
   });
 
-  it('maps deleted project routes onto panel query strings', () => {
-    expect(legacyAppDestination('/p/aaaa/plan')).toBe('/p/aaaa?panel=plan');
-    expect(legacyAppDestination('/p/aaaa/plan/problem')).toBe('/p/aaaa?panel=plan&section=problem');
-    expect(legacyAppDestination('/p/aaaa/work', '?view=blocked')).toBe(
-      '/p/aaaa?view=blocked&panel=work',
-    );
-    expect(legacyAppDestination('/p/aaaa/approvals')).toBe('/p/aaaa?panel=work&view=blocked');
-    expect(legacyAppDestination('/p/aaaa/co-founder')).toBe('/p/aaaa');
+  it('maps deleted drawer routes onto founder destinations', () => {
+    expect(legacyAppDestination('/p/aaaa/plan')).toBe('/p/aaaa/model');
+    expect(legacyAppDestination('/p/aaaa/plan/problem')).toBe('/p/aaaa/model/problem');
+    expect(legacyAppDestination('/p/aaaa/work', '?view=blocked')).toBe('/p/aaaa/journey');
+    expect(legacyAppDestination('/p/aaaa/approvals')).toBe('/p/aaaa/decisions');
     expect(legacyAppDestination('/p/aaaa/pack/mvbp')).toBe(
-      '/p/aaaa?panel=plan&section=mvbp_kill_lines',
+      '/p/aaaa/model/next_validation_experiment',
     );
+    expect(legacyAppDestination('/p/aaaa', '?panel=plan&section=problem')).toBe(
+      '/p/aaaa/model/problem',
+    );
+    expect(legacyAppDestination('/p/aaaa', '?panel=research')).toBe('/p/aaaa/evidence');
+    expect(legacyAppDestination('/p/aaaa/co-founder')).toBe('/p/aaaa');
   });
 
-  it('leaves the project root alone', () => {
+  it('leaves the new founder destinations alone', () => {
     expect(legacyAppDestination('/p/aaaa')).toBeNull();
-    expect(legacyAppDestination('/p/aaaa', '?panel=plan')).toBeNull();
+    expect(legacyAppDestination('/p/aaaa/journey')).toBeNull();
+    expect(legacyAppDestination('/p/aaaa', '?panel=settings')).toBeNull();
   });
 });

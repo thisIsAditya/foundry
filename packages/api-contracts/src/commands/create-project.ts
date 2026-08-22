@@ -9,6 +9,9 @@ export const CreateProjectInputSchema = z.object({
   geography: z.string().min(1).optional(),
   objective: FounderObjectiveSchema.optional(),
   founderPitch: z.string().min(1).optional(),
+  constraints: z.string().min(1).optional(),
+  urgency: z.enum(['now', 'soon', 'exploring']).optional(),
+  customerHint: z.string().min(1).optional(),
   attachmentIds: z.array(EvidenceItemIdSchema).max(10).optional(),
   idempotencyKey: IdempotencyKeySchema,
 });

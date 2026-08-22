@@ -22,21 +22,10 @@
     "node": ">=24 <25"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "5.0.57",
-    "@ai-sdk/anthropic": "4.0.39",
-    "@ai-sdk/gateway": "4.0.52",
-    "@ai-sdk/mcp": "2.0.32",
-    "@ai-sdk/openai": "4.0.42",
-    "@ai-sdk/openai-compatible": "3.0.30",
     "@foundry/api-contracts": "workspace:*",
-    "@foundry/config": "workspace:*",
     "@foundry/domain": "workspace:*",
     "@foundry/observability": "workspace:*",
-    "@foundry/policy": "workspace:*",
-    "@foundry/tools": "workspace:*",
-    "ai": "7.0.66",
     "ioredis": "5.11.1",
-    "quickjs-emscripten": "0.31.0",
     "zod": "4.4.3"
   },
   "devDependencies": {

@@ -1,12 +1,10 @@
 'use client';
 
 import type { Project } from '@foundry/domain';
-import { Gauge } from '@foundry/ui';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { journeyStep } from '../../lib/journey';
 import { useTRPC } from '../../lib/trpc/client';
 import { VentureComposer } from './venture-composer';
 
@@ -40,9 +38,9 @@ export function VenturesHome({
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Your ventures</h1>
-          <p className="lede">Open one to keep working, or start another.</p>
+          <p className="lede">Open one to keep working, or start another from a short idea.</p>
         </div>
-        <button type="button" className="btn" onClick={() => setComposing(true)}>
+        <button type="button" className="btn min-h-11" onClick={() => setComposing(true)}>
           New venture
         </button>
       </header>
@@ -64,24 +62,21 @@ export function VenturesHome({
 
 function VentureRow({ projectId, name }: { projectId: string; name: string }) {
   const trpc = useTRPC();
-  const desk = useQuery(trpc.project.getDeskSummary.queryOptions({ projectId }));
-  const phase = desk.data?.derivedPhase;
-  const overall = desk.data?.overview.overallScore ?? null;
+  const overview = useQuery(trpc.journey.getOverview.queryOptions({ projectId }));
 
   return (
     <li className="list-row">
       <Link href={`/p/${projectId}`} className="flex min-w-0 items-center gap-3 no-underline">
-        <Gauge value={overall} size="sm" label={`${name} score`} />
         <span className="min-w-0">
           <span className="block truncate text-sm">{name}</span>
           <span className="hint">
-            {desk.isLoading
-              ? 'Loading phase…'
-              : desk.isError
-                ? desk.error.message
-                : phase === undefined
-                  ? 'Phase pending'
-                  : journeyStep(phase).title}
+            {overview.isLoading
+              ? 'Loading stage…'
+              : overview.isError
+                ? overview.error.message
+                : overview.data === undefined || overview.data === null
+                  ? 'Stage pending'
+                  : `${overview.data.stageLabel} · ${overview.data.journey.currentObjective}`}
           </span>
         </span>
       </Link>

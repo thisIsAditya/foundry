@@ -396,3 +396,14 @@ export const integrationReadProcedure = protectedProcedure.use(
 export const integrationWriteProcedure = protectedProcedure.use(
   requireWorkspaceAccess('integration.connect'),
 );
+export const journeyReadProcedure = protectedProcedure.use(requireProjectAccess('journey.read'));
+export const journeyWriteProcedure = protectedProcedure.use(requireProjectAccess('journey.write'));
+export const recordReadProcedure = protectedProcedure.use(requireProjectAccess('record.read'));
+export const recordWriteProcedure = protectedProcedure.use(requireProjectAccess('record.accept'));
+export const proposalReadProcedure = protectedProcedure.use(requireProjectAccess('proposal.read'));
+export const proposalWriteProcedure = protectedProcedure.use(
+  requireProjectAccess('proposal.review'),
+);
+export const cofounderRespondProcedure = protectedProcedure.use(
+  requireProjectAccess('cofounder.respond'),
+);

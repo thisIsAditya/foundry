@@ -45,6 +45,7 @@ export class CiStack extends cdk.Stack {
 
     ecr.webRepository.grantPullPush(deployRole);
     ecr.workerRepository.grantPullPush(deployRole);
+    ecr.harnessRepository.grantPullPush(deployRole);
 
     deployRole.addToPolicy(
       new iam.PolicyStatement({

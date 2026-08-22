@@ -125,3 +125,18 @@ export async function updateProjectCurrentPackRevision(
   `;
   return toProject(requireRow(rows, 'updateProjectCurrentPackRevision'));
 }
+
+export async function updateProjectCurrentPhase(
+  sql: Sql,
+  id: ProjectId,
+  currentPhase: JourneyPhase,
+): Promise<Project> {
+  const rows = await sql<ProjectRow[]>`
+    update projects
+    set current_phase = ${currentPhase},
+        updated_at = now()
+    where id = ${id}
+    returning *
+  `;
+  return toProject(requireRow(rows, 'updateProjectCurrentPhase'));
+}

@@ -29,6 +29,12 @@ safe or aligned to embed unchanged.
 5. [DeepSeek Harness evaluation](16-deepseek-harness-evaluation.md)
 6. [Canonical journey and business model](17-canonical-journey-and-business-model.md)
 7. [Implementation contracts and cleanup runbook](18-implementation-contracts-and-cleanup.md)
+8. [Implementation v4](implementation-v4/00-README.md)
+
+`implementation-v4/` is the active execution plan. It turns the reset
+requirements, migration inventory, and Harness boundary into delivery waves,
+concrete contracts, migration gates, web routes, runtime seams, and release
+criteria.
 
 ## Delivery order
 
@@ -52,6 +58,7 @@ not implementation authority:
 | `implementation/` | Historical | Reference for the existing codebase and infrastructure inventory |
 | `implementation-v2/` | Historical | Reference for prior product-direction changes; do not extend its job/sprint model |
 | `implementation-3/` | Historical | Reference for UI implementation detail; reconcile every item with current requirements first |
+| `implementation-v4/` | Current | Execute the reset in this order; it is constrained by the requirements and plans above |
 
 The corresponding research archive retains business-framework and human-ownership
 insights. Its multi-agent architecture and company-operations runtime are
